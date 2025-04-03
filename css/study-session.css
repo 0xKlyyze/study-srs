@@ -1,0 +1,1523 @@
+        /* --- CSS Variables (Combined & Enhanced) --- */
+        :root {
+            /* Base Theme */
+            --bg-gradient-start: #1a1a2e; --bg-gradient-end: #16213e;
+            --primary-bg: #1f2a40; --secondary-bg: #2c3a56;
+            --tertiary-bg: #1a1a2e; /* Card BG often darker/primary */
+            --border-color: #4a5a7e; --hover-border-color: #6a7aac;
+            --text-primary: #e8e8e8; /* Slightly brighter text */
+            --text-secondary: #b0b0d0; /* Slightly brighter secondary text */
+            --icon-color: #b0b0d0; --icon-hover-color: #ffffff;
+
+            /* Accents */
+            --accent-blue: #5bc0de; --accent-green: #5cb85c;
+            --accent-yellow: #f0ad4e; --accent-red: #d9534f;
+            --accent-purple: #6a11cb; --accent-orange: #ff851b;
+            --accent-pink: #e83e8c; --accent-teal: #20c997;
+
+             /* Effects & UI Elements */
+             --modal-overlay-bg: rgba(10, 10, 20, 0.7);
+             --shadow-color: rgba(0, 0, 0, 0.5); /* Slightly darker shadow */
+             --pill-bg: rgba(31, 42, 64, 0.85); /* Slightly less transparent pill */
+             --card-bg: var(--secondary-bg); /* Use secondary for card base */
+             --action-btn-bg: var(--primary-bg); /* Darker action buttons */
+             --action-btn-hover-bg: var(--secondary-bg);
+             --flip-btn-bg: var(--accent-blue);
+             --flip-btn-text: var(--primary-bg);
+             --flip-btn-glow: rgba(91, 192, 222, 0.6); /* Glow for flip button */
+             --quality-btn-good-glow: rgba(91, 192, 222, 0.5);
+             --quality-btn-easy-glow: rgba(92, 184, 92, 0.5);
+             --ai-glow-start: #6a11cb; --ai-glow-end: #2575fc; /* Purple to Blue */
+             --ai-glow-color-1: rgba(106, 17, 203, 0.6); /* Purpleish */
+             --ai-glow-color-2: rgba(37, 117, 252, 0.5); /* Blueish */
+             --tilt-max: 6deg; /* Max degrees for tilt */
+             --star-glow-color: rgba(240, 173, 78, 0.7); /* Yellow */
+             --delete-glow-color: rgba(217, 83, 79, 0.6); /* Red */
+             --edit-glow-color: rgba(91, 192, 222, 0.6); /* Blue (example) */
+             --skip-glow-color: rgba(100, 110, 130, 0.6); /* Greyish (example) */
+             --bury-glow-color: rgba(92, 184, 92, 0.6); /* Green (example) */
+
+             --ai-panel-width: 50%; /* Width of the AI panel relative to study area */
+             --card-reduced-width-factor: 0.6; /* Card becomes 60% of original width */
+             --pill-height-approx: 5rem; /* Estimated pill height + top space in rem */
+             /* Target height when AI active - can use vh or rely on stretch */
+
+             --ai-panel-bg: var(--primary-bg);
+             --content-target-height-ai: 93.5vh; /* Adjust target height if needed */
+             --pill-target-transform: translateX(-50%) translateY(-5.5rem); /* Define pill move target */
+             --content-max-height: 90vh; /* Allow more initial vertical space */
+             --panel-transition-duration: 0.45s; /* Define duration */
+             --panel-transition-timing: cubic-bezier(0.4, 0, 0.2, 1); /* Smoother ease */
+             --action-btn-active-scale: 1.15; /* How much active buttons scale */
+        }
+
+        /* --- General Styles & SCALING --- */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+             font-size: 19px; /* Base font size increased (adjust as needed) */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            align-items: center; /* This is what's missing! Center everything horizontally */
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-top: 0rem; /* Initial padding */
+            transition: padding-top 0.5s ease; /* <<< ADD PADDING TRANSITION */
+        }
+
+                /* Allow body padding to reduce when AI active, moving content up */
+        body.panel-active {
+            padding-top: 1rem; /* <<< REDUCED PADDING WHEN AI ACTIVE */
+        }
+
+        /* --- Session Pill (Top Floating - Element 2) --- */
+        .session-pill {
+            position: fixed;
+            top: 1.2rem; /* Use rem units */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+
+            background-color: var(--pill-bg);
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+            
+            padding: 0.6rem 1.8rem; /* Use rem */
+            border-radius: 50px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4); /* Enhanced shadow */
+
+            display: flex;
+            align-items: center;
+            gap: 1.8rem; /* Use rem */
+            transition: transform 0.5s ease, height 0.5s ease, padding 0.5s ease, opacity 0.5s ease; /* Smooth transitions */
+            opacity: 0.9;
+        }
+
+                /* Select pill based on class on body/study-area */
+        /* When AI panel is active */
+        /* IMPORTANT: Apply class to BODY or use sibling selector correctly */
+        body.panel-active .session-pill { /* If class is on body */
+            /* Move up much further */
+            /* transform: translateX(-50%) translateY(calc(-1 * var(--pill-height-approx) * 0.9)); /* Move up 90% */
+            transform: var(--pill-target-transform); /* Apply more drastic upward movement */
+            /* Optional: Reduce height/padding slightly */
+            padding-top: 0.4rem;
+            padding-bottom: 0.4rem;
+            /* Optional: Make slightly transparent? */
+            /* opacity: 0.8; */
+        }
+        .session-stats {
+            display: flex;
+            gap: 1rem; /* Use rem */
+            font-size: 0.9rem; /* Relative to base */
+            color: var(--text-secondary);
+            align-items: center; /* Align items vertically */
+        }
+
+        .session-stats span {
+            padding: 0.3rem 0; /* Use rem */
+            white-space: nowrap;
+             display: flex; /* Use flex for icon alignment */
+             align-items: center;
+             gap: 0.4rem;
+        }
+        .session-stats span svg {
+             width: 1rem;
+             height: 1rem;
+             fill: currentColor;
+             opacity: 0.7;
+        }
+        /* Removed separators for cleaner look */
+
+        .session-controls .nav-btn {
+            background-color: var(--tertiary-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1.2rem; /* Use rem */
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem; /* Relative to base */
+            transition: all 0.2s ease;
+            margin-left: 0.5rem;
+             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+             white-space: nowrap; /* Keep text on one line */
+        }
+        .session-controls .nav-btn:hover {
+            background-color: var(--hover-border-color);
+            color: var(--text-primary);
+            border-color: var(--hover-border-color);
+             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* --- Main Study Area (Holds Actions and Card) --- */
+        /* --- Main Study Area Layout Shift --- */
+/* To ensure the study area layout maintains side-by-side arrangement */
+/* --- Main Study Area --- */
+.study-area {
+    display: flex;
+    gap: 2.5rem;
+    align-items: center;
+    justify-content: center; /* <<< Ensure this is center */
+    padding: 0rem 1.2rem;
+    padding-bottom: 0.8rem;
+    position: relative;
+    perspective: 1500px;
+    transition: gap var(--panel-transition-duration) var(--panel-transition-timing),
+    align-items var(--panel-transition-duration) var(--panel-transition-timing);
+    width: 100%;
+    max-width: 1200px;
+    flex-grow: 1;
+}
+
+        /* ADD generic class for when *any* panel is active */
+        body.panel-active .study-area {
+        gap: 1.5rem;
+        align-items: stretch; /* Stretch vertically */
+        }
+
+        /* When AI panel is active */
+        .study-area.ai-panel-active {
+            gap: 1.5rem; /* Reduce gap */
+            align-items: stretch; /* Make items stretch vertically */
+        }
+
+/* --- AI and Edit Panel Base Styling --- */
+.ai-panel,
+.edit-panel {
+    /* --- Keep the display: none fix --- */
+    display: none; /* <<< Keep: Removes from layout when inactive */
+    opacity: 0;
+    /* width: 0; height: 0; visibility: hidden; - removed as display:none handles it */
+
+    /* --- Other existing styles --- */
+    max-height: var(--content-max-height);
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    transform: scale(0.95) translateX(40px);
+    transform-origin: center right;
+    z-index: 50;
+    box-shadow: 0 6px 20px var(--shadow-color);
+    flex-direction: column; /* Keep */
+    overflow: hidden; /* Keep */
+    order: 3; /* Keep */
+
+    /* Adjust transition - cannot transition display, width, height */
+    transition: transform var(--panel-transition-duration) var(--panel-transition-timing),
+                opacity calc(var(--panel-transition-duration) * 0.8) ease calc(var(--panel-transition-duration) * 0.1),
+                max-height var(--panel-transition-duration) var(--panel-transition-timing);
+    will-change: transform, opacity, max-height;
+}
+
+/* State when panels are active (Show specific panel) */
+body.ai-panel-active .ai-panel,
+body.edit-panel-active .edit-panel {
+    display: flex; /* <<< Keep: Makes visible and acts as flex container */
+    width: var(--ai-panel-width);
+    height: var(--content-target-height-ai);
+    max-height: var(--content-target-height-ai); /* Optional but good practice */
+    min-height: 0; /* Allow shrinking */
+    opacity: 1;
+    transform: scale(1) translateX(0);
+    transition-delay: 0s;
+    /* Transitions may need further tweaking if entry feels abrupt */
+    transition: transform var(--panel-transition-duration) var(--panel-transition-timing),
+    opacity calc(var(--panel-transition-duration) * 0.8) ease calc(var(--panel-transition-duration) * 0.1),
+    max-height var(--panel-transition-duration) var(--panel-transition-timing),
+    height var(--panel-transition-duration) var(--panel-transition-timing), /* Add height */
+    width var(--panel-transition-duration) var(--panel-transition-timing); /* Add width */
+}
+
+        /* Specific AI Panel Glow (Apply only to AI panel) */
+        body.ai-panel-active .ai-panel {
+        box-shadow: 0 0 15px var(--ai-glow-color-1), 0 0 25px var(--ai-glow-color-2), 0 6px 20px var(--shadow-color);
+        }
+
+        .study-area.ai-panel-active .ai-panel {
+            width: var(--ai-panel-width);
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1) translateX(0);
+            order: 3; /* <<<<<<<<<< CHANGE ORDER TO 3 WHEN ACTIVE */
+            max-height: var(--content-target-height-ai); /* <<<<<<<<<< SET TARGET HEIGHT */
+            transition-delay: 0s;
+        }
+
+        /* --- Edit Panel Content Styling --- */
+        .edit-panel-header { /* Style like AI header */
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.8rem 1.2rem; border-bottom: 1px solid var(--border-color);
+        flex-shrink: 0;
+        }
+        .edit-panel-header h3 { font-size: 1.1rem; margin: 0; color: var(--text-primary); }
+        .edit-panel-header .close-edit { /* Style like close-ai */
+        background: none; border: none; color: var(--icon-color);
+        width: 2rem; height: 2rem; padding: 0; cursor: pointer;
+        border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+        transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .edit-panel-header .close-edit:hover { background-color: var(--secondary-bg); color: var(--icon-hover-color); }
+        .edit-panel-header .close-edit svg { width: 1.2rem; height: 1.2rem; }
+
+        .edit-panel-content { /* Style like AI content */
+        flex-grow: 1; padding: 1.2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;
+        /* Scrollbar */
+        scrollbar-width: thin; scrollbar-color: var(--border-color) var(--primary-bg);
+        }
+        .edit-panel-content::-webkit-scrollbar { width: 8px; }
+        .edit-panel-content::-webkit-scrollbar-track { background: var(--primary-bg); }
+        .edit-panel-content::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 4px; }
+
+        .edit-form-group { margin-bottom: 1rem; }
+        .edit-form-group label { display: block; margin-bottom: 0.4rem; font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
+        .edit-form-group input[type="text"],
+        .edit-form-group textarea {
+        width: 100%; padding: 0.6rem 0.8rem; border: 1px solid var(--border-color);
+        border-radius: 6px; background-color: var(--secondary-bg); color: var(--text-primary);
+        font-size: 0.95rem; box-sizing: border-box;
+        transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
+        .edit-form-group input[type="text"]:focus,
+        .edit-form-group textarea:focus { border-color: var(--accent-blue); background-color: var(--tertiary-bg); outline: none; }
+        .edit-form-group textarea { min-height: 6rem; resize: vertical; line-height: 1.5; }
+
+        .edit-panel-footer { /* Style like AI footer */
+        padding: 0.8rem 1.2rem; border-top: 1px solid var(--border-color);
+        display: flex; justify-content: flex-end; gap: 0.8rem; flex-shrink: 0;
+        background-color: var(--secondary-bg);
+        }
+        /* Reuse panel-button styles if defined globally, or define here */
+        .panel-button { padding: 0.5rem 1.2rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.2s ease, transform 0.1s ease; }
+        .panel-button.primary { background-color: var(--accent-green); color: white; }
+        .panel-button.primary:hover { background-color: color-mix(in srgb, var(--accent-green) 90%, white); transform: translateY(-1px); }
+        .panel-button.secondary { background-color: var(--border-color); color: var(--text-secondary); }
+        .panel-button.secondary:hover { background-color: var(--hover-border-color); color: var(--text-primary); transform: translateY(-1px);}
+        /* --- End Edit Panel Styles --- */
+
+        .ai-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 1.2rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .ai-panel-header h3 {
+            font-size: 1.1rem;
+            margin: 0;
+            color: var(--text-primary);
+        }
+        .ai-panel-header .close-ai { /* Style close button like other icon buttons */
+            background: none; border: none; color: var(--icon-color);
+            width: 2rem; height: 2rem; padding: 0; cursor: pointer;
+            border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .ai-panel-header .close-ai:hover { background-color: var(--secondary-bg); color: var(--icon-hover-color); }
+        .ai-panel-header .close-ai svg { width: 1.2rem; height: 1.2rem; }
+
+        .ai-panel-content {
+            flex-grow: 1;
+            padding: 1.2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .ai-panel-content p { margin: 0 0 0.5rem 0; color: var(--text-secondary); font-size: 0.9rem; }
+        .ai-chat-placeholder { flex-grow: 1; background-color: var(--secondary-bg); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-style: italic; }
+        .ai-panel-content textarea { width: 100%; height: 5rem; background-color: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); padding: 0.5rem; font-family: inherit; font-size: 0.9rem; resize: none; }
+        .ai-send-btn { background-color: var(--accent-blue); color: var(--primary-bg); border: none; padding: 0.6rem 1rem; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease; align-self: flex-end; }
+        .ai-send-btn:hover { background-color: #31b0d5; }
+
+                /* Shrink buttons in BOTH columns when panel is active */
+        .study-area.ai-panel-active .card-actions-column .icon-btn {
+            width: 2.5rem; /* Reduced size */
+            height: 2.5rem;
+            transform: scale(0.9);
+        }
+        .study-area.ai-panel-active .card-actions-column .icon-btn svg {
+            width: 1.2rem;
+            height: 1.2rem;
+        }
+
+
+        /* --- Card Actions (Flanking - Elements 3-8) --- */
+        .card-actions-column {
+            transition: transform 0.5s ease, opacity 0.4s ease 0.1s, width 0.5s ease, gap 0.5s ease;
+            flex-shrink: 0;
+            /* Removed align-self: center */
+            display: flex; /* Ensure flex properties apply */
+            flex-direction: column;
+            align-items: center; /* Center buttons horizontally */
+            justify-content: center; /* Center buttons vertically */
+            gap: 1.5rem; /* Default gap */
+            width: 4rem; /* Default width */
+             padding-top: 0;
+        }
+
+        .card-actions-left {
+            order: 1; /* Left column first */
+        }
+        .card-actions-right {
+            order: 3; /* Right column after card */
+        }
+
+        .card-actions-column .icon-btn {
+            background: linear-gradient(145deg, var(--secondary-bg), var(--action-btn-bg)); /* Subtle gradient */
+            color: var(--icon-color);
+            border: 1px solid var(--border-color);
+            width: 3.2rem; /* Increased size, use rem */
+            height: 3.2rem;
+            border-radius: 50%;
+            cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: all 0.25s ease, box-shadow 0.3s ease, width 0.5s ease, height 0.5s ease, transform 0.5s ease; /* Add size transition */
+            padding: 0;
+            box-shadow: 0 4px 10px var(--shadow-color);
+            position: relative; /* Needed for potential pseudo-elements */
+        }
+         .card-actions-column .icon-btn svg {
+             width: 1.5rem; /* Use rem */
+             height: 1.5rem;
+             fill: currentColor;
+        }
+        .card-actions-column .icon-btn:hover:not(:disabled) {
+            /* Base hover effect */
+            color: var(--icon-hover-color);
+            background: linear-gradient(145deg, var(--action-btn-hover-bg), var(--secondary-bg));
+            border-color: var(--hover-border-color);
+            transform: translateY(-3px) scale(1.05);
+            /* Base shadow lift */
+            box-shadow: 0 6px 15px var(--shadow-color);
+        }
+
+        /* Edit Button Active */
+        #editBtn.active {
+        background: linear-gradient(145deg, var(--accent-blue), #31b0d5); /* Blue gradient */
+        border-color: var(--accent-blue);
+        color: white;
+        transform: scale(var(--action-btn-active-scale)); /* Use variable */
+        box-shadow: 0 0 12px var(--edit-glow-color), 0 0 20px var(--edit-glow-color), 0 6px 15px var(--shadow-color);
+        }
+        /* AI Button Active */
+        #aiBtn.active {
+        transform: scale(var(--action-btn-active-scale)); /* Use variable */
+        box-shadow: 0 0 14px var(--ai-glow-color-1), 0 0 25px var(--ai-glow-color-2), 0 6px 15px var(--shadow-color); /* Slightly stronger active glow */
+        }
+
+        /* Both columns stay on left when active */
+        /* When AI panel is active */
+        .study-area.ai-panel-active .card-actions-left {
+            order: 1; /* Stays first */
+            width: 3rem; /* Shrink width */
+            gap: 0.8rem; /* Reduce gap */
+            align-self: stretch; /* Stretch vertically with card/panel */
+            justify-content: center; /* Keep buttons centered vertically */
+        }
+
+        .study-area.ai-panel-active .card-actions-right {
+            order: 1; /* Moves to the left group visually (but will be hidden) */
+            opacity: 0; /* Hide right column */
+            width: 0; /* Collapse width */
+            pointer-events: none; /* Disable interaction */
+            /* Reset transform if any was applied */
+            transform: translateX(-50px); /* Optional: Slight move left before fading */
+            margin-left: -1.5rem; /* Compensate for gap removal */
+            gap: 0; /* Collapse gap */
+        }
+
+        /* When AI panel is active (Class on BODY) */
+        /* Move buttons */
+        body.panel-active .card-actions-left { order: 1; width: 3rem; gap: 0.8rem; align-self: stretch; justify-content: center; }
+        body.panel-active .card-actions-right { order: 1; opacity: 0; width: 0; pointer-events: none; margin-left: -1.5rem; gap: 0; transition-delay: 0s, 0s, 0s, 0s, 0.3s; }
+        /* Shrink buttons */
+        body.panel-active .card-actions-left .icon-btn {
+        width: 2.5rem; height: 2.5rem; transform: scale(0.9);
+        transition: width var(--panel-transition-duration) var(--panel-transition-timing),
+        height var(--panel-transition-duration) var(--panel-transition-timing),
+        transform var(--panel-transition-duration) var(--panel-transition-timing);
+        }
+        body.panel-active .card-actions-left .icon-btn svg { width: 1.2rem; height: 1.2rem; }
+
+                        /* Shrink buttons in the LEFT column when panel is active */
+        /* Shrink buttons in the LEFT column when panel is active */
+        .study-area.ai-panel-active .card-actions-left .icon-btn {
+            width: 2.5rem;
+            height: 2.5rem;
+            transform: scale(0.9);
+        }
+        .study-area.ai-panel-active .card-actions-left .icon-btn svg {
+            width: 1.2rem;
+            height: 1.2rem;
+        }
+        /* Make the gap smaller in the left column */
+        .study-area.ai-panel-active .card-actions-left {
+            gap: 1rem;
+        }
+
+        /* --- Specific Button Styles & Hover Glows --- */
+
+        /* AI Button (Permanent Glow + Gradient) */
+        #aiBtn {
+            background: linear-gradient(145deg, var(--ai-glow-start), var(--ai-glow-end));
+            color: #fff; /* Ensure contrast */
+            border-color: var(--ai-glow-color-2);
+            /* Persistent subtle glow */
+            box-shadow: 0 0 8px var(--ai-glow-color-1), 0 0 15px var(--ai-glow-color-2), 0 4px 10px var(--shadow-color);
+        }
+        #aiBtn:hover:not(:disabled) {
+            border-color: var(--ai-glow-end);
+            /* Enhanced glow on hover */
+            box-shadow: 0 0 14px var(--ai-glow-color-1), 0 0 25px var(--ai-glow-color-2), 0 6px 15px var(--shadow-color);
+            color: #fff;
+            /* Keep transform */
+            transform: translateY(-3px) scale(1.05);
+        }
+
+        /* Star Button Hover */
+        #starBtn:hover:not(:disabled) {
+            border-color: var(--accent-yellow);
+            box-shadow: 0 0 12px var(--star-glow-color), 0 6px 15px var(--shadow-color); /* Yellow Glow + Base Shadow */
+        }
+        #starBtn.active { /* Keep active style distinct */
+            color: var(--accent-yellow);
+            background: linear-gradient(145deg, var(--action-btn-hover-bg), var(--secondary-bg));
+            border-color: var(--accent-yellow);
+            box-shadow: 0 0 10px var(--star-glow-color), 0 4px 10px var(--shadow-color);
+        }
+        #starBtn.active:hover:not(:disabled) { /* Hover on active star */
+            box-shadow: 0 0 15px var(--star-glow-color), 0 6px 15px var(--shadow-color);
+        }
+
+
+        /* Delete Button Hover */
+        #deleteBtn:hover:not(:disabled) {
+            border-color: var(--accent-red);
+            box-shadow: 0 0 12px var(--delete-glow-color), 0 6px 15px var(--shadow-color); /* Red Glow + Base Shadow */
+        }
+
+        /* Edit Button Hover */
+        #editBtn:hover:not(:disabled) {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 12px var(--edit-glow-color), 0 6px 15px var(--shadow-color); /* Blue Glow + Base Shadow */
+        }
+
+        /* Skip Button Hover */
+        #skipBtn:hover:not(:disabled) {
+            border-color: var(--text-secondary); /* Example */
+            box-shadow: 0 0 12px var(--skip-glow-color), 0 6px 15px var(--shadow-color); /* Grey Glow + Base Shadow */
+        }
+
+        /* Bury Button Hover */
+        #buryBtn:hover:not(:disabled) {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 12px var(--bury-glow-color), 0 6px 15px var(--shadow-color); /* Green Glow + Base Shadow */
+        }
+
+
+        /* AI Button Glow */
+        .card-actions-column .icon-btn.ai:hover:not(:disabled) {
+            border-color: var(--ai-glow-color-2);
+             box-shadow: 0 0 12px var(--ai-glow-color-1), 0 0 20px var(--ai-glow-color-2), 0 6px 15px var(--shadow-color);
+             color: #fff;
+         }
+        /* Active Star State */
+        .card-actions-column .icon-btn.star.active {
+            color: var(--accent-yellow);
+            background: linear-gradient(145deg, var(--action-btn-hover-bg), var(--secondary-bg));
+            border-color: var(--accent-yellow);
+            box-shadow: 0 0 10px var(--accent-yellow), 0 4px 10px var(--shadow-color);
+         }
+        .card-actions-column .icon-btn.star .icon-star-filled { display: none; }
+        .card-actions-column .icon-btn.star.active .icon-star-filled { display: block; } /* Corrected display */
+        .card-actions-column .icon-btn.star.active .icon-star-outline { display: none; }
+
+        
+
+
+/* --- Card Scene & Flipper --- */
+.card-scene {
+    /* === REVERT TO PREVIOUS SIZING === */
+    flex-grow: 1;                     /* <<< Allow growing */
+    flex-shrink: 1;                   /* <<< Allow shrinking (good practice) */
+    flex-basis: auto;                 /* <<< Let grow/content determine base */
+    max-width: 45rem;                 /* <<< Restore original max-width */
+    /* === REMOVE MARGIN AUTO === */
+    /* margin-left: auto;  */        /* <<< REMOVE */
+    /* margin-right: auto; */        /* <<< REMOVE */
+
+    /* --- Keep other styles --- */
+    min-height: 25rem;
+    height: auto;
+    max-height: var(--content-max-height); /* Restore this */
+    transition: width 0.5s ease, max-width 0.5s ease,
+                height 0.5s ease,
+                min-height 0.5s ease,
+                max-height 0.5s ease;
+    order: 2;
+    position: relative;
+}
+
+                /* Re-enable base hover effect (shadow lift) */
+        .card-scene:hover {
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+
+        /* --- Card Scene & Action Button Adjustments When Panel Active --- */
+        body.panel-active .card-scene {
+            /* Apply width reduction using flex-basis or width */
+            flex-basis: calc(100% - var(--ai-panel-width) - 4rem); /* Adjust basis, account for gap */
+            flex-grow: 0; /* Prevent growing */
+            flex-shrink: 1; /* Allow shrinking */
+            max-width: none; /* Override max-width */
+            height: var(--content-target-height-ai);
+            max-height: var(--content-target-height-ai);
+            min-height: 0;
+            transition: flex-basis var(--panel-transition-duration) var(--panel-transition-timing), /* Animate flex-basis */
+                        width var(--panel-transition-duration) var(--panel-transition-timing),
+                        height var(--panel-transition-duration) var(--panel-transition-timing),
+                        max-height var(--panel-transition-duration) var(--panel-transition-timing),
+                        min-height var(--panel-transition-duration) var(--panel-transition-timing);
+        }
+
+        .study-area.ai-panel-active .card-scene {
+            /* Width is now determined by flex-grow */
+            /* Target height set by align-items: stretch, constrained by max-height */
+            max-height: var(--content-target-height-ai); /* <<<<<<<<<< SET TARGET HEIGHT */
+            min-height: 0; /* Allow shrinking if needed, though max-height dominates */
+        }
+        /* Ensure scrolling within new height limit */
+        .study-area.ai-panel-active .card-content-wrapper {
+            /* Ensure it doesn't overflow the card face */
+            height: 100%; /* Try to fill available space */
+        }
+
+        /* --- SIMPLE TILT EFFECT (Pure CSS) --- */
+         /* JS would update --flipper-transform based on mouse position */
+         /* For flip animation: */
+         .card-scene.is-flipped .card-flipper {
+            /* Override tilt when flipped - Apply flip rotation instantly or with transition */
+             transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Apply flip transition */
+            transform: rotateY(180deg); /* No tilt when flipped */
+        }
+        /* --- End Tilt Effect --- */
+
+
+        .card-flipper {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transform-style: preserve-3d;
+            position: relative;
+            min-height: inherit;
+            transform: var(--flipper-transform, rotateY(0deg)); 
+            transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            min-height: inherit; /* Inherit min-height from scene */
+            height: 100%; /* Allow to grow based on content */
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem; /* Use rem */
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            display: flex;
+            top: 0; left: 0;
+            flex-direction: column;
+            /* overflow: hidden;   Important for border-radius */
+        }
+
+        .card-front {
+            z-index: 2;
+            align-items: center;
+            justify-content: center; /* Center main content */
+             padding: 3rem; /* Use rem */
+             text-align: center;
+             position: relative; /* Needed for absolute positioning flip button */
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+             padding: 0;
+             justify-content: space-between;
+             z-index: 1; /* Back is initially lower */
+        }
+
+        /* --- Flip Prompt Button --- */
+        .flip-prompt-btn {
+            position: absolute;
+            bottom: 1.5rem; /* Position at bottom */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--flip-btn-bg);
+            color: var(--flip-btn-text);
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.25s ease;
+            box-shadow: 0 0 12px var(--flip-btn-glow), 0 0 20px var(--flip-btn-glow), 0 3px 8px rgba(0,0,0,0.3);
+            z-index: 3; /* Above card front content */
+        }
+        .flip-prompt-btn svg {
+             width: 1.2rem;
+             height: 1.2rem;
+             fill: currentColor;
+        }
+        .flip-prompt-btn .text { /* Span for text to hide/show tooltip */
+             transition: opacity 0.2s ease;
+        }
+        .flip-prompt-btn::after { /* Tooltip */
+             content: attr(data-tooltip);
+             position: absolute;
+             bottom: 100%; /* Position above button */
+             left: 50%;
+             transform: translateX(-50%) translateY(-5px); /* Center and space */
+             background-color: var(--primary-bg);
+             color: var(--text-primary);
+             padding: 0.4rem 0.8rem;
+             border-radius: 5px;
+             font-size: 0.8rem;
+             white-space: nowrap;
+             opacity: 0;
+             visibility: hidden;
+             transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+             z-index: 10;
+             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .flip-prompt-btn:hover {
+             transform: translateX(-50%) scale(1.05); /* Grow slightly */
+             box-shadow: 0 0 18px var(--flip-btn-glow), 0 0 30px var(--flip-btn-glow), 0 5px 12px rgba(0,0,0,0.4);
+        }
+        .flip-prompt-btn:hover::after {
+             opacity: 1;
+             visibility: visible;
+             transition-delay: 0s; /* Show immediately */
+        }
+        .flip-prompt-btn:hover .text {
+              opacity: 0; /* Hide original text on hover */
+        }
+
+
+         /* --- Card Content Styling (Front & Back) --- */
+        .theorem-name {
+            font-size: 2rem; /* Use rem */
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .card-meta {
+            font-size: 1rem; /* Use rem */
+            color: var(--text-secondary);
+            margin-bottom: 3rem; /* Add space above flip button */
+        }
+
+         .card-content-wrapper {
+            height: 100%; /* Try to fill card-face height */
+             flex-grow: 1;
+             overflow-y: auto;
+             padding: 1.5rem 2rem; /* Use rem */
+                 /* Add padding-bottom if needed for spacing before toggle button */
+            padding-bottom: 1rem;
+            scroll-behavior: smooth;
+         }
+         /* Custom scrollbar styling (keep as is) */
+         .card-content-wrapper::-webkit-scrollbar { width: 8px; }
+         .card-content-wrapper::-webkit-scrollbar-track { background: var(--secondary-bg); border-radius: 4px; }
+         .card-content-wrapper::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 4px; border: 2px solid var(--secondary-bg); }
+         .card-content-wrapper::-webkit-scrollbar-thumb:hover { background-color: var(--hover-border-color); }
+
+         .explanation {
+            font-size: 1em;
+            line-height: 1.3;
+            /* margin-bottom: 1em; /* Now handled by explanation-block */
+        }
+        
+        /* --- LaTeX Block Styling (Keep As Is) --- */
+        .explanation .latex-block {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #1f2a40; /* Slightly different background */
+            border-radius: 4px; /* Can keep this or match main block radius */
+            overflow-x: auto; /* Allow horizontal scroll for wide equations */
+            color: #e0e0e0; /* Ensure text is visible */
+        }
+        
+        /* --- Base Explanation Block --- */
+        /* Common styles for all explanation blocks */
+        .explanation .explanation-block {
+            margin-bottom: 1em; /* Space between blocks */
+            border-radius: 6px; /* <<<< Rounded corners applied here */
+            overflow: hidden;   /* <<<< Important for background clipping */
+            position: relative; /* Needed if using pseudo-elements later, good practice */
+            
+        }
+        
+        /* --- Improved Header --- */
+        .explanation .explanation-block .explanation-block-header {
+            display: block; /* Ensure it takes full width */
+            font-weight: 600; /* Keep header bold */
+            color: var(--text-primary); /* Keep header text brighter */
+            margin-bottom: 0.25em; /* Slightly reduced space below header text */
+            padding: 0.5em 0 0.5em 0; /* Add some vertical padding, keep left padding handled by block */
+            /* Optional: Subtle bottom border for separation */
+            border-bottom: 1px solid var(--border-color-translucent, rgba(255, 255, 255, 0.08));
+            /* Ensure header text isn't affected by block's left padding: */
+            /* We'll rely on the block's padding-left instead */
+        }
+        
+        /* --- Content Area --- */
+        .explanation .explanation-block .explanation-block-content {
+             /* Content inherits block padding. Add specific styles if needed */
+             /* e.g., padding-top: 0.25em; if more space needed below header border */
+             line-height: 1.6; /* Ensure consistent line-height */
+        }
+        
+        
+        /* --- Type-Specific Styling --- */
+        /* Apply individual border colors, backgrounds, and padding */
+        /* NOTE: border-radius is now handled by the base .explanation-block */
+        
+        .explanation .explanation-block[data-block-type*="Définition"],
+        .explanation .explanation-block[data-block-type*="Definition"] {
+            border-left: 5px solid var(--accent-blue);
+            padding-left: 1rem; /* Keep space from border */
+            margin-left: 0;
+            padding-top: 0.5em;
+            padding-bottom: 0.5em;
+            background: rgba(91, 192, 222, 0.05); /* Keep translucent background */
+            /* border-radius: 6px; */ /* REMOVED - Handled by base class */
+        }
+        
+        .explanation .explanation-block[data-block-type*="Explication"] {
+            border-left: 5px solid var(--accent-purple);
+            padding-left: 1rem;
+            margin-left: 0;
+            padding-top: 0.5em;
+            padding-bottom: 0.5em;
+            background: rgba(118, 36, 156, 0.05); /* Keep translucent background */
+            /* border-radius: 6px; */ /* REMOVED - Handled by base class */
+        }
+        
+        .explanation .explanation-block[data-block-type*="Proposition"] {
+            border-left: 5px solid var(--accent-green);
+            padding-left: 1rem;
+            margin-left: 0;
+            padding-top: 0.5em;
+            padding-bottom: 0.5em;
+            background: rgba(92, 184, 92, 0.05); /* Keep translucent background */
+            /* border-radius: 6px; */ /* REMOVED - Handled by base class */
+        }
+        
+        .explanation .explanation-block[data-block-type*="Théorème"],
+        .explanation .explanation-block[data-block-type*="Theorem"] {
+            border-left: 5px solid var(--accent-yellow);
+            padding-left: 1rem;
+            margin-left: 0;
+            padding-top: 0.5em;
+            padding-bottom: 0.5em;
+            background: rgba(240, 173, 78, 0.05); /* Keep translucent background */
+            /* border-radius: 6px; */ /* REMOVED - Handled by base class */
+        }
+        
+        /* --- Fix inconsistent selectors & apply consistent styling --- */
+        /* Target .explanation-block and apply similar styles */
+        
+        .explanation .explanation-block[data-block-type*="Corollaire"],
+        .explanation .explanation-block[data-block-type*="Corollary"] {
+            border-left: 5px solid #6a7aac; /* Adjusted border width slightly */
+            padding-left: 1rem;
+            margin-left: 0; /* Remove negative margin */
+            padding-top: 0.5em;
+            padding-bottom: 0.5em;
+            background: rgba(106, 122, 172, 0.05); /* Added background */
+            /* border-radius: 6px; */ /* REMOVED - Handled by base class */
+        }
+        
+        .explanation .explanation-block[data-block-type*="Lemme"],
+        .explanation .explanation-block[data-block-type*="Lemma"] {
+            border-left: 5px solid #d9534f; /* Adjusted border width slightly */
+            padding-left: 1rem;
+            margin-left: 0; /* Remove negative margin */
+            padding-top: 0.5em;
+            padding-bottom: 0.5em;
+            background: rgba(217, 83, 79, 0.05); /* Added background */
+            /* border-radius: 6px; */ /* REMOVED - Handled by base class */
+        }
+        
+        .explanation .explanation-block[data-block-type*="Exemple"],
+        .explanation .explanation-block[data-block-type*="Example"] {
+            border-left: 5px solid #7a8aae; /* Adjusted border width slightly */
+            padding-left: 1rem;
+            margin-left: 0; /* Remove negative margin */
+            padding-top: 0.5em;
+            padding-bottom: 0.5em;
+            background: rgba(122, 138, 174, 0.05); /* Added background */
+            /* border-radius: 6px; */ /* REMOVED - Handled by base class */
+        }
+        
+        /* --- Plain Text Block Styling --- */
+        /* Style the plain text block if needed, ensure it doesn't get rounded/bordered */
+        .explanation .explanation-block.type-text {
+            padding-left: 0; /* No border padding */
+            background: none; /* No background */
+            border-left: none; /* No border */
+            border-radius: 0; /* No rounding */
+            overflow: visible; /* Reset overflow */
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        /* Optional: Hide header border for plain text blocks */
+        .explanation .explanation-block.type-text .explanation-block-header {
+            border-bottom: none;
+            padding: 0; /* Reset padding */
+            margin-bottom: 0.5em; /* Restore some margin if needed */
+        }
+        .explanation .explanation-block.type-text .explanation-block-content {
+            /* Keep default content styling */
+        }
+        
+        /* Add others */
+        .card-scene .brief-explanation { display: block; }
+        .card-scene .detailed-explanation { display: none; }
+        /* --- Separator styling (keep as is) --- */
+        .card-scene.show-detailed .explanation-separator {
+            display: block;
+            border: none;
+            border-top: 2px dotted var(--border-color);
+            width: 50%;
+            margin: 1.8rem auto;
+            opacity: 0.6;
+        }
+        .card-scene.show-detailed .brief-explanation {
+            display: block; /* KEEP brief visible */
+            margin-top: 1.5rem; /* Add space above brief when detailed is shown */
+        }
+        .card-scene.show-detailed .detailed-explanation { display: block; }
+        .card-scene.show-detailed .explanation-separator {
+            display: block; /* Show separator */
+            border: none;
+            border-top: 2px dotted var(--border-color); /* Dotted style */
+            width: 50%; /* 50% width */
+            margin: 1.8rem auto; /* Vertical space and horizontal centering */
+            opacity: 0.6; /* Make it less prominent */
+        }
+
+        .detail-toggle-container {
+            text-align: center; /* Center the button */
+            padding: 1rem 0; /* Add some padding */
+            margin-top: 1rem; /* Space above the button */
+        }
+        
+        .toggle-detail-btn { /* Style remains similar */
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+        .toggle-detail-btn:hover { /* Style remains similar */
+            background-color: var(--tertiary-bg);
+            color: var(--text-primary);
+            border-color: var(--hover-border-color);
+        }
+        .keyboard-hint { font-size: 0.75rem; color: #8a9ac0; margin-left: 0.3rem; }
+
+        /* --- Quality Buttons (Elements 9-12) --- */
+/* --- Quality Buttons (Positioned relative to card-scene) --- */
+/* --- Quality Buttons (Positioning Fix) --- */
+.quality-buttons {
+    display: flex;
+    justify-content: space-around;
+    position: absolute;
+    left: 50%;
+    width: 90%;
+    max-width: calc(100% - 4rem);
+
+    /* Positioning: Start further down */
+    bottom: 0; /* Align bottom for transform origin */
+    transform: translateX(-50%) translateY(80%); /* Start lower */
+
+    z-index: 10;
+    padding: 0;
+    gap: 0.8rem;
+
+    opacity: 0;
+    visibility: hidden;
+    /* Adjusted transition */
+    transition: opacity 0.3s ease 0.3s, transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s, visibility 0s linear 0.6s;
+}
+
+.card-scene.is-flipped .quality-buttons {
+    opacity: 1;
+    visibility: visible;
+    /* Final position: Overlap bottom by approx 30% */
+    /* We need button height. Assume approx 3.5rem height including padding */
+    /* 70% of height below = 0.7 * 3.5rem = 2.45rem */
+    /* So bottom edge is -2.45rem from card scene bottom */
+     bottom: -2.7rem; /* Push bottom edge down from card bottom */
+     transform: translateX(-50%) translateY(0%); /* No Y translate needed if using bottom */
+    /* OR adjust translateY method: */
+    /* bottom: 0; */
+    /* transform: translateX(-50%) translateY(calc(-1 * 0.3 * ButtonHeight)); */ /* Needs button height variable */
+    /* Using bottom is often simpler */
+
+    transition-delay: 0.3s, 0.3s, 0s;
+}
+
+        .quality-btn {
+            background: linear-gradient(145deg, var(--secondary-bg), var(--tertiary-bg));
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.8rem 1.2rem; /* Use rem */
+            border-radius: 0.7rem; /* Use rem */
+            cursor: pointer;
+            font-size: 1rem; /* Use rem */
+            font-weight: 500;
+            min-width: 7rem; /* Use rem */
+            text-align: center;
+            transition: all 0.25s ease;
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.35); /* Enhanced shadow */
+        }
+        /* Specific colors */
+        .quality-btn[data-quality="0"] { background: var(--accent-red); color: #fff;}
+        .quality-btn[data-quality="1"] { background: var(--accent-yellow); color: #1a1a2e; }
+        .quality-btn[data-quality="2"] { background: var(--accent-blue); color: #1a1a2e; }
+        .quality-btn[data-quality="3"] { background: var(--accent-green); color: #fff; }
+
+        .quality-btn:hover:not(:disabled) {
+            border-color: var(--accent-blue);
+            color: white;
+            transform: translateY(-5px) scale(1.05); /* More hover lift */
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+        }
+        /* Add subtle glow on hover for good/easy */
+         .quality-btn[data-quality="2"]:hover:not(:disabled) {
+             box-shadow: 0 0 10px var(--quality-btn-good-glow), 0 0 18px var(--quality-btn-good-glow), 0 8px 18px rgba(0, 0, 0, 0.45);
+         }
+         .quality-btn[data-quality="3"]:hover:not(:disabled) {
+             box-shadow: 0 0 10px var(--quality-btn-easy-glow), 0 0 18px var(--quality-btn-easy-glow), 0 8px 18px rgba(0, 0, 0, 0.45);
+         }
+
+         .quality-btn .key-hint { display: block; font-size: 0.75rem; color: rgba(255,255,255,0.7); margin-top: 0.3rem; }
+        .quality-btn[data-quality="1"] .key-hint,
+        .quality-btn[data-quality="2"] .key-hint { color: rgba(26, 26, 46, 0.7); }
+
+                /* Select pill based on class on body/study-area */
+        body.ai-panel-active .session-pill, /* If class is on body */
+        .study-area.ai-panel-active ~ .session-pill /* If class is on study-area */
+        {
+            /* Move up slightly */
+            transform: translateX(-50%) translateY(-15px);
+        }
+
+        /* --- Quality Buttons Adjustment (Hide when AI panel is active?) --- */
+        /* Hide immediately when panel is active */
+        .study-area.ai-panel-active .quality-buttons {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transition: none !important; /* No transition when hiding due to AI */
+        }
+
+        body.ai-panel-active .quality-buttons {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transition: none !important;
+        }
+
+/* === NEW SESSION COMPLETION V2 STYLES === */
+
+.session-complete-overlay {
+    position: fixed; /* Take over viewport */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--modal-overlay-bg); /* Use modal overlay bg */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 200; /* High z-index */
+    display: flex; /* Use flex to center content */
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    opacity: 0; /* Animate appearance */
+    visibility: hidden;
+    transition: opacity 0.4s ease, visibility 0s linear 0.4s;
+}
+/* State when shown by JS */
+.session-complete-overlay.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+}
+
+.completion-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5rem; /* Space between elements */
+    text-align: center;
+    max-width: 800px; /* Limit content width */
+}
+
+.completion-title {
+    color: var(--text-primary);
+    font-size: 2.5rem;
+    font-weight: 600;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+/* --- Completion Stats --- */
+.completion-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Responsive columns */
+    gap: 2rem;
+    width: 100%;
+    max-width: 500px; /* Max width for stats grid */
+    margin: 0 auto;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background-color: rgba(31, 42, 64, 0.7); /* Semi-transparent background */
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    position: relative; /* For potential absolute elements like circle */
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+/* Accuracy Circle Styling (Example) */
+.stat-accuracy {
+    position: relative;
+}
+.accuracy-circle-bg,
+.accuracy-circle {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 95%; height: 95%;
+    transform: translate(-50%, -50%) rotate(-90deg); /* Center and start at top */
+    fill: none;
+    stroke-width: 3; /* Adjust thickness */
+}
+.accuracy-circle-bg path {
+    stroke: var(--secondary-bg); /* Background track color */
+}
+.accuracy-circle .accuracy-value-path {
+    stroke: var(--accent-green); /* Progress color */
+    stroke-linecap: round; /* Rounded ends */
+    /* stroke-dasharray/offset set by JS */
+    stroke-dasharray: 100 100; /* Circumference */
+    stroke-dashoffset: 100; /* Start empty */
+    transition: stroke-dashoffset 0.8s ease-out;
+}
+.stat-accuracy .stat-value {
+    position: relative; /* Ensure value is above SVG */
+    z-index: 1;
+     font-size: 1.5rem; /* Smaller font inside circle */
+}
+
+
+/* --- Floating Action Buttons --- */
+.completion-actions-floating {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem; /* Space above buttons */
+}
+
+.completion-btn-floating {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.8rem 1.8rem;
+    border-radius: 50px; /* Pill shape */
+    border: 1px solid var(--border-color);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background: linear-gradient(145deg, var(--secondary-bg), var(--primary-bg));
+    color: var(--text-secondary);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+}
+.completion-btn-floating svg {
+    width: 1.3rem;
+    height: 1.3rem;
+    fill: currentColor;
+    opacity: 0.8;
+}
+.completion-btn-floating:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    color: var(--text-primary);
+    border-color: var(--hover-border-color);
+}
+
+/* Specific button styles and glows */
+.completion-btn-floating.return:hover {
+    /* Keep base hover or add subtle glow */
+}
+
+.completion-btn-floating.study-global { /* Blue */
+    background: linear-gradient(145deg, var(--accent-blue), #31b0d5);
+    color: #fff;
+    border-color: var(--accent-blue);
+}
+.completion-btn-floating.study-global:hover {
+    color: #fff;
+    border-color: #5bc0ff;
+    box-shadow: 0 0 12px var(--quality-btn-good-glow), 0 0 20px var(--quality-btn-good-glow), 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+.completion-btn-floating.study-other { /* Yellow */
+    background: linear-gradient(145deg, var(--accent-yellow), #ec971f);
+    color: #fff;
+    border-color: var(--accent-yellow);
+}
+.completion-btn-floating.study-other:hover {
+    color: #fff;
+    border-color: #f0be4e;
+    box-shadow: 0 0 12px var(--star-glow-color), 0 0 20px var(--star-glow-color), 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+
+/* --- Floating Other Materials Popup --- */
+/* Position relative to the overlay */
+.other-materials-popup-floating {
+    position: absolute; /* Position within overlay */
+    bottom: 10%; /* Adjust vertical position */
+    left: 50%;
+    transform: translateX(-50%) translateY(20px); /* Start below */
+
+    padding: 1rem;
+    background-color: var(--primary-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    width: 90%;
+    max-width: 380px;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.5);
+
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transition: max-height 0.4s ease-out,
+                opacity 0.4s ease-out,
+                transform 0.4s ease-out,
+                visibility 0s linear 0.4s,
+                bottom 0.4s ease-out; /* Animate position */
+}
+.other-materials-popup-floating.visible {
+    max-height: 40vh; /* Limit height based on viewport */
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+    bottom: calc(10% + 1rem); /* Adjust final position relative to buttons */
+    transition-delay: 0s;
+    overflow-y: auto;
+}
+
+
+        /* --- Other Materials Popup --- */
+        .other-materials-popup {
+        margin-top: 1rem; /* Space above popup */
+        padding: 1rem;
+        background-color: var(--primary-bg); /* Darker background */
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        width: 90%;
+        max-width: 350px; /* Limit popup width */
+        margin-left: auto;
+        margin-right: auto;
+
+        /* Animation */
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(-10px); /* Start slightly up */
+        visibility: hidden; /* Use visibility */
+        transition: max-height 0.4s ease-out,
+                opacity 0.4s ease-out,
+                transform 0.4s ease-out,
+                visibility 0s linear 0.4s, /* Hide visibility after transition */
+                margin-top 0.4s ease-out,
+                padding 0.4s ease-out;
+        }
+        .other-materials-popup.visible {
+        max-height: 300px; /* Adjust max height as needed */
+        opacity: 1;
+        visibility: visible; /* Make visible */
+        transform: translateY(0);
+        margin-top: 1.5rem; /* Add margin when visible */
+        padding: 1rem; /* Ensure padding is applied */
+        transition-delay: 0s; /* Apply visible transitions immediately */
+        overflow-y: auto; /* Allow scrolling within popup if needed */
+        }
+
+        .other-material-item {
+        display: block;
+        padding: 0.6rem 1rem;
+        color: var(--text-primary);
+        text-decoration: none;
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+        transition: background-color 0.2s ease;
+        text-align: left; /* Align text left */
+        background-color: var(--secondary-bg); /* Background for items */
+        border: 1px solid var(--border-color);
+        }
+        .other-material-item:hover {
+        background-color: var(--tertiary-bg);
+        color: var(--icon-hover-color);
+        border-color: var(--hover-border-color);
+        }
+        .other-material-item span { /* Due count */
+        float: right;
+        font-size: 0.9em;
+        color: var(--text-secondary);
+        background-color: var(--primary-bg);
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        }
+        .other-materials-popup p { /* For Loading/Error messages */
+        color: var(--text-secondary);
+        font-style: italic;
+        }
+
+
+        /* --- Responsiveness --- */
+        @media (max-width: 1024px) { /* Adjust breakpoint */
+            /* On smaller screens, maybe hide AI panel or make it overlay? */
+            /* For now, let's make panel narrower */
+            :root {
+               --ai-panel-width: 45%;
+            }
+             .study-area.ai-panel-active .card-scene {
+                 max-width: calc(100% - var(--ai-panel-width) - 1.5rem - 4rem); min-height: 27rem;
+             }
+       }
+        @media (max-width: 900px) { /* Adjust breakpoint if needed */
+             html { font-size: 16px; } /* Reduce base size slightly for tablets */
+             .study-area { gap: 1.5rem; }
+             .card-actions-column { width: 3.5rem; padding-top: 4rem;}
+             .card-actions-column .icon-btn { width: 3rem; height: 3rem; }
+             .card-actions-column .icon-btn svg { width: 1.4rem; height: 1.4rem; }
+             .card-scene { min-height: 25rem; } /* Adjust card height */
+             .card-face { min-height: 25rem; }
+                 /* Stack card and panel */
+    body.panel-active .study-area {
+        flex-direction: column; /* Stack vertically */
+        align-items: center; /* Center horizontally */
+        gap: 1rem;
+        padding-top: calc(var(--pill-height-approx) * 0.5); /* Reduced top padding */
+    }
+    body.panel-active .card-scene {
+        order: 1; /* Card on top */
+        flex-basis: auto; /* Reset basis */
+        width: 90%; /* Take most width */
+        height: 50vh; /* Approx half height */
+        max-height: 50vh;
+    }
+    body.panel-active .ai-panel,
+    body.panel-active .edit-panel {
+        display: flex; /* <<< ADD THIS to make it visible and function as a flex container */
+        order: 2; /* Panel below */
+        position: relative; /* Unset fixed positioning */
+        width: 90%; /* Take most width */
+        height: 40vh; /* Approx half height */
+        max-height: 40vh;
+        left: auto; top: auto; right: auto; bottom: auto; /* Reset positioning */
+        transform: scale(1) translateX(0); /* Reset transform */
+        opacity: 1;
+        margin-top: 1rem; /* Space between card and panel */
+         transition: width 0.3s ease, height 0.3s ease, margin-top 0.3s ease; /* Faster transition */
+             transition-delay: 0s; /* Apply transitions immediately */
+    /* Transitions may need further tweaking if entry feels abrupt */
+    }
+    /* Hide action buttons columns when stacked */
+    body.panel-active .card-actions-column {
+        display: none;}
+        }
+
+        @media (max-width: 768px) {
+             html { font-size: 15px; } /* Further reduce for smaller tablets/large phones */
+             body { padding-top: 1rem; }
+             .session-pill {
+                 padding: 0.5rem 1rem;
+                 gap: 1rem;
+                 top: 0.8rem;
+             }
+             .session-stats { font-size: 0.85rem; gap: 0.8rem; }
+             .session-controls .nav-btn { padding: 0.4rem 1rem; font-size: 0.85rem;}
+
+            .study-area {
+                 padding: 1rem 0.8rem;
+                 padding-top: 5rem; /* Space below wrapped pill */
+                 gap: 1rem;
+             }
+             .card-actions-column {
+                 gap: 1rem;
+             }
+              .card-actions-left { order: 3; margin-top: 1rem; }
+              .card-actions-right { order: 4; }
+
+              .card-scene {
+                width: 95%;
+                order: 2;
+                min-height: 26rem;
+                position: relative;
+                margin-left: auto;  /* Add these two properties */
+                margin-right: auto; /* to center the card */
+            }
+            
+             .card-face { min-height: 24rem; border-radius: 0.8rem;}
+
+             .quality-buttons {
+                position: relative;
+                bottom: auto;
+                left: auto;
+                width: 100%;
+                max-width: 100%;
+                margin-top: 1.2rem;
+                transform: none !important;
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.3s ease 0.3s, visibility 0s linear 0.6s;
+                order: 5;
+                padding: 0.8rem 0;
+                gap: 0.6rem;
+            }
+
+            
+             .quality-btn { padding: 0.7rem 0.8rem; min-width: 4.5rem; font-size: 0.9rem; }
+             .theorem-name { font-size: 1.6rem; }
+             .explanation { font-size: 1rem; }
+             .card-content-wrapper {
+                padding-bottom: 0.5rem; /* Reduce padding for toggle button space */
+            }
+             .flip-prompt-btn { padding: 0.5rem 1.2rem; font-size: 0.85rem; bottom: 1rem;}
+             .detail-toggle-container {
+                padding: 0.8rem 0;
+                margin-top: 0.8rem;
+            }
+            .card-scene.show-detailed .explanation-separator {
+                width: 60%; /* Slightly wider on smaller screens */
+                margin: 1.5rem auto;
+            }
+            .quality-buttons {
+                transform: none !important; /* Still needed for non-absolute */
+                transition: opacity 0.3s ease 0.3s; /* Only fade */
+            }
+            .card-scene.is-flipped .quality-buttons {
+                opacity: 1;
+                visibility: visible;
+                /* No transform needed */
+                transition-delay: 0.3s, 0s;
+            }
+
+                        /* Option 1: Panel overlays everything */
+                        .study-area.ai-panel-active .ai-panel {
+                            position: fixed; left: 0; top: 0;
+                            width: 100%; height: 100%;
+                            border-radius: 0; z-index: 200;
+                            transform: translateX(0) scale(1);
+                            max-height: 100vh; /* Override max-height */
+                        }
+                         .study-area.ai-panel-active .card-actions-column,
+                         .study-area.ai-panel-active .card-scene {
+                            opacity: 0;
+                            pointer-events: none;
+                            transition: opacity 0.3s ease;
+                        }
+     /* Mobile: Panel overlay */
+     body.ai-panel-active .ai-panel {
+        position: fixed; left: 0; top: 0;
+        width: 100%; height: 100%;
+        border-radius: 0; z-index: 200;
+        transform: translateX(0) scale(1);
+        max-height: 100vh;
+        order: 100; /* Ensure it's on top */
+    }
+     body.ai-panel-active .card-actions-column, /* Hide both columns */
+     body.ai-panel-active .card-scene {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+     body.ai-panel-active .session-pill {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-50%) translateY(-150%);
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+                 /* Ensure right column is properly hidden on mobile too */
+     .study-area.ai-panel-active .card-actions-right {
+        opacity: 0;
+        width: 0;
+        pointer-events: none;
+        margin-left: 0; /* Reset margin */
+        transform: none; /* Reset transform */
+    }
+
+    body.panel-active .card-scene { height: 45vh; max-height: 45vh; }
+    body.panel-active .ai-panel,
+    body.panel-active .edit-panel { height: 45vh; max-height: 45vh; }
+
+    
+        }
+
+        @media (max-width: 480px) {
+            html { font-size: 14px; } /* Smallest base size */
+            body { padding-top: 6rem; } /* Ensure enough space if pill wraps to 2 lines */
+            .session-stats { font-size: 0.8rem; }
+            .quality-btn { padding: 0.6rem 0.6rem; min-width: 4rem; font-size: 0.8rem; }
+            .card-actions-column .icon-btn { width: 2.8rem; height: 2.8rem; }
+            .card-actions-column .icon-btn svg { width: 1.3rem; height: 1.3rem; }
+            .card-scene { min-height: 24rem; }
+            .card-face { min-height: 22rem; }
+        }

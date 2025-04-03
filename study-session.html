@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaizen - Study Session</title> <!-- Changed title back -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/katex.min.css" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/katex.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/contrib/auto-render.min.js" crossorigin="anonymous"
+        onload="window.renderMathInElement = renderMathInElement;"></script>
+
+    <!-- Link to external CSS file -->
+    <link rel="stylesheet" href="./css/study-session.css">
+
+</head>
+<!-- Add is-loading class here for testing -->
+<body>
+
+    <!-- Session Pill (Floating Header) -->
+    <div class="session-pill">
+        <!-- ProgressTracker content injected here -->
+        <div class="session-stats" id="progressTracker">
+            <span id="stat-remaining"> <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                <title>Icon representing a deck of taller flashcards, showing one</title>
+              
+                <!-- Back Card (rotated slightly more, taller) -->
+                <!-- Increased height to 24, adjusted y to 4 to maintain vertical center -->
+                <rect 
+                  x="6" y="4" 
+                  width="20" height="24" 
+                  rx="3" ry="3" 
+                  fill="none" 
+                  stroke="white" 
+                  stroke-width="1.5" 
+                  transform="rotate(-6 16 16)" /> 
+                  <!-- Rotation center (16, 16) is still the geometric center: x=6 + width/2=16, y=4 + height/2=16 -->
+              
+                <!-- Front Card Group (rotated slightly less) -->
+                <!-- Rotation center (13, 13) needs to be correct for the group -->
+                <g transform="rotate(4 13 13)"> 
+                   <!-- Rotation center for the group (13, 13) is still the geometric center of the front card's original position: x=4 + width/2=13, y=2 + height/2=13 -->
+              
+                  <!-- Front Card Outline (taller) -->
+                  <!-- Increased height to 22, adjusted y to 2 to maintain vertical center -->
+                  <rect 
+                    x="4" y="2" 
+                    width="18" height="22" 
+                    rx="3" ry="3" 
+                    fill="none" 
+                    stroke="white" 
+                    stroke-width="1.5" />
+              
+                  <!-- Number '1' -->
+                  <!-- Adjusted y position to 13 to be vertically centered in the taller card (y=2 + height/2=13) -->
+              
+                </g>
+              </svg> -- Left</span>
+            <span id="stat-accuracy"> <svg fill="#ffffff" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <style type="text/css"> .st0{fill:none;} </style> <path d="M11.7,2c-0.1,0-0.1,0-0.2,0c0,0,0,0-0.1,0v0c-0.2,0-0.3,0-0.5,0l0.2,2c0.4,0,0.9,0,1.3,0c4,0.3,7.3,3.5,7.5,7.6 c0.2,4.4-3.2,8.2-7.6,8.4c0,0-0.1,0-0.2,0c-0.3,0-0.7,0-1,0L11,22c0.4,0,0.8,0,1.3,0c0.1,0,0.3,0,0.4,0v0c5.4-0.4,9.5-5,9.3-10.4 c-0.2-5.1-4.3-9.1-9.3-9.5v0c0,0,0,0,0,0c-0.2,0-0.3,0-0.5,0C12,2,11.9,2,11.7,2z M8.2,2.7C7.7,3,7.2,3.2,6.7,3.5l1.1,1.7 C8.1,5,8.5,4.8,8.9,4.6L8.2,2.7z M4.5,5.4c-0.4,0.4-0.7,0.9-1,1.3l1.7,1C5.4,7.4,5.7,7.1,6,6.7L4.5,5.4z M15.4,8.4l-4.6,5.2 l-2.7-2.1L7,13.2l4.2,3.2l5.8-6.6L15.4,8.4z M2.4,9c-0.2,0.5-0.3,1.1-0.3,1.6l2,0.3c0.1-0.4,0.1-0.9,0.3-1.3L2.4,9z M4.1,13l-2,0.2 c0,0.1,0,0.2,0,0.3c0.1,0.4,0.2,0.9,0.3,1.3l1.9-0.6c-0.1-0.3-0.2-0.7-0.2-1.1L4.1,13z M5.2,16.2l-1.7,1.1c0.3,0.5,0.6,0.9,1,1.3 L6,17.3C5.7,16.9,5.4,16.6,5.2,16.2z M7.8,18.8l-1.1,1.7c0.5,0.3,1,0.5,1.5,0.8l0.8-1.8C8.5,19.2,8.1,19,7.8,18.8z"></path> <rect class="st0" width="24" height="24"></rect> </g></svg> --% Acc. </span>
+            <span id="stat-time"> <svg viewBox="0 0 24 24"><path fill="currentColor" d="M11.99,2C6.47,2,2,6.48,2,12s4.47,10,9.99,10C17.52,22,22,17.52,22,12S17.52,2,11.99,2z M12,20c-4.42,0-8-3.58-8-8s3.58-8,8-8s8,3.58,8,8S16.42,20,12,20z M12.5,7H11v6l5.25,3.15l0.75-1.23l-4.5-2.67V7z"/></svg> --:--</span>
+        </div>
+        <div class="session-controls">
+            <!-- Added ID -->
+            <button class="nav-btn" id="endSessionBtn">End Session</button>
+        </div>
+    </div>
+
+    <!-- Main Study Area -->
+    <!-- Error messages will be prepended here by JS -->
+    <main class="study-area" id="studyArea">
+        
+                <!-- AI Panel (Initially Hidden) -->
+                <aside class="ai-panel" id="aiPanel">
+                    <div class="ai-panel-header">
+                        <h3>AI Assistant</h3>
+                        <button class="icon-btn close-ai" id="closeAiBtn" title="Close Panel">
+                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                        </button>
+                    </div>
+                    <div class="ai-panel-content">
+                        <p>Ask me anything about this card!</p>
+                        <!-- Placeholder for chat interface -->
+                        <div class="ai-chat-placeholder">Chat interface goes here...</div>
+                        <textarea placeholder="Type your question..."></textarea>
+                        <button class="ai-send-btn">Send</button>
+                    </div>
+                </aside>
+
+                    <!-- === NEW: Edit Panel === -->
+    <aside class="edit-panel" id="editPanel">
+        <div class="edit-panel-header">
+            <h3>Edit Card</h3>
+            <!-- Optional: Add a close button specific to edit panel if needed -->
+             <button class="icon-btn close-edit" id="closeEditBtn" title="Close Panel">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+        <div class="edit-panel-content">
+            <div class="edit-form-group">
+                <label for="sessionEditNameInput">Name</label>
+                <input type="text" id="sessionEditNameInput">
+            </div>
+            <div class="edit-form-group">
+                <label for="sessionEditChapterInput">Chapter</label>
+                <input type="text" id="sessionEditChapterInput">
+            </div>
+            <div class="edit-form-group">
+                <label for="sessionEditBriefTextarea">Brief Explanation</label>
+                <textarea id="sessionEditBriefTextarea"></textarea>
+            </div>
+            <div class="edit-form-group">
+                <label for="sessionEditDetailedTextarea">Detailed Explanation</label>
+                <textarea id="sessionEditDetailedTextarea"></textarea>
+            </div>
+        </div>
+        <div class="edit-panel-footer">
+            <button class="panel-button secondary" id="sessionEditCancelBtn">Cancel</button>
+            <button class="panel-button primary" id="sessionEditSaveBtn">Save Changes</button>
+        </div>
+    </aside>
+    <!-- === End Edit Panel === -->
+            
+        <!-- Left Action Buttons -->
+        <div class="card-actions-column card-actions-left" id="leftActionsColumn">
+            <!-- Added IDs -->
+            <button class="icon-btn delete" id="deleteBtn" title="Delete (Del)">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M6,19c0,1.1 0.9,2 2,2h8c1.1,0 2,-0.9 2,-2V7H6v12z M19,4h-3.5l-1,-1h-5l-1,1H5v2h14V4z"/></svg>
+            </button>
+            <button class="icon-btn skip" id="skipBtn" title="Skip Card (N)">
+                 <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4,18l8.5,-6L4,6V18z M13,6v12l8.5,-6L13,6z"/></svg>
+            </button>
+            <button class="icon-btn edit" id="editBtn" title="Edit (E)">
+                 <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75L3,17.25z M20.71,7.04c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34c-0.39,-0.39 -1.02,-0.39 -1.41,0l-1.83,1.83l3.75,3.75L20.71,7.04z"/></svg>
+            </button>
+        </div>
+
+        <!-- Card Scene (Container for CardRenderer) -->
+        <!-- State classes 'is-flipped', 'show-detailed' managed by JS -->
+        <div class="card-scene" id="cardViewer">
+            <div class="card-flipper">
+                <!-- Card Front -->
+                <div class="card-face card-front">
+                    <div> <!-- Wrapper for main content -->
+                        <div class="theorem-name">Loading...</div> <!-- Populated by JS -->
+                        <div class="card-meta"></div> <!-- Populated by JS -->
+                    </div>
+                    <!-- Flip Button -->
+                    <button class="flip-prompt-btn" id="flipBtn" data-tooltip="Press Space or Enter">
+                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,4.5C7,4.5 2.73,7.61 1,12c1.73,4.39 6,7.5 11,7.5s9.27,-3.11 11,-7.5C21.27,7.61 17,4.5 12,4.5z M12,17c-2.76,0 -5,-2.24 -5,-5s2.24,-5 5,-5s5,2.24 5,5S14.76,17 12,17z M12,9c-1.66,0 -3,1.34 -3,3s1.34,3 3,3s3,-1.34 3,-3S13.66,9 12,9z"/></svg>
+                        <span class="text">Flip Card</span>
+                    </button>
+                </div>
+
+                <div class="card-face card-back">
+                    <div class="card-content-wrapper">
+                        <!-- Detailed Explanation (Now appears first when shown) -->
+                        <div class="explanation detailed-explanation" data-block-type=""></div>
+
+                        <!-- Separator (Visible only when detailed is shown) -->
+                        <hr class="explanation-separator">
+
+                        <!-- Brief Explanation (Always present, appears below detailed when shown) -->
+                        <div class="explanation brief-explanation" data-block-type=""></div>
+
+                        <!-- Centered Toggle Button -->
+                        <div class="detail-toggle-container">
+                            <button class="toggle-detail-btn">Show Detailed <span class="keyboard-hint">(D)</span></button>
+                        </div>
+                    </div>
+                    <!-- REMOVED card-footer -->
+                </div>
+            </div>
+
+                    <!-- Quality Buttons (Container for QualityButtons) -->
+            <div class="quality-buttons">
+                <!-- Buttons populated by QualityButtons component/HTML, but keep container -->
+                <button class="quality-btn" data-quality="0">Again <span class="key-hint">1</span></button>
+                <button class="quality-btn" data-quality="1">Hard <span class="key-hint">2</span></button>
+                <button class="quality-btn" data-quality="2">Good <span class="key-hint">3</span></button>
+                <button class="quality-btn" data-quality="3">Easy <span class="key-hint">4</span></button>
+            </div>
+        </div>
+
+        <!-- Right Action Buttons -->
+        <div class="card-actions-column card-actions-right" id="rightActionsColumn">
+            <!-- Added IDs -->
+            <button class="icon-btn star" id="starBtn" title="Star (S)" data-original-column="right">
+                <svg class="icon-star-outline" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M21.12 9.88005C21.0781 9.74719 20.9996 9.62884 20.8935 9.53862C20.7873 9.4484 20.6579 9.38997 20.52 9.37005L15.1 8.58005L12.67 3.67005C12.6008 3.55403 12.5027 3.45795 12.3853 3.39123C12.2678 3.32451 12.1351 3.28943 12 3.28943C11.8649 3.28943 11.7322 3.32451 11.6147 3.39123C11.4973 3.45795 11.3991 3.55403 11.33 3.67005L8.89999 8.58005L3.47999 9.37005C3.34211 9.38997 3.21266 9.4484 3.10652 9.53862C3.00038 9.62884 2.92186 9.74719 2.87999 9.88005C2.83529 10.0124 2.82846 10.1547 2.86027 10.2907C2.89207 10.4268 2.96124 10.5512 3.05999 10.6501L6.99999 14.4701L6.06999 19.8701C6.04642 20.0091 6.06199 20.1519 6.11497 20.2826C6.16796 20.4133 6.25625 20.5267 6.36999 20.6101C6.48391 20.6912 6.61825 20.7389 6.75785 20.7478C6.89746 20.7566 7.03675 20.7262 7.15999 20.6601L12 18.1101L16.85 20.6601C16.9573 20.7189 17.0776 20.7499 17.2 20.7501C17.3573 20.7482 17.5105 20.6995 17.64 20.6101C17.7537 20.5267 17.842 20.4133 17.895 20.2826C17.948 20.1519 17.9636 20.0091 17.94 19.8701L17 14.4701L20.93 10.6501C21.0305 10.5523 21.1015 10.4283 21.1351 10.2922C21.1687 10.1561 21.1634 10.0133 21.12 9.88005Z" fill=""></path> </g></svg>
+                <svg class="icon-star-filled" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M21.12 9.88005C21.0781 9.74719 20.9996 9.62884 20.8935 9.53862C20.7873 9.4484 20.6579 9.38997 20.52 9.37005L15.1 8.58005L12.67 3.67005C12.6008 3.55403 12.5027 3.45795 12.3853 3.39123C12.2678 3.32451 12.1351 3.28943 12 3.28943C11.8649 3.28943 11.7322 3.32451 11.6147 3.39123C11.4973 3.45795 11.3991 3.55403 11.33 3.67005L8.89999 8.58005L3.47999 9.37005C3.34211 9.38997 3.21266 9.4484 3.10652 9.53862C3.00038 9.62884 2.92186 9.74719 2.87999 9.88005C2.83529 10.0124 2.82846 10.1547 2.86027 10.2907C2.89207 10.4268 2.96124 10.5512 3.05999 10.6501L6.99999 14.4701L6.06999 19.8701C6.04642 20.0091 6.06199 20.1519 6.11497 20.2826C6.16796 20.4133 6.25625 20.5267 6.36999 20.6101C6.48391 20.6912 6.61825 20.7389 6.75785 20.7478C6.89746 20.7566 7.03675 20.7262 7.15999 20.6601L12 18.1101L16.85 20.6601C16.9573 20.7189 17.0776 20.7499 17.2 20.7501C17.3573 20.7482 17.5105 20.6995 17.64 20.6101C17.7537 20.5267 17.842 20.4133 17.895 20.2826C17.948 20.1519 17.9636 20.0091 17.94 19.8701L17 14.4701L20.93 10.6501C21.0305 10.5523 21.1015 10.4283 21.1351 10.2922C21.1687 10.1561 21.1634 10.0133 21.12 9.88005Z" fill=""></path> </g></svg>
+            </button>
+            <button class="icon-btn ai" id="aiBtn" title="AI Actions (Not Implemented)" data-original-column="right">
+                 <svg fill="#ffffff" height="200px" width="200px" version="1.1" id="Icons" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <path d="M12,17c0.8-4.2,1.9-5.3,6.1-6.1c0.5-0.1,0.8-0.5,0.8-1s-0.3-0.9-0.8-1C13.9,8.1,12.8,7,12,2.8C11.9,2.3,11.5,2,11,2 c-0.5,0-0.9,0.3-1,0.8C9.2,7,8.1,8.1,3.9,8.9C3.5,9,3.1,9.4,3.1,9.9s0.3,0.9,0.8,1c4.2,0.8,5.3,1.9,6.1,6.1c0.1,0.5,0.5,0.8,1,0.8 S11.9,17.4,12,17z"></path> <path d="M22,24c-2.8-0.6-3.4-1.2-4-4c-0.1-0.5-0.5-0.8-1-0.8s-0.9,0.3-1,0.8c-0.6,2.8-1.2,3.4-4,4c-0.5,0.1-0.8,0.5-0.8,1 s0.3,0.9,0.8,1c2.8,0.6,3.4,1.2,4,4c0.1,0.5,0.5,0.8,1,0.8s0.9-0.3,1-0.8c0.6-2.8,1.2-3.4,4-4c0.5-0.1,0.8-0.5,0.8-1 S22.4,24.1,22,24z"></path> <path d="M29.2,14c-2.2-0.4-2.7-0.9-3.1-3.1c-0.1-0.5-0.5-0.8-1-0.8c-0.5,0-0.9,0.3-1,0.8c-0.4,2.2-0.9,2.7-3.1,3.1 c-0.5,0.1-0.8,0.5-0.8,1s0.3,0.9,0.8,1c2.2,0.4,2.7,0.9,3.1,3.1c0.1,0.5,0.5,0.8,1,0.8c0.5,0,0.9-0.3,1-0.8 c0.4-2.2,0.9-2.7,3.1-3.1c0.5-0.1,0.8-0.5,0.8-1S29.7,14.1,29.2,14z"></path> <path d="M5.7,22.3C5.4,22,5,21.9,4.6,22.1c-0.1,0-0.2,0.1-0.3,0.2c-0.1,0.1-0.2,0.2-0.2,0.3C4,22.7,4,22.9,4,23s0,0.3,0.1,0.4 c0.1,0.1,0.1,0.2,0.2,0.3c0.1,0.1,0.2,0.2,0.3,0.2C4.7,24,4.9,24,5,24c0.1,0,0.3,0,0.4-0.1s0.2-0.1,0.3-0.2 c0.1-0.1,0.2-0.2,0.2-0.3C6,23.3,6,23.1,6,23s0-0.3-0.1-0.4C5.9,22.5,5.8,22.4,5.7,22.3z"></path> <path d="M28,7c0.3,0,0.5-0.1,0.7-0.3C28.9,6.5,29,6.3,29,6s-0.1-0.5-0.3-0.7c-0.1-0.1-0.2-0.2-0.3-0.2c-0.2-0.1-0.5-0.1-0.8,0 c-0.1,0-0.2,0.1-0.3,0.2C27.1,5.5,27,5.7,27,6c0,0.3,0.1,0.5,0.3,0.7C27.5,6.9,27.7,7,28,7z"></path> </g> </g></svg>
+            </button>
+             <button class="icon-btn bury" id="buryBtn" title="Bury (B)" data-original-column="right">
+                 <svg class="icon-bury"  viewBox="0 0 24.00 24.00" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff" stroke-width="0.00024000000000000003"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M21.9445 14.4719L21.9661 14.5336L21.9892 14.6345L21.9981 14.7331V21.25C21.9981 21.6297 21.7159 21.9435 21.3499 21.9932L21.2481 22H2.75C2.3703 22 2.05651 21.7178 2.00685 21.3518L2 21.25V14.7506L2.00184 14.6977L2.01271 14.6122C2.02285 14.5584 2.03841 14.5072 2.05894 14.4587L4.81824 8.44003C4.92517 8.2068 5.14245 8.04682 5.39153 8.01047L5.5 8.0026L8.03982 8.00183L7.25089 9.37206L7.18282 9.50183L5.981 9.502L3.918 13.9998H20.07L18.0428 9.65383L18.9052 8.15653C18.9718 8.20739 19.0301 8.26957 19.0771 8.3411L19.1297 8.43553L21.9445 14.4719ZM13.3652 2.05565L13.4566 2.10062L18.6447 5.10375C18.9729 5.29371 19.1033 5.69521 18.9636 6.03728L18.9187 6.1289L16.112 11.001L17.25 11.0016C17.6642 11.0016 18 11.3374 18 11.7516C18 12.1313 17.7178 12.4451 17.3518 12.4948L17.25 12.5016L15.248 12.501L15.2471 12.504H11.1691L11.166 12.501L6.75 12.5016C6.33579 12.5016 6 12.1658 6 11.7516C6 11.3719 6.28215 11.0581 6.64823 11.0085L6.75 11.0016L8.573 11.001L8.39145 10.8963C8.06327 10.7063 7.93285 10.3048 8.0726 9.96272L8.11747 9.8711L12.4341 2.37536C12.6235 2.04633 13.024 1.91557 13.3652 2.05565ZM13.3559 3.77529L9.78781 9.97119L11.566 11.001H14.383L17.248 6.02818L13.3559 3.77529Z" fill="#ffffff"></path> </g></svg>
+                 <svg class="icon-unbury" style="display: none;" viewBox="0 0 24.00 24.00" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff" stroke-width="0.00024000000000000003">
+                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                    <g id="SVGRepo_iconCarrier">
+                        <path d=" M21.9445 14.4719 L21.9661 14.5336 L21.9892 14.6345 L21.9981 14.7331 V 21.25 C 21.9981 21.6297 21.7159 21.9435 21.3499 21.9932 L 21.2481 22 H 2.75 C 2.3703 22 2.05651 21.7178 2.00685 21.3518 L 2 21.25 V 14.7506 L 2.00184 14.6977 L 2.01271 14.6122 C 2.02285 14.5584 2.03841 14.5072 2.05894 14.4587 L 4.81824 8.44003 C 4.92517 8.2068 5.14245 8.04682 5.39153 8.01047 L 5.5 8.0026 L 18.9 8.0026 L 19.1297 8.43553 L 21.9445 14.4719 Z M13.3652 -0.94435 L 13.4566 -0.89938 L 18.6447 2.10375 C 18.9729 2.29371 19.1033 2.69521 18.9636 3.03728 L 18.9187 3.1289 L 16.112 8.001 L 8.573 8.001 L 8.39145 7.8963 C 8.06327 7.7063 7.93285 7.3048 8.0726 6.96272 L 8.11747 6.8711 L 12.4341 -0.62464 C 12.6235 -0.95367 13.024 -1.08443 13.3652 -0.94435 Z M13.3559 0.77529 L 9.78781 6.97119 L 11.566 8.001 H 14.383 L 17.248 3.02818 L 13.3559 0.77529 Z" fill="#ffffff"></path>
+                    </g>
+                </svg>
+             </button>
+        </div>
+
+
+
+    </main>
+
+    <!-- === NEW Session Completion Screen Structure === -->
+    <div class="session-complete-overlay" id="sessionCompleteContainer" style="display: none;">
+        <div class="completion-content">
+
+            <h2 id="completionMessage" class="completion-title">Session Complete!</h2>
+
+            <!-- Stats Display -->
+            <div class="completion-stats-grid" id="completionStats">
+                <div class="stat-item">
+                    <span class="stat-value" id="compStatTotal">--</span>
+                    <span class="stat-label">Cards Studied</span>
+                </div>
+                 <div class="stat-item stat-accuracy">
+                     <!-- Placeholder for potential circular progress -->
+                     <svg class="accuracy-circle-bg" viewBox="0 0 36 36"><path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path></svg>
+                     <svg class="accuracy-circle" viewBox="0 0 36 36"><path class="accuracy-value-path" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path></svg>
+                    <span class="stat-value" id="compStatAccuracy">--%</span>
+                    <span class="stat-label">Accuracy</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="compStatTime">--:--</span>
+                    <span class="stat-label">Total Time</span>
+                </div>
+                 <!-- Add more stats if needed (Correct, Incorrect?) -->
+            </div>
+
+            <!-- Floating Action Buttons -->
+            <div class="completion-actions-floating">
+                <button id="returnBtn" class="completion-btn-floating return">
+                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                    <span>Return</span>
+                </button>
+                <button id="studyGlobalMaterialBtn" class="completion-btn-floating study-global" style="display: none;">
+                    <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                        <title>Icon representing a fanned deck of taller flashcards, showing one</title>
+                      
+                        <!-- Card 4 (Deepest in the stack) -->
+                        <!-- Further offset (x=8, y=2), increased negative rotation -->
+                        <rect 
+                          x="8" y="2" 
+                          width="20" height="24" 
+                          rx="3" ry="3" 
+                          fill="none" 
+                          stroke="white" 
+                          stroke-width="1.5" 
+                          transform="rotate(-12 18 14)" /> 
+                          <!-- Rotation center: x=8 + width/2=18, y=2 + height/2=14 -->
+                      
+                        <!-- Card 3 -->
+                        <!-- Original "Back Card", now the third from front -->
+                        <!-- Position (x=6, y=4), standard negative rotation -->
+                         <rect 
+                          x="6" y="4" 
+                          width="20" height="24" 
+                          rx="3" ry="3" 
+                          fill="none" 
+                          stroke="white" 
+                          stroke-width="1.5" 
+                          transform="rotate(-6 16 16)" /> 
+                          <!-- Rotation center: x=6 + width/2=16, y=4 + height/2=16 -->
+                      
+                        <!-- Card 2 & Text '1' Group (Front Card Group) -->
+                        <!-- Rotated slightly positive -->
+                        <g transform="rotate(4 13 13)"> 
+                           <!-- Rotation center: x=4 + width/2=13, y=2 + height/2=13 -->
+                      
+                          <!-- Card 2 Outline (Front Card Outline) -->
+                          <rect 
+                            x="4" y="2" 
+                            width="18" height="22" 
+                            rx="3" ry="3" 
+                            fill="none" 
+                            stroke="white" 
+                            stroke-width="1.5" />
+                      
+                      
+                        </g>
+                      </svg>
+                    <span>Study All Due [Material]</span>
+                </button>
+                <button id="studyOtherBtn" class="completion-btn-floating study-other">
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 256 256" enable-background="new 0 0 256 256" xml:space="preserve">
+                        <metadata> Svg Vector Icons : http://www.onlinewebfonts.com/icon </metadata>
+                        <g><g><g><path fill="#fffff" d="M124,10.3c-5.2,0.9-10.6,3.9-13.9,7.6l-1.8,2l-7.1,0.2c-6.3,0.1-7.4,0.3-9.1,1.2c-3,1.6-4.8,3.3-6.3,6l-1.4,2.4h-8.9c-10.3,0-12.6,0.3-17.2,2.5c-6.6,3.1-12.2,10.3-13.5,17.3c-0.3,1.6-0.5,33.5-0.5,88.7c0,94.9-0.1,89.1,2.9,94.8c3,5.7,8.3,10.1,14.5,12l3.2,1h63h63l3.2-1c6.1-1.9,11.4-6.3,14.5-12c3-5.8,2.9,0.2,2.8-96.5l-0.1-87.6l-1.2-3.1c-2.8-6.9-7.7-11.8-14.5-14.5c-3-1.2-3.6-1.2-13.6-1.4l-10.5-0.2l-1.4-2.4c-1.5-2.7-3.3-4.4-6.2-6c-1.7-0.9-2.8-1-9-1.2l-7.1-0.2l-1.8-2C140.9,12.2,131.6,9,124,10.3z M134.3,20.9c1.3,0.6,3.1,2,4.2,3.1c1,1.1,2.5,2.7,3.3,3.6l1.4,1.6h7.5c11.5,0,12,0.5,12,10.2c0,6.9-0.4,8.2-3,9.4c-1.4,0.6-4.8,0.7-31.7,0.7c-26.9,0-30.3-0.1-31.7-0.7c-2.5-1.2-3-2.5-3-9.4c0-9.7,0.5-10.2,11.9-10.2c8.3,0,8.3,0,10.9-3.6c1.8-2.5,4.2-4.2,7.2-5.4C126.3,19.2,131.3,19.5,134.3,20.9z M83.8,43.5c0.4,6.6,2.9,10.9,7.9,13.7l2.4,1.3H128H162l2.4-1.3c5-2.8,7.5-7.2,7.9-13.8l0.2-4.1l9.5,0.1c8.9,0.1,9.6,0.2,11.5,1.2c2.9,1.5,5.3,3.9,6.8,6.6l1.3,2.4l0.1,87.3c0.1,97.2,0.4,89.5-3.1,93.9c-1.1,1.4-2.9,2.8-4.7,3.8l-3,1.6h-63H65l-3-1.6c-1.8-1-3.6-2.4-4.7-3.8c-3.5-4.4-3.2,3.4-3.1-93.9l0.1-87.3l1.1-1.9c2-3.8,5-6.5,8.8-7.8c1.1-0.4,4.5-0.6,10.5-0.6h8.8L83.8,43.5z"/><path fill="#fffff" d="M83.8,89.6c-12.5,4.5-13.1,21.7-1,27.1c2.4,1.1,3.2,1.2,6.3,1.1c8.1-0.4,13.4-5.7,13.8-13.8c0.2-3.1,0-3.9-1.1-6.3C98.8,90.7,90.8,87.1,83.8,89.6z M91.7,99.4c0.6,0.5,1.4,1.7,1.7,2.5c0.5,1.4,0.4,1.9-0.3,3.4c-1.2,2.4-3.7,3.6-5.9,2.9c-3-1-4.4-4.5-2.8-7.3C85.7,98.5,89.5,97.7,91.7,99.4z"/><path fill="#fffff" d="M116.1,99.2c-3.1,1.4-3.5,5.9-0.7,8.1c1.2,0.9,1.8,0.9,32.3,0.9h31.2l1.6-1.6c2.1-2.1,2.2-4.2,0.2-6.4l-1.3-1.5l-30.9-0.1C122.5,98.5,117.4,98.6,116.1,99.2z"/><path fill="#fffff" d="M83.3,139c-2.8,1-6.6,4.7-8,7.6c-1.5,3.3-1.5,8.9-0.1,12c1.4,3,4,5.7,7,7.2c3.5,1.7,8.8,1.8,12.2,0.3c3.2-1.5,6-4.3,7.5-7.6c1.1-2.4,1.2-3.3,1.1-6.4c-0.4-8.3-6.3-13.9-14.6-13.9C86.7,138.2,84.4,138.6,83.3,139z M92.1,149.1c3.1,3,1.1,8.5-3.1,8.5c-3.2,0-5.2-2-5.2-5.2C83.7,148.2,88.9,146.1,92.1,149.1z"/><path fill="#fffff" d="M115.2,149c-1.8,1.5-2.2,3.3-1.3,5.5c1.3,3.1,0.5,3,33.8,3c27.6,0,30.1,0,31.5-0.8c3.1-1.6,3.7-4.8,1.2-7.3l-1.6-1.6h-31.2h-31.2L115.2,149z"/><path fill="#fffff" d="M85.4,187.6c-4.2,1-8.1,4.1-10,8c-1.6,3.3-1.6,9.2,0,12.3c5.3,10.9,20.3,11.3,26.2,0.7c1.2-2.2,1.3-2.9,1.3-6.8c0-3.6-0.2-4.7-1-6.3c-2.3-4.3-5.2-6.6-9.7-7.8C89.2,187,88,187,85.4,187.6z M91,197.5c2.5,1.2,3.4,5.1,1.8,7.2c-2.1,2.8-5.2,3-7.5,0.7c-1.3-1.3-1.6-1.9-1.6-3.5s0.3-2.2,1.6-3.5C87,196.6,88.8,196.4,91,197.5z"/><path fill="#fffff" d="M115.7,197.8c-1.4,0.7-2.6,3.3-2.2,5c0.2,0.7,0.9,1.9,1.7,2.5l1.4,1.2h31.4h31.4l1.1-1.1c0.6-0.6,1.2-1.7,1.4-2.3c0.4-1.7-0.1-3.4-1.4-4.7l-1.1-1.1l-31.3,0C127,197.3,116.4,197.5,115.7,197.8z"/></g></g></g>
+                        </svg>
+                    <span>Study Another</span>
+                </button>
+            </div>
+
+        </div> <!-- End completion-content -->
+
+        <!-- Other Materials Popup (Relative to overlay) -->
+        <div id="otherMaterialsList" class="other-materials-popup-floating">
+            <!-- Dynamically populated -->
+        </div>
+
+
+    <!-- Main JS Module -->
+    <script type="module" src="./js/views/studyView.js"></script>
+
+</body>
+</html>

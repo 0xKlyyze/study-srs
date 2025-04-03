@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script> 
+    <title>Kaizen - Manage Chapters v4</title>
+    <style>
+        :root {
+        --switcher-icon-size: 48px; /* Base size of icons */
+        --switcher-icon-gap: 10px; /* Gap when expanded */
+        --switcher-stack-offset: 6px; /* Vertical offset for stacked look */
+        --accent-blue: #5bc0de; /* Ensure this exists */
+        }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #e0e0e0;
+            margin: 0;
+            padding: 30px;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .management-container {
+            max-width: 1200px; margin: 0 auto; background-color: #1f2a40;
+            padding: 30px;padding-top: 8px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        /* --- NEW: Center Stacking/Expanding Material Switcher --- */
+        .material-switcher {
+            position: fixed;
+            top: 20px;       /* Position from top */
+            left: 50%;       /* Center horizontally */
+            transform: translateX(-50%); /* Fine-tune centering */
+            z-index: 500;
+            /* --- Container size needs to adapt on hover --- */
+            min-width: var(--switcher-icon-size); /* Base width */
+            height: calc(var(--switcher-icon-size) + 10px); /* Base height + padding */
+            display: flex; /* Use flex to help align items */
+            justify-content: center; /* Center items horizontally within container */
+            align-items: flex-start; /* Align items to the top (due to padding) */
+            padding: 5px;
+            background-color: transparent;
+            /* Smooth transition for potential width changes (though we use transforms) */
+            transition: width 0.3s ease-out;
+        }
+
+        .material-tab {
+            width: var(--switcher-icon-size);
+            height: var(--switcher-icon-size);
+            border-radius: 50%;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+
+            /* Base Appearance (Subtle) */
+            background-color: rgba(44, 58, 86, 0.75);
+            border: 1px solid rgba(74, 90, 126, 0.5);
+            color: var(--text-secondary, #a0a0c0);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+
+            /* Positioning & Transitions */
+            position: absolute;
+            /* Center the stack initially */
+            top: 5px; /* Align with container padding */
+            /* 'left: 50%; transform: translateX(-50%)' within absolute is tricky */
+            /* We will position relative to the container's center using translateX */
+            left: calc(50% - (var(--switcher-icon-size) / 2)); /* Center the button itself */
+
+            opacity: 0; /* Hidden by default */
+            /* --- Start slightly offset and scaled --- */
+            transform: translateY(var(--switcher-stack-offset)) scale(0.95);
+            transform-origin: center center;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        opacity 0.3s ease-out,
+                        /* Transition transform for horizontal movement */
+                        background-color 0.2s ease,
+                        border-color 0.2s ease,
+                        color 0.2s ease,
+                        box-shadow 0.2s ease;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .material-tab svg {
+             width: calc(var(--switcher-icon-size) * 0.5);
+             height: calc(var(--switcher-icon-size) * 0.5);
+             fill: var(--accent-blue);
+             transition: fill 0.2s ease;
+         }
+
+
+        /* Active Icon State */
+        .material-tab.active {
+            opacity: 1; /* Slightly more opaque when active */
+            transform: translateY(0) scale(1); /* Positioned normally, centered */
+            pointer-events: auto;
+            z-index: 10;
+            background-color: rgba(60, 78, 110, 0.95); /* Darker active */
+            border-color: var(--accent-blue); /* Keep accent border */
+            color: var(--text-primary); /* Keep icon light by default */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .material-tab.active svg {
+            fill: var(--accent-blue); /* Match border color */
+            transform: scale(1.05); /* Slightly larger icon when active */
+        }
+         /* Add visual cue for multiple icons only if more than one exists */
+         /* Applied via JS potentially, or complex sibling CSS */
+         .material-switcher.has-multiple .material-tab.active {
+             /* Add subtle bottom shadow/border to hint at stack */
+              box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35),
+                          0 2px 3px -1px rgba(0, 0, 0, 0.4); /* Hint of element below */
+              /* border-bottom: 2px solid rgba(0,0,0,0.2); */ /* Alternative cue */
+         }
+
+
+        /* Hover State on CONTAINER - Expand (Logic Unchanged) */
+        .material-switcher:hover .material-tab:not(.active) {
+            opacity: 0.9;
+            pointer-events: auto;
+            z-index: 5;
+            transform: translateY(0) scale(1) translateX( calc( (var(--i) - (var(--n) - 1) / 2) * (var(--switcher-icon-size) + var(--switcher-icon-gap)) ) );
+             transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                         opacity 0.3s ease-out,
+                         background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+       /* --- UPDATED: Hover State on INDIVIDUAL NON-ACTIVE Icon (when expanded) --- */
+       .material-switcher:hover .material-tab:not(.active):hover {
+            opacity: 1; /* Fully opaque */
+            /* Maintain horizontal position, scale up more, lift slightly */
+            transform: translateY(-3px) scale(1.1) translateX( calc( (var(--i) - (var(--n) - 1) / 2) * (var(--switcher-icon-size) + var(--switcher-icon-gap)) ) );
+            background-color: var(--accent-blue); /* Use accent color for background */
+            color: var(--primary-bg, #1f2a40);       /* Dark icon */
+            border-color: transparent;              /* Hide border */
+            box-shadow: 0 0 12px 2px rgba(91, 192, 222, 0.5), /* Stronger glow */
+                        0 5px 15px rgba(0, 0, 0, 0.4);
+            z-index: 6;
+        }
+         .material-switcher:hover .material-tab:not(.active):hover svg {
+             fill: currentColor; /* Ensure icon uses the dark color on hover */
+             transform: scale(1.1); /* Scale icon slightly on hover */
+         }
+
+        /* --- Optional: Slightly different hover for the ACTIVE icon itself --- */
+        .material-switcher:hover .material-tab.active:hover {
+        transform: translateY(-2px) scale(1.05); /* Slight lift/scale */
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.45), /* Stronger shadow */
+                0 0 8px 0px var(--accent-blue); /* Subtle glow add */
+        background-color: rgba(70, 90, 125, 0.98); /* Slightly lighter active bg */
+        }
+        /* --- Overview Section --- */
+        .overview-section {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 30px;
+            margin-bottom: 40px; align-items: start;
+        }
+        .heatmaps-column { display: flex; flex-direction: column; gap: 25px; }
+        .section-container {}
+        .section-title {
+            font-size: 1.1em; color: #a0a0c0; margin-bottom: 0px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            padding-bottom: 0px;
+            text-align: center;
+        }
+
+        .section-title-review-activity, .section-title-review-schedule {
+            font-size: 1.1em; color: #a0a0c0; margin-bottom: 8px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            padding-bottom: 0px;
+            text-align: center;}
+
+        /* --- Chapter Mastery Heatmap (Single Row, Scrollable) --- */
+        .heatmap-grid {
+            /* display: grid; REMOVE or comment out grid display */
+            display: flex; /* USE FLEXBOX */
+            flex-wrap: nowrap; /* Prevent wrapping */
+            gap: 5px;
+            overflow-x: auto; /* Enable horizontal scroll */
+            /* padding-bottom: 10px; Keep this or adjust if needed */
+
+            /* --- ADD THESE LINES --- */
+            padding-top: 10px;    /* Space above cells for expansion */
+            padding-bottom: 15px; /* Space below (extra for scrollbar + expansion) */
+            /* ----------------------- */
+
+            /* --- ADD HORIZONTAL PADDING --- */
+            padding-left: 10px;   /* Space for first cell expansion */
+            padding-right: 10px;  /* Space for last cell expansion */
+            /* ------------------------------ */
+
+            /* Optional: Add smooth scrolling behavior */
+            -webkit-overflow-scrolling: touch; /* For iOS momentum scrolling */
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: #4a5a7e #2c3a56; /* Firefox: thumb track */
+        }
+
+        /* Optional: Style scrollbar for Webkit browsers (Chrome, Safari) */
+        .heatmap-grid::-webkit-scrollbar {
+            height: 6px; /* Height of horizontal scrollbar */
+        }
+        .heatmap-grid::-webkit-scrollbar-track {
+            background: #2c3a56; /* Track color */
+            border-radius: 3px;
+        }
+        .heatmap-grid::-webkit-scrollbar-thumb {
+            background-color: #4a5a7e; /* Thumb color */
+            border-radius: 3px;
+        }
+        .heatmap-grid::-webkit-scrollbar-thumb:hover {
+            background-color: #6a7aac; /* Thumb hover color */
+        }
+        
+        /* --- ADD NEW GLOBAL TOOLTIP CSS --- */
+        .global-tooltip {
+            position: fixed; /* Position relative to viewport */
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            padding: 6px 12px; /* Slightly larger padding */
+            border-radius: 4px;
+            font-size: 0.9em;  /* Slightly larger font */
+            white-space: nowrap;
+            z-index: 1000;     /* High z-index to be on top */
+            pointer-events: none; /* Prevent tooltip from blocking hover on elements below */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            /* Default position off-screen, will be set by JS */
+            left: -9999px;
+            top: -9999px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3); /* Optional shadow */
+        }
+
+        .global-tooltip.visible {
+            opacity: 1;
+            visibility: visible;
+            /* Position will be set by JS */
+        }
+        /* --- END OF NEW TOOLTIP CSS --- */
+
+        .heatmap-cell {
+            /* aspect-ratio: 1 / 1; Keep this */
+            /* width: 40px; Use flex-basis for better control */
+            flex: 0 0 40px; /* Don't grow, don't shrink, base width 40px */
+            height: 40px; /* Explicit height to match flex-basis for square */
+            border-radius: 4px;
+            background-color: #3a4a6e;
+            opacity: 0.8;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        /* Keep existing :hover, [data-mastery], ::after styles for cells */
+        .heatmap-cell:hover { transform: scale(1.1); opacity: 1; z-index: 10; }
+        .heatmap-cell[data-mastery="low"] { background-color: #d9534f; }
+        .heatmap-cell[data-mastery="medium"] { background-color: #f0ad4e; }
+        .heatmap-cell[data-mastery="high"] { background-color: #5cb85c; }
+
+
+        /* --- Review Heatmap (3x10, Short Rectangles) --- */
+        .review-heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr); /* 10 columns */
+            /* Rows created implicitly by cell count */
+            gap: 2px; /* Reduced gap */
+        }
+        .review-heatmap-cell {
+            /* aspect-ratio: 1 / 1; */ /* Removed */
+            height: 20px; /* Explicit small height for short cells */
+            width: 100%; /* Fill column width */
+            border-radius: 2px;
+            background-color: #2c3a56;
+            opacity: 0.7;
+            position: relative;
+        }
+         /* Intensity colors (unchanged) */
+        .review-heatmap-cell[data-reviews="1-3"] { background-color: #395580; opacity: 0.8; }
+        .review-heatmap-cell[data-reviews="4-7"] { background-color: #4a77b4; opacity: 0.9; }
+        .review-heatmap-cell[data-reviews="8+"] { background-color: #5bc0de; opacity: 1; }
+        .review-heatmap-cell::after { /* Tooltip styles (unchanged) */
+            content: attr(data-tooltip); position: absolute; bottom: 110%; left: 50%;
+            transform: translateX(-50%); background-color: #1a1a2e; color: #e0e0e0;
+            padding: 4px 8px; border-radius: 3px; font-size: 0.8em; white-space: nowrap;
+            opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s ease;
+            pointer-events: none; z-index: 20;
+        }
+        .review-heatmap-cell:hover::after { opacity: 1; visibility: visible; }
+
+
+        /* --- Review Schedule Graph --- */
+         .review-schedule-graph {
+            background-color: #2c3a56; border: 1px solid #4a5a7e; border-radius: 8px;
+            min-height: 150px; /* Adjust min-height as needed for visual balance */
+            display: flex; align-items: center; justify-content: center;
+            color: #a0a0c0; font-style: italic; text-align: center;
+            padding: 20px; box-sizing: border-box; height: 100%;
+         }
+
+/* --- Action Button Area --- */
+.main-action-area {
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 40px;
+            /* Use Flexbox for layout */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px; /* Space between buttons */
+        }
+            .action-button {
+        /* Default state - Blue with Glow */
+        background-color: #2290bb; 
+        box-shadow: 0 0 15px 2px rgba(34, 144, 187, 0.7); 
+        color: #ffffff; 
+        border: none; 
+        padding: 15px 30px;
+        border-radius: 8px; 
+        cursor: pointer; 
+        font-size: 1.1em; 
+        font-weight: bold;
+        transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    }
+
+    .action-button:hover { 
+        /* Default Hover state - Darker Blue, Intense Glow, Lift */
+        background-color: #1e7fa8; 
+        transform: translateY(-2px); 
+        box-shadow: 0 0 20px 4px rgba(34, 144, 187, 0.85); 
+    }
+
+    /* --- MODIFIED SELECT MODE state --- */
+    .action-button.select-mode { 
+        /* Reverted to initial Green style */
+        background-color: #5cb85c; 
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); 
+        /* Reset transform if needed, though usually not applied in base state */
+        transform: translateY(0); 
+    }
+
+    /* --- MODIFIED SELECT MODE HOVER state --- */
+    .action-button.select-mode:hover { 
+        /* Reverted to initial Green Hover style */
+        background-color: #449d44; 
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35); 
+        transform: translateY(-2px); /* Apply lift effect on hover */
+    }
+                /* --- ADD Styles for the NEW Icon Button --- */
+                .icon-button.select-chapters-button {
+            background-color: #4a5a7e; /* Neutral background */
+            color: #e0e0e0;
+            border: 1px solid #6a7aac;
+            padding: 10px; /* Adjust padding for icon size */
+            width: 48px;   /* Fixed width */
+            height: 48px;  /* Fixed height */
+            border-radius: 50%; /* Make it round */
+            cursor: pointer;
+            display: flex; /* Center icon inside */
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2em; /* Adjust icon size */
+            transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .icon-button.select-chapters-button:hover {
+            background-color: #6a7aac;
+            border-color: #8a9ac0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        /* Style for when selection mode is active */
+        .icon-button.select-chapters-button.active {
+            background-color: #5bc0de; /* Use highlight color */
+            border-color: #7bd0e8;
+            color: #1a1a2e; /* Dark icon color on light background */
+            box-shadow: 0 0 10px rgba(91, 192, 222, 0.5);
+        }
+        /* ----------------------------------------- */
+        /* --- Chapter Cards Grid (Unchanged) --- */
+        .chapter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .chapter-card {
+            background-color: #2c3a56; border: 1px solid #4a5a7e; border-radius: 8px; padding: 20px;
+            display: flex; flex-direction: column; transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            cursor: pointer; position: relative;
+        }
+        .chapter-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3); border-color: #6a7aac; }
+        .chapter-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .chapter-name { font-size: 1.25em; font-weight: bold; color: #ffffff; margin-right: 10px; flex-grow: 1; }
+        .mastery-indicator { font-size: 1em; font-weight: bold; padding: 4px 8px; border-radius: 4px; flex-shrink: 0; }
+        .mastery-indicator.low { background-color: #d9534f; color: #fff;}
+        .mastery-indicator.medium { background-color: #f0ad4e; color: #1a1a2e;}
+        .mastery-indicator.high { background-color: #5cb85c; color: #fff;}
+        .chapter-stats { font-size: 0.9em; color: #a0a0c0; display: flex; justify-content: space-between; margin-top: auto; padding-top: 15px; border-top: 1px solid #3a4a6e; }
+
+        /* --- Bulk Selection (Unchanged) --- */
+         .chapter-card .selection-checkbox { position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; cursor: pointer; accent-color: #5cb85c; display: none; z-index: 5; }
+         .management-container.selection-mode .chapter-card .selection-checkbox { display: block; }
+
+         .management-container.selection-mode .chapter-card:hover {
+    transform: none; /* Disable base hover lift */
+}
+         .management-container.selection-mode .chapter-card {
+    cursor: pointer; /* Indicate clickable */
+    transition: transform 0.1s ease, box-shadow 0.1s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+/* --- NEW: Selection Activation Animation --- */
+@keyframes subtle-pulse {
+    0% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    50% { transform: scale(1.015); box-shadow: 0 4px 10px rgba(91, 192, 222, 0.2); } /* Use accent blue glow */
+    100% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+}
+
+/* Apply animation ONLY when selection mode is active AND card is NOT selected */
+.management-container.selection-mode .chapter-card:not(.selected) {
+     /* Keep the base transition for smooth switching */
+    transition: transform 0.1s ease, box-shadow 0.1s ease, border-color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+    animation: subtle-pulse 1.8s infinite ease-in-out;
+}
+
+/* Stop animation on hover (unless selected) */
+.management-container.selection-mode .chapter-card:not(.selected):hover {
+    animation: none; /* Stop pulsing on hover */
+    /* Re-apply a slight hover effect if desired, different from selected state */
+    transform: scale(1.01);
+    border-color: #6a7aac; /* Standard hover border */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+
+/* --- UPDATED: Styling for the SELECTED chapter card --- */
+.management-container.selection-mode .chapter-card.selected {
+    /* --- Styles copied & adapted from flashcards-view.html --- */
+    border-color: var(--accent-blue); /* Use variable if defined, else #5bc0de */
+    outline: 2px solid var(--accent-blue, #5bc0de);
+    outline-offset: 2px;
+    /* Use color-mix if supported, fallback otherwise */
+    background-color: #3a4a6e; /* Fallback color */
+    background-color: color-mix(in srgb, var(--secondary-bg, #2c3a56) 75%, var(--accent-blue, #5bc0de) 25%);
+    transform: scale(1.02); /* Scale up when selected */
+    box-shadow: 0 6px 15px rgba(91, 192, 222, 0.3); /* Accent shadow */
+    animation: none; /* IMPORTANT: Stop animation when selected */
+}
+
+/* Ensure selected card doesn't change further on hover */
+.management-container.selection-mode .chapter-card.selected:hover {
+     transform: scale(1.02); /* Maintain selected scale */
+     /* Keep other selected styles */
+}
+
+        .context-menu {
+        position: fixed;
+        background-color: #2c3a56;
+        border: 1px solid #4a5a7e;
+        border-radius: 6px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        padding: 10px 0; /* Slightly more vertical padding */
+        min-width: 200px; /* Increased minimum width */
+        display: none; /* Hidden by default */
+        color: #e0e0e0;
+        }
+
+        .context-menu ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        }
+        
+        .context-menu li:hover {
+        background-color: #3a4a6e;
+        color: #ffffff;
+        }
+         /* --- Context Menu Styles (Updated for SVG) --- */
+        .context-menu li {
+            /* ... existing li styles ... */
+            padding: 12px 20px; /* Increased padding */
+            font-size: 1em; /* Slightly larger font */
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        .context-menu .menu-icon {
+            margin-right: 12px; /* Increased space */
+            display: inline-flex; /* Use flex for alignment */
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+        }
+        .context-menu .menu-icon svg {
+            width: 16px; /* Adjust SVG size */
+            height: 16px;
+            fill: currentColor; /* Allows color inheritance */
+        }
+        /* Delete item icon color */
+        .context-menu li[data-action="delete"] .menu-icon svg {
+             fill: #d9534f; /* Default red icon */
+        }
+        .context-menu li[data-action="delete"]:hover .menu-icon svg {
+             fill: #f0716e; /* Lighter red on hover */
+        }
+
+
+        /* --- NEW: Custom Modal Styles --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(26, 26, 46, 0.7); /* Dark semi-transparent overlay */
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 1050; /* Above other elements but below system UI potentially */
+            backdrop-filter: blur(3px); /* Optional: blur background */
+            -webkit-backdrop-filter: blur(3px);
+        }
+        .modal-overlay.visible {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #1f2a40; /* Match container background */
+            padding: 25px 30px;
+            border-radius: 10px;
+            border: 1px solid #4a5a7e;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            color: #e0e0e0;
+            max-width: 450px; /* Limit width */
+            width: 90%; /* Responsive width */
+            text-align: center;
+            animation: modal-fade-in 0.3s ease-out; /* Fade-in animation */
+        }
+
+        @keyframes modal-fade-in {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .modal-header .modal-icon svg {
+            width: 28px;
+            height: 28px;
+        }
+        /* Specific icon colors */
+         .modal-icon.warning svg { fill: #f0ad4e; } /* Yellow for warning */
+         .modal-icon.error svg { fill: #d9534f; } /* Red for error */
+
+        .modal-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #ffffff;
+            margin: 0; /* Reset margin */
+        }
+
+        .modal-message {
+            font-size: 1em;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: #c0c0d0; /* Slightly lighter than main text */
+        }
+        .modal-message strong { /* Highlight chapter names */
+             color: #ffffff;
+             font-weight: 600;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: center; /* Center buttons */
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        /* Basic button style - adapt if you have global button styles */
+        .modal-button {
+            padding: 10px 25px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .modal-button:hover {
+             transform: translateY(-1px);
+        }
+        .modal-button.primary { /* e.g., Confirm Delete */
+            background-color: #d9534f;
+            color: white;
+            box-shadow: 0 2px 5px rgba(217, 83, 79, 0.3);
+        }
+        .modal-button.primary:hover { background-color: #c9302c; }
+
+        .modal-button.secondary { /* e.g., Cancel, OK */
+            background-color: #4a5a7e;
+            color: #e0e0e0;
+            border: 1px solid #6a7aac;
+        }
+        .modal-button.secondary:hover { background-color: #6a7aac; color: #ffffff; }
+
+        /* --- NEW: Delete Confirmation Target Animation --- */
+        @keyframes pulse-danger {
+            0%, 100% { border-color: #d9534f; box-shadow: 0 0 0 0 rgba(217, 83, 79, 0.4); }
+            50% { border-color: #f0716e; box-shadow: 0 0 0 6px rgba(217, 83, 79, 0); }
+        }
+        .chapter-card.confirming-delete {
+            border-color: #d9534f; /* Start with red border */
+            animation: pulse-danger 1.5s infinite ease-in-out;
+        }
+
+
+        /* --- NEW: Delete Vanish Animation --- */
+        @keyframes fade-out-shrink {
+             to {
+                 opacity: 0;
+                 transform: scale(0.8);
+                 margin-bottom: -10px; /* Pull elements below up smoothly */
+                 padding-top: 0;
+                 padding-bottom: 0;
+                 height: 0; /* Animate height to 0 */
+                 border-width: 0;
+                 overflow: hidden; /* Prevent content spill during shrink */
+             }
+        }
+        .chapter-card.fading-out {
+             animation: fade-out-shrink 0.4s ease-out forwards;
+             /* Ensure it doesn't respond to hover etc. while fading */
+             pointer-events: none;
+         }
+
+         /* --- NEW: Inline Rename Styles --- */
+         .chapter-card.is-renaming .chapter-name {
+             display: none; /* Hide the original span */
+         }
+         .chapter-card .rename-input {
+             display: none; /* Hidden by default */
+             width: calc(100% - 0px); /* Take full width */
+             padding: 6px 8px;
+             font-size: 1.25em; /* Match chapter-name */
+             font-weight: bold; /* Match chapter-name */
+             border: 1px solid #5bc0de; /* Highlight border */
+             border-radius: 4px;
+             background-color: #1a1a2e; /* Dark background */
+             color: #e0e0e0;
+             outline: none;
+             box-sizing: border-box; /* Include padding/border in width */
+             margin: 0; /* Remove default margins */
+             /* Remove mastery indicator space */
+             /* If mastery indicator is next to it, might need flexbox adjustments */
+         }
+          .chapter-card.is-renaming .rename-input {
+             display: block; /* Show when renaming */
+          }
+         /* Hide mastery indicator during rename */
+          .chapter-card.is-renaming .mastery-indicator {
+              display: none;
+          }
+
+        /* Responsiveness */
+        @media (max-width: 900px) {
+             .overview-section { grid-template-columns: 1fr; gap: 30px; }
+        }
+        @media (max-width: 768px) {
+             body { padding: 15px; }
+             .management-container { padding: 20px; }
+             .heatmap-grid { grid-template-columns: repeat(auto-fill, minmax(35px, 1fr)); gap: 4px; }
+             /* Review heatmap cells are already small */
+        }
+         @media (max-width: 480px) {
+             .chapter-grid { grid-template-columns: 1fr; }
+             .action-button { width: 90%; font-size: 1em; padding: 12px 20px; }
+             .heatmap-grid { grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); } /* Smaller cells on mobile */
+
+         }
+
+    </style>
+</head>
+<body>
+
+    <div class="management-container" id="managementContainer">
+
+        <div class="material-switcher" id="materialSwitcherContainer">
+            <button class="material-tab active" data-material="Mathematics"></button>
+            <button class="material-tab" data-material="Physics"></button>
+        </div>
+
+         <div class="overview-section">
+            <div class="heatmaps-column">
+                <div class="section-container chapter-mastery-section">
+                     <h2 class="section-title">Chapter Mastery</h2>
+                     <div class="heatmap-grid">
+                        <div class="heatmap-cell" data-mastery="high" data-tooltip="Algebra Basics (95%)"></div>
+                        <div class="heatmap-cell" data-mastery="medium" data-tooltip="Calculus I (75%)"></div>
+                        <div class="heatmap-cell" data-mastery="low" data-tooltip="Linear Algebra (40%)"></div>
+                        <div class="heatmap-cell" data-mastery="high" data-tooltip="Probability (88%)"></div>
+                        <div class="heatmap-cell" data-mastery="medium" data-tooltip="Set Theory (65%)"></div>
+                        <div class="heatmap-cell" data-mastery="medium" data-tooltip="Differential Eq (70%)"></div>
+                        <div class="heatmap-cell" data-mastery="high" data-tooltip="Geometry (92%)"></div>
+                        <div class="heatmap-cell" data-mastery="low" data-tooltip="Complex Analysis (35%)"></div>
+                        <div class="heatmap-cell" data-mastery="medium" data-tooltip="Number Theory (60%)"></div>
+                        <div class="heatmap-cell" data-mastery="high" data-tooltip="Topology (85%)"></div>
+                        <div class="heatmap-cell" data-mastery="medium" data-tooltip="Statistics (72%)"></div>
+                        <div class="heatmap-cell" data-mastery="low" data-tooltip="Abstract Algebra (45%)"></div>
+                     </div>
+                </div>
+                <!-- ... inside .review-activity-section ... -->
+                <div class="section-container review-activity-section">
+                    <h2 class="section-title-review-activity">Recent Review Activity</h2>
+                    <!-- REMOVE ALL STATIC CELLS FROM HERE -->
+                    <div class="review-heatmap-grid">
+                        <!-- This should be empty now - JS will fill it -->
+                    </div>
+                    <!-- END OF REMOVAL -->
+               </div>
+               <!-- ... -->
+            </div>
+            <div class="section-container review-schedule-section">
+                <h2 class="section-title-review-schedule">Review Schedule</h2>
+                <div class="review-schedule-graph" style="position: relative;"> <!-- Added position:relative -->
+                   <canvas id="reviewScheduleCanvas"></canvas>
+                   <!-- Added status paragraph -->
+                   <p class="graph-status" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #a0a0c0; display: none; text-align: center;"></p>
+                </div>
+           </div>
+        </div>
+
+        <div class="main-action-area">
+            <!-- Change initial text -->
+            <button class="action-button" id="sessionButton">Start Studying</button>
+
+            <!-- Add the new icon button -->
+            <button class="icon-button select-chapters-button" id="selectChaptersButton" aria-label="Select Chapters for Focused Study" title="Select Chapters for Focused Study">
+                <img src="icons/chap-selection.png" alt="" width="32" height="32" aria-hidden="true">
+            </button>
+        </div>
+
+        <div class="chapter-grid" id="chapterGrid">
+             <div class="chapter-card" data-chapter-id="math-alg"> <input type="checkbox" class="selection-checkbox" aria-label="Select Chapter: Algebra Basics"> <div class="chapter-card-header"> <span class="chapter-name">Algebra Basics</span> <span class="mastery-indicator high">95%</span> </div> <div class="chapter-stats"> <span class="stat-item">Cards: 50</span> <span class="stat-item">Buried: 5</span> <span class="stat-item">Mastered: 45</span> </div> </div>
+             <div class="chapter-card" data-chapter-id="math-calc1"> <input type="checkbox" class="selection-checkbox" aria-label="Select Chapter: Calculus I"> <div class="chapter-card-header"> <span class="chapter-name">Calculus I</span> <span class="mastery-indicator medium">75%</span> </div> <div class="chapter-stats"> <span class="stat-item">Cards: 80</span> <span class="stat-item">Buried: 10</span> <span class="stat-item">Mastered: 55</span> </div> </div>
+             <div class="chapter-card" data-chapter-id="math-linalg"> <input type="checkbox" class="selection-checkbox" aria-label="Select Chapter: Linear Algebra"> <div class="chapter-card-header"> <span class="chapter-name">Linear Algebra</span> <span class="mastery-indicator low">40%</span> </div> <div class="chapter-stats"> <span class="stat-item">Cards: 60</span> <span class="stat-item">Buried: 2</span> <span class="stat-item">Mastered: 20</span> </div> </div>
+         </div>
+         <div id="heatmap-tooltip" class="global-tooltip" role="tooltip"></div>
+    </div>
+
+    <!-- Context Menu Structure (Updated with SVG Placeholders) -->
+    <div id="chapterContextMenu" class="context-menu" style="display: none;">
+        <ul>
+            <li data-action="open">
+                <span class="menu-icon" title="Open">
+                    <!-- Open Folder SVG -->
+                    <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                        <title>Icon representing a deck of taller flashcards, showing one</title>
+                      
+                        <!-- Back Card (rotated slightly more, taller) -->
+                        <!-- Increased height to 24, adjusted y to 4 to maintain vertical center -->
+                        <rect 
+                          x="6" y="4" 
+                          width="20" height="24" 
+                          rx="3" ry="3" 
+                          fill="none" 
+                          stroke="white" 
+                          stroke-width="1.5" 
+                          transform="rotate(-6 16 16)" /> 
+                          <!-- Rotation center (16, 16) is still the geometric center: x=6 + width/2=16, y=4 + height/2=16 -->
+                      
+                        <!-- Front Card Group (rotated slightly less) -->
+                        <!-- Rotation center (13, 13) needs to be correct for the group -->
+                        <g transform="rotate(4 13 13)"> 
+                           <!-- Rotation center for the group (13, 13) is still the geometric center of the front card's original position: x=4 + width/2=13, y=2 + height/2=13 -->
+                      
+                          <!-- Front Card Outline (taller) -->
+                          <!-- Increased height to 22, adjusted y to 2 to maintain vertical center -->
+                          <rect 
+                            x="4" y="2" 
+                            width="18" height="22" 
+                            rx="3" ry="3" 
+                            fill="none" 
+                            stroke="white" 
+                            stroke-width="1.5" />
+                      
+                          <!-- Number '1' -->
+                          <!-- Adjusted y position to 13 to be vertically centered in the taller card (y=2 + height/2=13) -->
+                      
+                        </g>
+                      </svg>
+                </span> See Cards
+            </li>
+            <li data-action="rename">
+                <span class="menu-icon" title="Rename">
+                    <!-- Edit/Pencil SVG -->
+                    <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path></svg>
+                </span> Rename Chapter
+            </li>
+            <li data-action="delete">
+                <span class="menu-icon" title="Delete">
+                    <!-- Trash Can SVG -->
+                     <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path></svg>
+                </span> Delete Chapter
+            </li>
+        </ul>
+    </div>
+
+    <!-- NEW: Confirmation Modal Structure -->
+    <div id="confirmationModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="confirmModalIcon" class="modal-icon warning">
+                    <!-- Warning/Alert SVG -->
+                    <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"></path></svg>
+                </span>
+                <h3 id="confirmModalTitle" class="modal-title">Confirmation</h3>
+            </div>
+            <p id="confirmModalMessage" class="modal-message">Are you sure?</p>
+            <div id="confirmModalActions" class="modal-actions">
+                <!-- Buttons added dynamically by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Error Modal Structure (Similar to Confirmation) -->
+    <div id="errorModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                 <span id="errorModalIcon" class="modal-icon error">
+                    <!-- Error/Cross SVG -->
+                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+                 </span>
+                 <h3 id="errorModalTitle" class="modal-title">Error</h3>
+            </div>
+            <p id="errorModalMessage" class="modal-message">An error occurred.</p>
+            <div id="errorModalActions" class="modal-actions">
+                 <button class="modal-button secondary" data-action="close">OK</button>
+            </div>
+        </div>
+    </div>
+    <!-- At the end of the body tag -->
+    <script type="module" src="./js/views/chapterFoldersView.js"></script>
+</body>
+</html>

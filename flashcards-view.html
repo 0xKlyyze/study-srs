@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaizen - Chapter Details v7 (UI refined)</title>
+     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/katex.min.css" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/katex.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/contrib/auto-render.min.js" crossorigin="anonymous"
+        onload="setTimeout(() => renderMathInElement(document.body, { trust: true }), 100);"></script>
+    <style>
+        /* --- Paste ALL CSS from the previous response here --- */
+        /* --- We will ADD/MODIFY styles below --- */
+        :root {
+            --bg-gradient-start: #1a1a2e; --bg-gradient-end: #16213e; --primary-bg: #1f2a40;
+            --secondary-bg: #2c3a56; --tertiary-bg: #1a1a2e; --border-color: #4a5a7e;
+            --hover-border-color: #6a7aac; --text-primary: #e0e0e0; --text-secondary: #a0a0c0;
+            --accent-blue: #5bc0de; --accent-green: #5cb85c; --accent-yellow: #f0ad4e;
+            --accent-red: #d9534f; --modal-overlay-bg: rgba(10, 10, 20, 0.7);
+            --shadow-color: rgba(0, 0, 0, 0.4); --icon-color: #a0a0c0; --icon-hover-color: #ffffff;
+            --ai-glow-start: #6a11cb; --ai-glow-end: #2575fc; /* Purple to Blue */
+            --ai-glow-color-1: rgba(106, 17, 203, 0.6); /* Purpleish */
+            --ai-glow-color-2: rgba(37, 117, 252, 0.5); /* Blueish */
+            --button-glow-color: rgba(91, 192, 222, 0.6); /* Glow color for study button */
+        }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #e0e0e0; margin: 0; padding: 30px; min-height: 100vh; box-sizing: border-box; transition: background-color 0.3s ease; 
+        }
+        body.modal-open { overflow: hidden; }
+        .chapter-details-container {
+            max-width: 1200px; margin: 0 auto; background-color: #1f2a40;
+            padding: 30px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+             transition: filter 0.3s ease; /* For blurring */
+        }
+        .chapter-details-container.blurred { filter: blur(5px) brightness(0.7); pointer-events: none; user-select: none; }
+
+
+        /* --- Header (Unchanged) --- */
+        .chapter-header {
+             display: flex; flex-wrap: wrap; justify-content: space-between; /* Keep space-between for potential right-side elements */
+             align-items: center;
+             margin-bottom: 10px; /* Keep margin */
+             padding-bottom: 0; /* Remove padding */
+             border-bottom: none; /* REMOVE border */
+             gap: 15px;
+         }
+        .chapter-title-section {} /* Keep this wrapper */
+        .breadcrumbs {
+             font-size: 1.1em; /* Slightly larger base size */
+             color: var(--text-secondary);
+             margin: 0; /* Remove default margins */
+             position: relative;
+         }
+        .breadcrumbs a { /* Material Link */
+             color: var(--text-secondary);
+             text-decoration: none;
+             transition: color 0.2s ease;
+             font-weight: 500;
+         }
+        .breadcrumbs a:hover { color: var(--text-primary); }
+        .breadcrumb-separator { /* Style the slash */
+            margin: 0 8px;
+            opacity: 0.6;
+        }
+        .breadcrumb-chapter-name { /* The main chapter name */
+             font-size: 1.9em; /* Significantly larger */
+             font-weight: bold;
+             color: var(--text-primary);
+         }
+
+         .breadcrumbs.is-renaming .breadcrumb-chapter-name {
+             visibility: hidden; /* Hide the span, but keep space */
+             /* display: none; might cause layout shift */
+         }
+         .breadcrumbs .rename-input-header {
+             display: none; /* Hidden by default */
+             /* Position over the hidden span if using visibility:hidden */
+             /* position: absolute; top: 0; left: 0; */
+             width: 100%; /* Adjust as needed */
+             padding: 2px 6px;
+             font-size: 1.9em; /* Match breadcrumb-chapter-name */
+             font-weight: bold; /* Match breadcrumb-chapter-name */
+             border: 1px solid var(--accent-blue);
+             border-radius: 4px;
+             background-color: var(--secondary-bg); /* Slightly different bg */
+             color: var(--text-primary);
+             outline: none;
+             box-sizing: border-box;
+             margin: 0;
+             line-height: 1.2; /* Adjust line height */
+         }
+         .breadcrumbs.is-renaming .rename-input-header {
+            display: inline-block; /* Show when renaming */
+            vertical-align: bottom; /* Align with other breadcrumb parts */
+         }
+
+         /* --- >> MODIFIED: Analytics & Graph Section --- */
+         .stats-graph-section {
+             display: grid;
+             /* Give slightly more space to analytics: 1.1fr vs 0.9fr */
+             grid-template-columns: 1.1fr 0.9fr;
+             gap: 30px; margin-bottom: 40px;
+             align-items: stretch; /* Make grid items stretch vertically */
+         }
+        .section-container {
+            display: flex; /* Allow flex direction column */
+            flex-direction: column;
+            height: 100%; /* Make container fill grid cell height */
+        }
+        .section-title { font-size: 1.1em; text-align: center; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 0px solid var(--border-color); padding-bottom: 8px; flex-shrink: 0; } /* Prevent title shrinking */
+        .chapter-analytics { background-color: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; flex-grow: 1; /* Allow analytics box to grow */ }
+        .timeline-graph-placeholder { background-color: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: 8px; min-height: 200px; /* Adjust min-height as needed */ display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-style: italic; text-align: center; padding: 20px; box-sizing: border-box; height: 100%; }
+
+        /* --- >> MODIFIED: Analytics Items --- */
+        .analytics-item { margin-bottom: 15px; font-size: 0.95em; }
+        .analytics-item label { color: var(--text-secondary); display: block; margin-bottom: 8px; font-size: 0.9em; }
+        .analytics-item .value { font-weight: bold; font-size: 1.1em; white-space: nowrap; }
+        /* Progress Bar Item Layout */
+        .mastery-progress-item { /* Specific class or target uniquely */
+            display: flex;
+            align-items: center;
+            gap: 12px; /* Space between value and bar */
+            margin-top: 5px; /* Space below label */
+        }
+        .mastery-progress-item .value {
+            flex-shrink: 0; /* Prevent percentage shrinking */
+            font-size: 1.2em; /* Make percentage slightly larger */
+             min-width: 50px; /* Ensure space */
+             text-align: right;
+        }
+        .mastery-progress-item progress {
+            width: auto; /* Let flexbox handle width */
+            flex-grow: 1; /* Allow progress bar to take remaining space */
+            height: 12px; /* Slightly thicker */
+            border-radius: 6px; overflow: hidden; border: none; background-color: #3a4a6e;
+        }
+        .mastery-progress-item progress::-webkit-progress-bar { /* ... */ }
+        .mastery-progress-item progress::-webkit-progress-value { background-color: var(--accent-blue); border-radius: 6px; }
+        .mastery-progress-item progress::-moz-progress-bar { background-color: var(--accent-blue); border-radius: 6px; }
+        /* Status Boxes Layout */
+        .card-status-container {
+             display: flex; /* Keep flex */
+             gap: 10px; /* Adjust gap */
+             /* REMOVE flex-wrap: wrap; */
+             justify-content: space-between; /* Distribute space */
+             margin-top: 10px; /* Space below progress bar */
+        }
+        .card-stat-box {
+             background-color: var(--primary-bg); border: 1px solid var(--border-color);
+             border-radius: 6px; padding: 10px; /* Reduced padding */
+             text-align: center;
+             flex: 1 1 0; /* Allow shrinking and growing from 0 base */
+             min-width: 60px; /* Prevent too much shrinking */
+             max-width: 23%; /* Approx max width for 4 items + gaps */
+        }
+        .card-stat-box .stat-value { display: block; font-size: 1.4em; /* Reduced size */ font-weight: bold; color: var(--text-primary); margin-bottom: 2px; }
+        .card-stat-box .stat-label { font-size: 0.75em; /* Reduced size */ color: var(--text-secondary); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+
+                 /* --- >> MODIFIED: Filters & Bulk Actions Section --- */
+                 .controls-section { /* New wrapper for filters and bulk actions */
+             display: flex;
+             justify-content: space-between;
+             align-items: center;
+             flex-wrap: wrap; /* Allow wrapping */
+             gap: 15px; /* Gap between left/right groups */
+             margin-bottom: 25px;
+             padding-bottom: 15px; /* Add padding back here */
+             border-bottom: 1px solid var(--border-color); /* Add border back here */
+         }
+         .filter-buttons-group {
+             display: flex;
+             flex-wrap: wrap;
+             gap: 10px;
+         }
+         .bulk-actions-group {
+             display: flex;
+             align-items: center;
+             gap: 10px;
+         }
+         .bulk-action-btn { /* Style for the small icon buttons */
+             background: none;
+             border: 1px solid var(--border-color);
+             color: var(--icon-color);
+             width: 36px; height: 36px; /* Smaller size */
+             border-radius: 50%;
+             cursor: pointer;
+             display: none; /* Hidden by default */
+             align-items: center !important;  
+             justify-content: center !important; 
+             transition: all 0.2s ease;
+             padding: 0; /* Remove padding */
+         }
+        /* Force display when active */
+        .bulk-actions-group.active .bulk-action-btn {
+        display: inline-flex !important;
+        }
+         .bulk-action-btn svg { width: 18px; height: 18px; fill: currentColor; }
+        .bulk-action-btn.bury svg,
+        .action-icon-btn.bury svg {
+        width: 100%;
+        height: 100%;
+        max-width: 18px; /* For bulk buttons */
+        max-height: 18px;
+        }
+         .bulk-action-btn:hover { background-color: var(--secondary-bg); color: var(--icon-hover-color); border-color: var(--hover-border-color); }
+         .bulk-actions-group.active .bulk-action-btn { display: inline-flex; } /* Show when active */
+         /* Specific hover colors */
+         .bulk-action-btn.star:hover { color: var(--accent-yellow); border-color: var(--accent-yellow); }
+         .bulk-action-btn.delete:hover { color: var(--accent-red); border-color: var(--accent-red); }
+
+         .select-cards-toggle-btn { /* Style for the "Select Cards" button */
+             background-color: var(--secondary-bg);
+             color: var(--text-secondary);
+             border: 1px solid var(--border-color);
+             padding: 8px 15px;
+             border-radius: 6px;
+             cursor: pointer;
+             font-size: 0.9em;
+             transition: all 0.2s ease;
+         }
+         .select-cards-toggle-btn:hover { background-color: var(--hover-border-color); color: var(--text-primary); }
+         .select-cards-toggle-btn.active { background-color: var(--accent-blue); color: var(--primary-bg); border-color: var(--accent-blue); font-weight: bold;}
+
+         /* --- >> MODIFIED: Filters --- */
+        .filter-section {
+             margin-bottom: 25px;
+             padding-bottom: 0; /* Remove padding */
+             border-bottom: none; /* REMOVE border */
+             display: flex; flex-wrap: wrap; gap: 10px;
+         }
+        .filter-btn { background-color: #4a5a7e; color: #e0e0e0; border: none; padding: 8px 15px; border-radius: 15px; cursor: pointer; font-size: 0.9em; transition: background-color 0.2s ease, color 0.2s ease; }
+        .filter-btn.active { background-color: var(--accent-blue); color: var(--tertiary-bg); font-weight: bold; }
+        .filter-btn:hover:not(.active) { background-color: #6a7aac; }
+        
+                /* Updated icon-button base style (similar to chapter-folders) */
+        .icon-button {
+            background-color: #4a5a7e;
+            color: #e0e0e0;
+            border: 1px solid #6a7aac;
+            padding: 10px;
+            width: 48px;
+            height: 48px;
+            border-radius: 80%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Add these SVG-specific styles to your existing CSS */
+        .icon-button.study-all-button svg {
+        width: 32px;
+        height: 32px;
+        max-width: 100%;
+        max-height: 100%;
+        }
+
+        /* Study All Button (icon version) */
+        .icon-button.study-all-button {
+            background-color: #5cb85c; /* Keep green color */
+            border-color: #4cae4c;
+            color: #ffffff;
+            width: 52px; /* Slightly larger */
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .icon-button.study-all-button:hover {
+            background-color: #449d44;
+            border-color: #398439;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .icon-button.study-all-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+         /* --- >> MODIFIED: Study Button Container --- */
+         .study-button-container {
+             text-align: center; margin-top: 40px; margin-bottom: 30px;
+             display: flex; /* Use flex */
+             justify-content: center; /* Center buttons */
+             align-items: center;
+             gap: 15px; /* Space between buttons */
+             flex-wrap: wrap; /* Allow wrapping on small screens */
+         }
+        /* --- >> MODIFIED: Study Button Style --- */
+        .study-now-button {
+            background-color: var(--accent-blue); /* Signature blue */
+            color: white;
+            border: none;
+            padding: 16px 40px; /* Larger padding */
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em; /* Larger font */
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px 0 var(--button-glow-color), /* Inner glow */
+                        0 0 25px 5px rgba(91, 192, 222, 0.3); /* Outer glow */
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        .study-now-button:hover {
+            background-color: color-mix(in srgb, var(--accent-blue) 90%, white 10%); /* Lighter blue on hover */
+            transform: translateY(-2px) scale(1.02); /* Slight lift and scale */
+            box-shadow: 0 0 20px 3px var(--button-glow-color),
+                        0 0 35px 8px rgba(91, 192, 222, 0.4);
+        }
+        .study-now-button:active {
+             transform: translateY(0) scale(1);
+             box-shadow: 0 0 10px 0 var(--button-glow-color);
+        }
+                 /* Optional: Style 'Study All' slightly differently */
+                 .study-all-button { background-color: #5cb85c; color: #ffffff; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-size: 1em; font-weight: bold; transition: background-color 0.2s ease, transform 0.1s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.2); white-space: nowrap; }
+                 .study-all-button:hover { background-color: #449d44; transform: translateY(-1px); }
+         .study-all-button:active { transform: translateY(0) scale(1); box-shadow: 0 0 10px 0 var(--button-glow-color); }
+
+
+                 /* --- Card Grid Selection Mode --- */
+                 .card-grid.selection-mode .theorem-card-minimal {
+             cursor: pointer; /* Indicate clickable */
+             transition: transform 0.1s ease, box-shadow 0.1s ease, border-color 0.2s ease, background-color 0.2s ease; /* Add background transition */
+         }
+
+            .theorem-card-minimal.buried-card-style {
+        opacity: 0.6;
+        /* Add other styles like a grey border? */
+        /* border-left-color: #777; */
+    }
+         .card-grid.selection-mode .theorem-card-minimal:hover {
+              /* Slightly different hover in selection mode */
+              transform: scale(1.01);
+              border-color: var(--accent-blue);
+              box-shadow: 0 4px 10px rgba(91, 192, 222, 0.2);
+         }
+         .card-grid.selection-mode .theorem-card-minimal.selected {
+             border-color: var(--accent-blue);
+             outline: 2px solid var(--accent-blue); /* Use outline instead of border */
+             outline-offset: 2px;
+             background-color: color-mix(in srgb, var(--secondary-bg) 75%, var(--accent-blue) 25%);
+             transform: scale(1.02); /* Slightly larger when selected */
+             box-shadow: 0 6px 15px rgba(91, 192, 222, 0.3);
+         }
+        /* --- Card Grid (Unchanged) --- */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .theorem-card-minimal { background-color: #2c3a56; border: 1px solid #4a5a7e; border-radius: 8px; padding: 15px; transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; cursor: pointer; position: relative; min-height: 100px; display: flex; flex-direction: column; }
+        .theorem-card-minimal:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3); border-color: #6a7aac; }
+        .theorem-name-minimal { font-size: 1.1em; font-weight: bold; color: #ffffff; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .explanation-preview { font-size: 0.9em; color: #a0a0c0; line-height: 1.4; flex-grow: 1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+        .theorem-card-minimal.starred { border-left: 4px solid #f0ad4e; }
+        
+
+        /* ================================== */
+        /* --- MODAL V8 STYLES START HERE --- */
+        /* ================================== */
+        .modal-overlay { position: fixed; inset: 0; background-color: var(--modal-overlay-bg); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; box-sizing: border-box; overflow: hidden; /* Prevent overlay scroll */ }
+        .modal-overlay.visible { display: flex; }
+
+        .modal-overlay.ai-active .modal-side-nav {
+             opacity: 0;
+             pointer-events: none;
+             transition: opacity 0.3s ease;
+             /* display: none; Might cause layout shift, stick to opacity */
+        }
+        /* --- NEW: Close Button State When Panel Active --- */
+        .modal-overlay.panel-active .global-modal-close-btn {
+        top: 10px;
+        right: 10px;
+        font-size: 1.6em;
+        opacity: 0.7; /* Increase visibility slightly */
+        z-index: 1060; /* Ensure it's above everything */
+        pointer-events: auto; /* Make sure it's clickable */
+        }
+
+        .modal-overlay.panel-active .global-modal-close-btn:hover {
+             opacity: 1;
+        }
+        /* --- End Close Button Update --- */
+
+        .global-modal-close-btn {
+            position: fixed;
+            top: 20px; right: 25px;
+            background: none; border: none; color: var(--icon-color);
+            font-size: 2.5em; line-height: 1; cursor: pointer;
+            z-index: 1050; padding: 5px; opacity: 0.8;
+            transition: color 0.2s ease, opacity 0.2s ease, top 0.45s ease-in-out, right 0.45s ease-in-out, font-size 0.3s ease; /* Added position/size transition */
+        }
+        .global-modal-close-btn:hover { color: var(--text-primary); opacity: 1; }
+
+        /* Modal Content Container - Base */
+        .modal-content {
+         background-color: var(--primary-bg); border-radius: 12px; /* ... etc ... */
+         width: 90%; max-width: 800px; height: 90vh; max-height: 700px;
+         display: flex; flex-direction: column; overflow: hidden;
+         /* --- Use position fixed/absolute within overlay --- */
+         position: absolute; /* Position relative to the flex overlay */
+         padding-bottom: 0px; 
+         left: 50%; /* Center horizontally initially */
+         top: 50%; /* Center vertically initially */
+         transform: translate(-50%, -50%); /* Centering trick */
+         /* --- Transition properties --- */
+         transition: width 0.5s ease-in-out, height 0.5s ease-in-out, /* Adjust height too? */
+                     left 0.5s ease-in-out, top 0.5s ease-in-out, /* Animate position */
+                     transform 0.5s ease-in-out,
+                     max-width 0.5s ease-in-out; /* Needed if max-width changes */
+         /* Remove margin-left/right: auto */
+    }
+
+        /* Modal Header */
+        .modal-header { padding: 20px 25px 15px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; gap: 15px; }
+        .modal-theorem-name { font-size: 1.6em; font-weight: bold; color: var(--text-primary); margin: 0; flex-grow: 1; }
+        .modal-status-pills { display: flex; gap: 8px; flex-shrink: 0; } /* Unchanged position for now, will move below */
+
+        /* Modal Body */
+        .modal-body { padding: 20px 25px 0 25px; /* Reduced bottom padding */ overflow-y: auto; flex-grow: 1; scrollbar-width: thin; scrollbar-color: var(--border-color) var(--primary-bg); }
+        .modal-body::-webkit-scrollbar { width: 8px; } .modal-body::-webkit-scrollbar-track { background: var(--primary-bg); } .modal-body::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 4px; border: 2px solid var(--primary-bg); }
+        /* Apply to the direct containers within modal body */
+        .modal-explanation {
+            font-size: 1.1em; line-height: 1.6; margin-bottom: 15px;
+            /* --- Ensure these alignment/wrapping rules are applied --- */
+            text-align: left !important; /* Force left alignment */
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            /* Hide potential horizontal overflow from content itself */
+            /* overflow-x: hidden;  Might hide useful scrollbars on code blocks inside */
+        }
+                /* Target the block containers generated by the processor */
+                .modal-explanation .explanation-block {
+            margin-bottom: 1.2em; padding: 12px 15px; border-radius: 5px;
+            border: 1px solid transparent; border-left-width: 4px;
+             /* --- Ensure these alignment/wrapping rules are applied --- */
+            text-align: left !important;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            /* overflow-x: hidden; */ /* Avoid hiding horizontal scroll on potential content inside */
+        }
+        .modal-explanation .explanation-block.type-text { /* Less padding/border for plain text */
+            padding: 0; border: none; margin-bottom: 0.8em;
+        }
+
+        .modal-explanation .explanation-block.type-explication {
+        background-color: rgba(91, 192, 222, 0.08); /* Lighter blue bg */
+        border-left-color: var(--accent-blue);
+        }
+
+        /* Ensure the block container itself allows left alignment */
+        .modal-explanation .explanation-block.type-latex-block {
+        border: none; /* Remove border from V6 */
+        padding: 0; /* Remove padding from V6 */
+        text-align: left !important; /* Ensure container aligns left */
+        /* Remove fixed width/height if any were added previously */
+        }
+
+        /* Target the main KaTeX display wrapper INSIDE the direct-render block */
+        .modal-explanation .explanation-block.type-latex-block .katex-display {
+        display: block; /* Ensure it's block-level */
+        text-align: left !important; /* Override KaTeX default */
+        margin-left: 0 !important;  /* Override auto margin */
+        margin-right: 0 !important; /* Override auto margin */
+        padding: 0; /* Reset padding if any */
+        /* overflow-x: auto; */ /* Keep if needed for very wide equations */
+        }
+
+        /* Target potential inner elements if the above isn't enough */
+        /* This might not be necessary but can help */
+        .modal-explanation .explanation-block.type-latex-block .katex-display > .katex {
+        /* display: inline-block; */ /* Avoid this unless wrapping fails badly */
+        text-align: left !important;
+        }
+        .modal-explanation .explanation-block.type-exemple {
+        background-color: rgba(92, 184, 92, 0.08); /* Lighter green bg */
+        border-left-color: var(--accent-green);
+        }
+        .modal-explanatio .explanation-block.type-theoreme,
+        .modal-explanation .explanation-block.type-proposition,
+        .modal-explanation .explanation-block.type-definition {
+        background-color: rgba(240, 173, 78, 0.08); /* Lighter yellow bg */
+        border-left-color: var(--accent-yellow);
+        /* font-weight: 500; */ /* Optional bolder text */
+        }
+        /* Add more .type-X styles as needed */
+
+        /* Add these styles */
+        .modal-explanation .explanation-block-header {
+        font-weight: bold;
+        margin-bottom: 0.6em; /* Space between header and content */
+        font-size: 1.05em; /* Slightly larger than content */
+        color: var(--text-primary); /* Match main text or use accent? */
+        /* Optional: Add accent color based on type */
+        /* border-bottom: 1px solid var(--border-color); */ /* Optional separator */
+        /* padding-bottom: 0.4em; */
+        }
+        /* Example: Color coding headers */
+        .modal-explanation .explanation-block.type-explication .explanation-block-header { color: var(--accent-blue); }
+        .modal-explanation .explanation-block.type-exemple .explanation-block-header { color: var(--accent-green); }
+        .modal-explanation  .explanation-block.type-theoreme .explanation-block-header,
+        .modal-explanation .explanation-block.type-proposition .explanation-block-header,
+        .modal-explanation .explanation-block.type-definition .explanation-block-header { color: var(--accent-yellow); }
+
+        .modal-explanation .explanation-block-content {
+        /* Styles for the content area *within* a typed block, if needed */
+        /* e.g., slight indentation? */
+        /* padding-left: 5px; */
+        }
+        .modal-explanation .latex-block { margin: 15px 0; padding: 10px; background-color: var(--tertiary-bg); border-radius: 4px; overflow-x: auto; }
+        .modal-detailed-explanation { display: none; }
+        .modal-toggle-detail-btn { display: block; margin: 15px auto 10px auto; /* Adjust margin */ background: none; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 0.9em; transition: background-color 0.2s ease, color 0.2s ease; }
+        .modal-toggle-detail-btn:hover { background-color: var(--secondary-bg); color: var(--text-primary); }
+        .keyboard-hint { font-size: 0.8em; color: #7a8aae; margin-left: 5px; }
+
+                /* Target KaTeX elements specifically WITHIN the modal */
+                .modal-body .katex-display {
+            display: block; /* Ensure block */
+            text-align: left !important; /* Override KaTeX default */
+            margin: 1em 0 !important; /* Keep vertical spacing */
+            padding: 0 !important; /* Remove potential padding */
+            overflow-x: auto !important; /* USE SCROLL for wide equations */
+            overflow-y: hidden;
+            /* Add some subtle styling for the scrollable math block */
+            background-color: rgba(0,0,0, 0.1); /* Slightly darker background */
+            border-radius: 4px;
+            border: 1px solid var(--border-color); /* Subtle border */
+            padding: 0.5em !important; /* Add padding INSIDE the scroll */
+            box-sizing: border-box;
+        }
+
+         /* Target potentially problematic inner KaTeX span */
+         .modal-body .katex-display > .katex {
+             display: inline-block; /* Allows wrapping better than block */
+             text-align: left !important;
+             white-space: normal; /* Allow wrapping within the math */
+             overflow-wrap: break-word;
+             /* max-width: 100%; */ /* Might be needed if inline-block isn't enough */
+         }
+
+        /* Ensure inline math also wraps if needed */
+        .modal-body .katex {
+             word-break: break-all; /* Force break for inline elements too */
+             overflow-wrap: break-word;
+             line-height: normal; /* Reset line height just for katex spans */
+         }
+
+            /* --- >> ADDED: Detail Separator Style --- */
+        .detail-separator {
+            border: none; /* Remove default border */
+            border-top: 1px dashed var(--border-color); /* Dashed line */
+            margin: 20px auto; /* Space above/below */
+            width: 80%; /* Not full width */
+            /* display: none; /* Controlled by JS */
+        }
+        /* --- >> NEW: Pill Section Above Footer --- */
+        /* --- UPDATED: Pills Section & Pills --- */
+        .modal-pills-section {
+        /* Make it an absolute positioned overlay */
+        position: absolute;
+        left: 0;
+        right: 0;
+        /* Position from the bottom of the content area, not covering the footer */
+        bottom: 100px; /* Adjust based on footer height */
+
+        /* Keep these styles */
+        padding: 10px 25px;
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        z-index: 10;
+        background: none;
+
+        /* Remove flex-shrink as it's not needed for absolute positioning */
+        }
+         .status-pill {
+             padding: 5px 12px; border-radius: 15px; font-size: 0.85em;
+             font-weight: 500; white-space: nowrap;
+             /* Text color remains primary */
+             color: var(--text-primary);
+             /* --- ADJUSTED Background --- */
+             background-color: rgba(44, 58, 86, 0.9); /* Default semi-transparent bg (#2c3a56 base) */
+             display: inline-block; overflow: hidden; text-overflow: ellipsis;
+             /* --- ADJUSTED Border --- */
+             border: 1px solid rgba(74, 90, 126, 0.8); /* Semi-transparent border (#4a5a7e base) */
+             box-shadow: 0 1px 3px rgba(0,0,0,0.3); /* Slightly stronger shadow */
+             transition: all 0.2s ease;
+             backdrop-filter: none; /* Add subtle blur behind pill */
+            -webkit-backdrop-filter: none;
+         }
+         .status-pill:hover {
+             transform: translateY(-1px);
+             box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+             /* Slightly lighten background on hover */
+             background-color: rgba(60, 78, 110, 0.85);
+             border-color: rgba(106, 122, 172, 0.7);
+         }
+         /* Status-specific colors (Apply to background, adjust alpha) */
+         .status-pill[data-status="New"], .status-pill[data-status="Unknown"] { background-color: rgba(119, 119, 119, 0.9); border-color: rgba(153, 153, 153, 0.8); }
+         .status-pill[data-status="Learning"] { background-color: rgba(91, 192, 222, 0.7); color: #ffffff; border-color: rgba(123, 208, 232, 0.9); } /* Keep text light */
+         .status-pill[data-status="Due"] { background-color: rgba(240, 173, 78, 0.7); color: #ffffff; border-color: rgba(242, 190, 110, 0.8); } /* Keep text light */
+         .status-pill[data-status="Mastered"] { background-color: rgba(92, 184, 92, 0.7); color: #ffffff; border-color: rgba(124, 196, 124, 0.6); }
+         /* New pill types */
+         .status-pill[data-pill-type="last-review"] { background-color: rgba(164, 51, 51, 0.75); color: var(--text-primary); border-color: rgba(192, 80, 80, 0.6); }
+         .status-pill[data-pill-type="next-review"] { background-color: rgba(193, 49, 138, 0.75); color: var(--text-primary); border-color: rgba(210, 80, 160, 0.6); }
+         .status-pill[data-pill-type="mastery-level"] { background-color: rgba(105, 43, 186, 0.75); color: #ffffff; border-color: rgba(135, 75, 200, 0.6); }
+         /* --- End Pills Update --- */
+
+
+        /* --- Modal Footer (Action Buttons) --- */
+        .modal-footer { padding: 15px 25px; border-top: 1px solid var(--border-color); display: flex; justify-content: center; align-items: center; flex-shrink: 0; gap: 15px; /* Adjusted gap */ background-color: var(--secondary-bg);              position: relative; /* Needed for potential pseudo-elements */
+            z-index: 5; /* Keep above pills visually */}
+        .action-icon-btn {
+        background-color: var(--primary-bg); color: var(--icon-color); border: 1px solid var(--border-color);
+        width: 56px; height: 56px; /* Increased size */
+        border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5em; transition: all 0.25s ease-out; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+        position: relative; /* For potential pseudo-elements */
+        overflow: hidden; /* Clip potential pseudo-elements */
+    }
+        .action-icon-btn svg { width: 28px; height: 28px; fill: currentColor; transition: transform 0.2s ease; }
+                /* Fix SVG color inheritance */
+        .action-icon-btn svg path,
+        .bulk-action-btn svg path {
+            fill: currentColor;
+            stroke: currentColor;
+            stroke-width: 0.00024;
+        }
+        .action-icon-btn:hover { color: var(--icon-hover-color); background-color: var(--hover-border-color); border-color: color-mix(in srgb, var(--hover-border-color) 80%, white 20%); transform: translateY(-2px); box-shadow: 0 5px 12px rgba(0, 0, 0, 0.4); }
+        .action-icon-btn:active { transform: translateY(0px); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); }
+        .action-icon-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .action-icon-btn:hover svg { transform: scale(1.05); }
+        /* Bury Button */
+        .action-icon-btn.bury .icon-unbury,
+        .bulk-action-btn.bury .icon-unbury { display: none; } /* Hide unbury by default */
+        .action-icon-btn.bury .icon-bury,
+        .bulk-action-btn.bury .icon-bury { display: inline-block; } /* Show bury by default */
+        .action-icon-btn.bury svg {
+        max-width: 28px; /* For modal footer buttons */
+        max-height: 28px;
+        }
+
+        .action-icon-btn.bury.is-buried .icon-unbury, /* When button has is-buried class */
+        .bulk-action-btn.bury.is-buried .icon-unbury { display: inline-block; } /* Show unbury */
+        .action-icon-btn.bury.is-buried .icon-bury,
+        .bulk-action-btn.bury.is-buried .icon-bury { display: none; } /* Hide bury */
+
+        /* Star Button */
+        .action-icon-btn.star.active { color: var(--accent-yellow); border-color: var(--accent-yellow); }
+        .action-icon-btn.star.active:hover { background-color: color-mix(in srgb, var(--accent-yellow) 20%, var(--primary-bg) 80%);}
+        .action-icon-btn.star .icon-star-filled { display: none; } .action-icon-btn.star .icon-star-outline { display: inline-block; } .action-icon-btn.star.active .icon-star-filled { display: inline-block; } .action-icon-btn.star.active .icon-star-outline { display: none; }
+        /* Delete Button */
+         .action-icon-btn.delete:hover { background-color: var(--accent-red); border-color: color-mix(in srgb, var(--accent-red) 80%, white 20%); color: white; }
+                 /* --- Edit Button Active State --- */
+        .action-icon-btn.edit.active {
+             background-color: var(--accent-blue);
+             border-color: color-mix(in srgb, var(--accent-blue) 70%, white 30%);
+             color: white;
+             transform: scale(1.1) translateY(-2px); /* Scale up and lift */
+             box-shadow: 0 0 15px 2px rgba(91, 192, 222, 0.5), /* Blue glow */
+                         0 5px 15px rgba(0, 0, 0, 0.4); /* Stronger shadow */
+         }
+         .action-icon-btn.edit.active:hover {
+             background-color: color-mix(in srgb, var(--accent-blue) 90%, white);
+             transform: scale(1.12) translateY(-3px); /* Slightly more effect on hover */
+         }
+
+        /* --- AI Button & Active State --- */
+        .action-icon-btn.ai {
+            width: 65px; height: 65px; /* Slightly smaller base */
+            background: linear-gradient(135deg, var(--ai-glow-start), var(--ai-glow-end));
+            border: none; color: white;
+             box-shadow: 0 0 12px rgba(106, 17, 203, 0.4), 0 0 18px rgba(37, 117, 252, 0.3), 0 3px 8px rgba(0,0,0,0.3);
+             /* transition already includes transform, box-shadow */
+        }
+        .action-icon-btn.ai:hover {
+             box-shadow: 0 0 18px rgba(106, 17, 203, 0.6), 0 0 25px rgba(37, 117, 252, 0.5), 0 4px 12px rgba(0,0,0,0.35);
+             transform: translateY(-2px) scale(1.03);
+        }
+         .action-icon-btn.ai svg { width: 38px; height: 38px; } /* Adjust icon size */
+
+         /* Active State for AI Button */
+         .action-icon-btn.ai.active {
+             transform: scale(1.15) translateY(-3px); /* Bigger scale */
+             box-shadow: 0 0 20px 3px rgba(106, 17, 203, 0.7), /* More intense glow */
+                         0 0 35px 6px rgba(37, 117, 252, 0.6),
+                         0 6px 18px rgba(0, 0, 0, 0.4); /* Stronger shadow */
+         }
+         .action-icon-btn.ai.active:hover {
+              transform: scale(1.17) translateY(-4px); /* Slightly more effect on hover */
+         }
+        /* Side Navigation Arrows */
+        .modal-side-nav { position: fixed; top: 50%; transform: translateY(-50%); background-color: rgba(44, 58, 86, 0.8); color: var(--icon-color); border: 1px solid var(--border-color); width: 40px; height: 60px; border-radius: 8px; cursor: pointer; display: none; /* Initially hidden */ align-items: center; justify-content: center; font-size: 1.8em; z-index: 1020; transition: all 0.2s ease; }
+        .modal-overlay.visible .modal-side-nav { display: flex; } /* Show when modal visible */
+        .modal-side-nav:hover { background-color: var(--secondary-bg); color: var(--icon-hover-color); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .modal-side-nav.prev { left: 20px; } .modal-side-nav.next { right: 20px; }
+        .modal-side-nav:disabled { opacity: 0.3; cursor: not-allowed; background-color: rgba(44, 58, 86, 0.5); }
+            /* --- >> ENSURE THIS RULE EXISTS << --- */
+        /* --- >> NEW: AI Panel Styles & Animation << --- */
+                /* --- REFINED: Panel Animation & Positioning --- */
+                .modal-content, #aiChatPanel, #editCardPanel {
+                    will-change: transform, opacity, left, width;
+transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1), 
+            opacity 0.3s ease-out;
+             box-sizing: border-box;
+        }
+
+        #aiChatPanel, #editCardPanel {
+            position: fixed; /* Keep fixed for simplicity */
+            right: 3%; top: 5vh; /* Default position */
+            width: 45%; max-width: 550px;
+            height: 90vh; max-height: 700px;
+            background-color: var(--primary-bg); border-radius: 12px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color);
+            z-index: 1015;
+            /* Initial State: Hidden */
+            opacity: 0;
+            transform: translateX(60px) scale(0.97); /* Start further right and slightly smaller */
+            pointer-events: none;
+            display: flex; /* Use flex for internal layout */
+            flex-direction: column; /* Stack header/body/footer */
+            overflow: hidden; /* Prevent content spill during animation */
+            will-change: transform, opacity;
+        }
+
+        /* --- Specific Glow for AI Panel --- */
+         #aiChatPanel {
+             border: 1px solid transparent; /* Start transparent for transition */
+             box-shadow: 0 0 8px 0px var(--ai-glow-color-2), 0 0 12px 0px var(--ai-glow-color-1), 0 5px 25px rgba(0, 0, 0, 0.4); /* Combine glows and shadow */
+         }
+        .ai-chat-panel {
+        position: fixed;
+        /* Final Position */
+        right: 3%; /* Gap from right edge */
+        top: 5vh; /* Align with modal top */
+        width: 45%; /* Panel width */
+        max-width: 550px;
+        height: 90vh; max-height: 700px; /* Match modal height */
+
+        /* Style like modal */
+        background-color: var(--primary-bg); border-radius: 12px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color);
+        z-index: 1015; display: flex; align-items: center; justify-content: center;
+        color: var(--text-secondary); font-style: italic; padding: 20px; box-sizing: border-box;
+
+        /* Initial State (Hidden, slightly offset) */
+        opacity: 0;
+        transform: translateX(40px); /* Start slightly right */
+        transition: opacity 0.4s ease-out, transform 0.4s ease-out, box-shadow 0.4s ease-out, border 0.4s ease-out;
+        pointer-events: none;
+
+        /* Glow */
+        border: 1px solid transparent;
+        box-shadow: 0 0 8px 0px var(--ai-glow-color-2), 0 0 12px 0px var(--ai-glow-color-1);
+    }
+
+            /* --- State when a panel (AI or Edit) is active --- */
+            .modal-overlay.panel-active .modal-content {
+            /* Position main modal to the left */
+            width: 48%; max-width: 600px;
+            left: 2%; top: 5vh;
+            transform: translate(0%, 0%) scale(1);
+            opacity: 1;
+        }
+        /* Show the active panel */
+        .modal-overlay.ai-active #aiChatPanel,
+        .modal-overlay.edit-active #editCardPanel {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+            pointer-events: auto;
+        }
+
+        /* --- UPDATED: Hide nav buttons when panel active --- */
+        .modal-overlay.panel-active .modal-side-nav {
+        opacity: 0; pointer-events: none;
+        }
+    /* State when AI panel is active */
+    .modal-overlay.ai-active .modal-content {
+        /* --- New Positioning for AI Active --- */
+        width: 48%; /* Desired width */
+        max-width: 600px; /* Max width when shifted */
+        height: 90vh; max-height: 700px; /* Ensure height matches */
+        left: 2%; /* Position from left edge */
+        top: 5vh; /* Align top with panel */
+        transform: translate(0%, 0%); /* Reset centering transform */
+        /* Remove transform/margin used previously */
+    }
+    .modal-overlay.ai-active .ai-chat-panel {
+        opacity: 1;
+        transform: translateX(0); /* Move to final position */
+        pointer-events: auto;
+        /* Enhanced Glow */
+        border: 1px solid color-mix(in srgb, var(--accent-blue) 50%, var(--accent-purple) 50%);
+        box-shadow: 0 0 15px 2px var(--ai-glow-color-2), 0 0 25px 5px var(--ai-glow-color-1);
+    }
+
+    /* Keep rule to hide arrows/close btn */
+    .modal-overlay.ai-active .modal-side-nav,
+
+            /* --- State when a panel (AI or Edit) is active --- */
+            .modal-overlay.panel-active .modal-content {
+            /* Position main modal to the left */
+            width: 48%; max-width: 600px;
+            left: 2%; top: 5vh;
+            transform: translate(0%, 0%) scale(1); /* Reset transform */
+            opacity: 1; /* Ensure full opacity */
+        }
+        /* Show the active panel */
+        .modal-overlay.ai-active #aiChatPanel,
+        .modal-overlay.edit-active #editCardPanel {
+            opacity: 1;
+            transform: translateX(0) scale(1); /* Slide in and scale up */
+            pointer-events: auto;
+        }
+        /* Specific Glow for Active AI Panel */
+        .modal-overlay.ai-active #aiChatPanel {
+            border: 1px solid color-mix(in srgb, var(--accent-blue) 50%, var(--ai-glow-start) 50%); /* Blend colors */
+             box-shadow: 0 0 15px 2px var(--ai-glow-color-2), 0 0 25px 5px var(--ai-glow-color-1), 0 5px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Hide nav/close when any panel is active */
+        .modal-overlay.panel-active .modal-side-nav{
+             opacity: 0; pointer-events: none;
+        }
+
+         /* --- Edit Panel Specific Styles --- */
+         #editCardPanel .panel-header {
+             padding: 15px 20px;
+             border-bottom: 1px solid var(--border-color);
+             font-size: 1.3em;
+             font-weight: bold;
+             color: var(--text-primary);
+             flex-shrink: 0;
+             text-align: center;
+         }
+         #editCardPanel .panel-body {
+             padding: 20px;
+             overflow-y: auto;
+             flex-grow: 1;
+             /* Styles for scrollbar (optional, copy from modal-body if desired) */
+             scrollbar-width: thin;
+             scrollbar-color: var(--border-color) var(--primary-bg);
+         }
+         .edit-form-group {
+             margin-bottom: 18px;
+         }
+         .edit-form-group label {
+             display: block;
+             margin-bottom: 6px;
+             font-size: 0.9em;
+             color: var(--text-secondary);
+             font-weight: 500;
+         }
+         .edit-form-group input[type="text"],
+         .edit-form-group textarea {
+             width: 100%;
+             padding: 10px 12px;
+             border: 1px solid var(--border-color);
+             border-radius: 5px;
+             background-color: var(--secondary-bg);
+             color: var(--text-primary);
+             font-size: 1em;
+             box-sizing: border-box;
+             transition: border-color 0.2s ease, background-color 0.2s ease;
+         }
+         .edit-form-group input[type="text"]:focus,
+         .edit-form-group textarea:focus {
+             border-color: var(--accent-blue);
+             background-color: var(--primary-bg);
+             outline: none;
+         }
+         .edit-form-group textarea {
+             min-height: 100px; /* Adjust min height */
+             resize: vertical;
+             line-height: 1.5;
+         }
+         #editCardPanel .panel-footer {
+             padding: 15px 20px;
+             border-top: 1px solid var(--border-color);
+             display: flex;
+             justify-content: flex-end; /* Align buttons right */
+             gap: 12px;
+             flex-shrink: 0;
+             background-color: var(--secondary-bg);
+         }
+         /* Simple button styles for edit panel footer */
+         .panel-button {
+             padding: 8px 20px;
+             border-radius: 5px;
+             border: none;
+             cursor: pointer;
+             font-size: 0.95em;
+             font-weight: 500;
+             transition: background-color 0.2s ease, transform 0.1s ease;
+         }
+         .panel-button.primary { /* Save */
+             background-color: var(--accent-blue);
+             color: white;
+         }
+         .panel-button.primary:hover { background-color: color-mix(in srgb, var(--accent-green) 90%, white); transform: translateY(-1px); }
+         .panel-button.secondary { /* Cancel */
+             background-color: var(--border-color);
+             color: var(--text-secondary);
+         }
+         .panel-button.secondary:hover { background-color: var(--hover-border-color); color: var(--text-primary); transform: translateY(-1px);}
+         /* --- End Edit Panel Styles --- */
+
+
+        /* Responsiveness */
+        /* Adjust responsiveness for new AI layout */
+     /* --- Responsiveness --- */
+     @media (max-width: 1300px) { /* Example: Adjust breakpoint for when panels affect modal significantly */
+              .modal-overlay.panel-active .modal-content { width: 45%; }
+              #aiChatPanel, #editCardPanel { width: 50%; right: 2%; }
+         }
+        @media (max-width: 1200px) { /* Adjust breakpoint for side-by-side */
+        .modal-overlay.ai-active .modal-content { left: 1%; width: 49%; } /* Slightly adjust */
+        .ai-chat-panel { right: 1%; width: 47%; }
+        
+        }
+         @media (max-width: 900px) { /* Stack them earlier */
+         .modal-overlay.ai-active .modal-content {
+             /* Move up and shrink */
+             width: 80%; height: 45%; /* Half height */
+             max-width: 600px;
+             left: 50%; top: 2.5vh; /* Position top half */
+             transform: translate(-50%, 0%); /* Center H, Top align */
+             opacity: 0.9; /* Slightly faded */
+             transition: width 0.5s ease-in-out, height 0.5s ease-in-out, left 0.5s ease-in-out, top 0.5s ease-in-out, transform 0.5s ease-in-out, opacity 0.3s ease-out;
+         }
+         .ai-chat-panel {
+             width: 80%; height: 45%; /* Half height */
+             max-width: 600px;
+             left: 50%; /* Center horizontally */
+             right: auto; /* Override right */
+             top: 52.5vh; /* Position bottom half */
+             bottom: auto; /* Override bottom */
+             transform: translate(-50%, 30px); /* Start below final, centered H */
+             opacity: 0;
+         }
+         .modal-overlay.ai-active .ai-chat-panel {
+             opacity: 1;
+             transform: translate(-50%, 0); /* Slide up to final position */
+         }              .modal-overlay.panel-active .modal-content {
+                 width: 85%; height: 48%; /* Slightly less than half */
+                 max-width: 700px; left: 50%; top: 1.5vh; /* Align top */
+                 transform: translate(-50%, 0%); opacity: 1; /* Ensure visible */
+                 transition: width 0.45s ease-in-out, height 0.45s ease-in-out, left 0.45s ease-in-out, top 0.45s ease-in-out, transform 0.45s ease-in-out, opacity 0.35s ease-in-out;
+             }
+             #aiChatPanel, #editCardPanel {
+                 width: 85%; height: 48%; /* Slightly less than half */
+                 max-width: 700px; left: 50%; top: auto; /* Position from bottom */
+                 bottom: 1.5vh; right: auto;
+                 transform: translate(-50%, 50px) scale(0.98); /* Start below and smaller */
+                 opacity: 0;
+             }
+             .modal-overlay.ai-active #aiChatPanel,
+             .modal-overlay.edit-active #editCardPanel {
+                  opacity: 1; transform: translate(-50%, 0) scale(1); /* Slide up */
+             }
+              /* Keep nav/close hidden */
+             .modal-overlay.panel-active .modal-side-nav,
+             .modal-overlay.panel-active .global-modal-close-btn {
+                  opacity: 0; pointer-events: none;
+             } .modal-side-nav.prev { left: 10px; } .modal-side-nav.next { right: 10px; } }
+         @media (max-width: 768px) { /* ... standard adjustments ... */          .modal-overlay.ai-active .modal-content { width: 40%; transform: translateX(-60%); opacity: 0.7; margin-left: 2%;} /* Shrink more */
+             .ai-chat-panel { width: 55%; right: 2%; }
+             .global-modal-close-btn { font-size: 2em; top: 10px; right: 10px;} /* Ensure close is reachable */ .controls-section { flex-direction: column; align-items: stretch; } .bulk-actions-group { justify-content: flex-end; } .modal-footer .action-icon-btn { width: 50px; height: 50px; } .modal-footer .action-icon-btn svg { width: 24px; height: 24px; } .modal-footer .action-icon-btn.ai { width: 58px; height: 58px; } .modal-footer .action-icon-btn.ai svg { width: 30px; height: 30px; } }
+         @media (max-width: 480px) { /* ... small mobile adjustments ... */                               .modal-overlay.ai-active .modal-content { display: none; }
+         .ai-chat-panel { width: 95%; height: 95vh; max-height: none; top: 2.5vh; bottom: 2.5vh; right: 2.5%; left: 2.5%; transform: translateY(30px) scale(0.95); /* Animate from bottom? */ }
+         .modal-overlay.ai-active .ai-chat-panel { transform: translateY(0) scale(1); }
+         .modal-overlay.panel-active .modal-content {
+                 display: none; /* Hide modal completely */
+             }
+             #aiChatPanel, #editCardPanel {
+                 width: 96%; height: 96vh;
+                 max-height: none; max-width: none;
+                 top: 2vh; bottom: 2vh; left: 2%; right: 2%;
+                 transform: translateY(50px) scale(0.95); /* Animate from bottom */
+                 opacity: 0;
+             }
+              .modal-overlay.ai-active #aiChatPanel,
+              .modal-overlay.edit-active #editCardPanel {
+                 opacity: 1; transform: translateY(0) scale(1);
+              }  .global-modal-close-btn { color: var(--text-primary); opacity: 0.9; /* Make sure close is visible */ } .study-button-container { flex-direction: column; } .bulk-actions-group { width: 100%; justify-content: center; margin-top: 10px; } .select-cards-toggle-btn { flex-grow: 1; text-align: center;} .modal-footer .action-icon-btn { width: 48px; height: 48px; } .modal-footer .action-icon-btn svg { width: 22px; height: 22px; } .modal-footer .action-icon-btn.ai { width: 56px; height: 56px; } .modal-footer .action-icon-btn.ai svg { width: 28px; height: 28px; } }
+
+    </style>
+</head>
+<body>
+    <!-- Main Page Content (Unchanged) -->
+    <div class="chapter-details-container" id="mainContent">
+        <!-- ... Header, Analytics, Filters, Grid ... -->
+        <div class="chapter-header">
+            <div class="chapter-title-section">
+                 <div class="breadcrumbs">
+                     <a href="index.html">Mathematics</a>
+                     <span class="breadcrumb-separator">/</span>
+                     <span class="breadcrumb-chapter-name">Calculus I</span>
+                 </div>
+                 <!-- REMOVED H1 -->
+            </div>
+            <!-- Study Button Moved Out -->
+        </div>
+        <!-- Analytics & Graph -->
+        <div class="stats-graph-section">
+             <div class="section-container chapter-analytics-section">
+                <h2 class="section-title">Chapter Analytics</h2>
+                <div class="chapter-analytics">
+                    <!-- Modified Mastery Progress Layout -->
+                    <div class="analytics-item">
+                        <label>Mastery Progress</label>
+                        <div class="mastery-progress-item">
+                             <span class="value">0%</span>
+                             <progress max="100" value="0"></progress>
+                         </div>
+                    </div>
+                     <!-- Modified Card Status Layout -->
+                    <div class="analytics-item">
+                        <label>Card Status</label>
+                         <div class="card-status-container">
+                             <!-- Existing -->
+                             <div class="card-stat-box"> <span class="stat-value" id="statTotalCards">-</span> <span class="stat-label">Total</span> </div>
+                             <div class="card-stat-box"> <span class="stat-value" id="statDueCards">-</span> <span class="stat-label">Due</span> </div>
+                             <!-- Added -->
+                             <div class="card-stat-box"> <span class="stat-value" id="statLearningCards">-</span> <span class="stat-label">Learning</span> </div>
+                             <div class="card-stat-box"> <span class="stat-value" id="statMasteredCards">-</span> <span class="stat-label">Mastered</span> </div>
+                             <!-- Add 'New' if API provides it reliably, or calculate Total - (Due+Learning+Mastered+Buried) -->
+                             <!-- <div class="card-stat-box"> <span class="stat-value" id="statNewCards">-</span> <span class="stat-label">New</span> </div> -->
+                         </div>
+                     </div>
+                </div>
+            </div>
+             <div class="section-container timeline-graph-section">
+                 <h2 class="section-title">Due Cards Timeline</h2>
+                 <div class="timeline-graph-placeholder" id="timelineGraphDiv"> <!-- Added ID for potential canvas replacement -->
+                     (Graph Area)
+                 </div>
+            </div>
+        </div>
+
+        <!-- Study Buttons (Moved & Added) -->
+        <div class="study-button-container">
+            <button class="study-now-button" id="studyDueBtn">Study Due Cards</button> <!-- Renamed ID -->
+            <button class="icon-button study-all-button" id="studyAllBtn" aria-label="Study All Cards" title="Study All Cards">
+                <!-- Cards stack SVG icon -->
+                <svg width="100" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                  
+                    <!-- Card 4 (Deepest in the stack) -->
+                    <!-- Further offset (x=8, y=2), increased negative rotation -->
+                    <rect 
+                      x="8" y="2" 
+                      width="20" height="24" 
+                      rx="3" ry="3" 
+                      fill="none" 
+                      stroke="white" 
+                      stroke-width="1.5" 
+                      transform="rotate(-12 18 14)" /> 
+                      <!-- Rotation center: x=8 + width/2=18, y=2 + height/2=14 -->
+                  
+                    <!-- Card 3 -->
+                    <!-- Original "Back Card", now the third from front -->
+                    <!-- Position (x=6, y=4), standard negative rotation -->
+                     <rect 
+                      x="6" y="4" 
+                      width="20" height="24" 
+                      rx="3" ry="3" 
+                      fill="none" 
+                      stroke="white" 
+                      stroke-width="1.5" 
+                      transform="rotate(-6 16 16)" /> 
+                      <!-- Rotation center: x=6 + width/2=16, y=4 + height/2=16 -->
+                  
+                    <!-- Card 2 & Text '1' Group (Front Card Group) -->
+                    <!-- Rotated slightly positive -->
+                    <g transform="rotate(4 13 13)"> 
+                       <!-- Rotation center: x=4 + width/2=13, y=2 + height/2=13 -->
+                  
+                      <!-- Card 2 Outline (Front Card Outline) -->
+                      <rect 
+                        x="4" y="2" 
+                        width="18" height="22" 
+                        rx="3" ry="3" 
+                        fill="none" 
+                        stroke="white" 
+                        stroke-width="1.5" />
+                  
+                  
+                    </g>
+                  </svg>
+            </button>
+        </div>
+                <!-- Controls: Filters & Bulk Actions (New Structure) -->
+                <div class="controls-section">
+                    <div class="filter-buttons-group">
+                         <button class="filter-btn active" data-filter="all">All Cards</button>
+                         <button class="filter-btn" data-filter="due">Due</button>
+                         <button class="filter-btn" data-filter="learning">Learning</button>
+                         <button class="filter-btn" data-filter="mastered">Mastered</button>
+                         <button class="filter-btn" data-filter="starred">Starred</button>
+                         <button class="filter-btn" data-filter="buried" id="buriedFilterBtn">Buried</button> <!-- New Filter -->
+                    </div>
+                    <div class="bulk-actions-group" id="bulkActionsGroup">
+                         <!-- Bulk action buttons (hidden initially by CSS) -->
+                         <button class="bulk-action-btn star" id="bulkStarBtn" title="Star Selected">
+                             <svg class="icon-star-outline" fill="#ffffff" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 36.09 36.09" xml:space="preserve" stroke="#ffffff" stroke-width="0.00036090000000000004"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <path d="M36.042,13.909c-0.123-0.377-0.456-0.646-0.85-0.688l-11.549-1.172L18.96,1.43c-0.16-0.36-0.519-0.596-0.915-0.596 s-0.755,0.234-0.915,0.598L12.446,12.05L0.899,13.221c-0.394,0.04-0.728,0.312-0.85,0.688c-0.123,0.377-0.011,0.791,0.285,1.055 l8.652,7.738L6.533,34.045c-0.083,0.387,0.069,0.787,0.39,1.02c0.175,0.127,0.381,0.191,0.588,0.191 c0.173,0,0.347-0.045,0.503-0.137l10.032-5.84l10.03,5.84c0.342,0.197,0.77,0.178,1.091-0.059c0.32-0.229,0.474-0.633,0.391-1.02 l-2.453-11.344l8.653-7.737C36.052,14.699,36.165,14.285,36.042,13.909z M25.336,21.598c-0.268,0.24-0.387,0.605-0.311,0.957 l2.097,9.695l-8.574-4.99c-0.311-0.182-0.695-0.182-1.006,0l-8.576,4.99l2.097-9.695c0.076-0.352-0.043-0.717-0.311-0.957 l-7.396-6.613l9.87-1.002c0.358-0.035,0.668-0.264,0.814-0.592l4.004-9.077l4.003,9.077c0.146,0.328,0.456,0.557,0.814,0.592 l9.87,1.002L25.336,21.598z"></path> </g> </g></svg>
+                        </button>
+                        <!-- Inside Bulk Actions Group -->
+                        <!-- Inside Bulk Actions Group -->
+<button class="bulk-action-btn bury" id="bulkBuryBtn" title="Toggle Bury Selected">
+    <!-- Bury Icon -->
+    <svg class="icon-bury" viewBox="0 0 24.00 24.00" fill="currentColor" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="0.00024">
+        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+        <g id="SVGRepo_iconCarrier"> 
+            <path d="M21.9445 14.4719L21.9661 14.5336L21.9892 14.6345L21.9981 14.7331V21.25C21.9981 21.6297 21.7159 21.9435 21.3499 21.9932L21.2481 22H2.75C2.3703 22 2.05651 21.7178 2.00685 21.3518L2 21.25V14.7506L2.00184 14.6977L2.01271 14.6122C2.02285 14.5584 2.03841 14.5072 2.05894 14.4587L4.81824 8.44003C4.92517 8.2068 5.14245 8.04682 5.39153 8.01047L5.5 8.0026L8.03982 8.00183L7.25089 9.37206L7.18282 9.50183L5.981 9.502L3.918 13.9998H20.07L18.0428 9.65383L18.9052 8.15653C18.9718 8.20739 19.0301 8.26957 19.0771 8.3411L19.1297 8.43553L21.9445 14.4719ZM13.3652 2.05565L13.4566 2.10062L18.6447 5.10375C18.9729 5.29371 19.1033 5.69521 18.9636 6.03728L18.9187 6.1289L16.112 11.001L17.25 11.0016C17.6642 11.0016 18 11.3374 18 11.7516C18 12.1313 17.7178 12.4451 17.3518 12.4948L17.25 12.5016L15.248 12.501L15.2471 12.504H11.1691L11.166 12.501L6.75 12.5016C6.33579 12.5016 6 12.1658 6 11.7516C6 11.3719 6.28215 11.0581 6.64823 11.0085L6.75 11.0016L8.573 11.001L8.39145 10.8963C8.06327 10.7063 7.93285 10.3048 8.0726 9.96272L8.11747 9.8711L12.4341 2.37536C12.6235 2.04633 13.024 1.91557 13.3652 2.05565ZM13.3559 3.77529L9.78781 9.97119L11.566 11.001H14.383L17.248 6.02818L13.3559 3.77529Z" fill="currentColor"></path> 
+        </g>
+    </svg>
+                <!-- Unbury Icon -->
+                <svg class="icon-unbury" viewBox="0 0 24.00 24.00" fill="currentColor" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="0.00024">
+                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                <g id="SVGRepo_iconCarrier">
+                    <path d="M21.9445 14.4719 L21.9661 14.5336 L21.9892 14.6345 L21.9981 14.7331 V 21.25 C 21.9981 21.6297 21.7159 21.9435 21.3499 21.9932 L 21.2481 22 H 2.75 C 2.3703 22 2.05651 21.7178 2.00685 21.3518 L 2 21.25 V 14.7506 L 2.00184 14.6977 L 2.01271 14.6122 C 2.02285 14.5584 2.03841 14.5072 2.05894 14.4587 L 4.81824 8.44003 C 4.92517 8.2068 5.14245 8.04682 5.39153 8.01047 L 5.5 8.0026 L 18.9 8.0026 L 19.1297 8.43553 L 21.9445 14.4719 Z M13.3652 -0.94435 L 13.4566 -0.89938 L 18.6447 2.10375 C 18.9729 2.29371 19.1033 2.69521 18.9636 3.03728 L 18.9187 3.1289 L 16.112 8.001 L 8.573 8.001 L 8.39145 7.8963 C 8.06327 7.7063 7.93285 7.3048 8.0726 6.96272 L 8.11747 6.8711 L 12.4341 -0.62464 C 12.6235 -0.95367 13.024 -1.08443 13.3652 -0.94435 Z M13.3559 0.77529 L 9.78781 6.97119 L 11.566 8.001 H 14.383 L 17.248 3.02818 L 13.3559 0.77529 Z" fill="currentColor"></path>
+                </g>
+                </svg>
+                </button>
+                          <button class="bulk-action-btn delete" id="bulkDeleteBtn" title="Delete Selected">
+                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"></path></svg>
+                         </button>
+                         <!-- Select Toggle Button -->
+                         <button class="select-cards-toggle-btn" id="selectCardsToggleBtn">Select Cards</button>
+                    </div>
+                </div>
+         <div class="card-grid" id="cardGrid"> <p>Loading cards...</p> </div>
+    </div>
+
+    <!-- =============================== -->
+    <!-- MODAL V8 MARKUP STARTS HERE     -->
+    <!-- =============================== -->
+
+    <!-- Global Close Button -->
+    <button class="global-modal-close-btn" id="modalCloseBtn" title="Close (Esc)" aria-label="Close" style="display: none;">×</button>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="flashcardPreviewModal">
+        <!-- AI Chat Panel (Existing) -->
+        <div class="ai-chat-panel" id="aiChatPanel"> AI Chat Panel Placeholder </div>
+
+        <!-- *** NEW: Edit Card Panel *** -->
+        <div id="editCardPanel" class="edit-card-panel">
+            <div class="panel-header">Edit Flashcard</div>
+            <div class="panel-body">
+                <div class="edit-form-group">
+                    <label for="editNameInput">Name</label>
+                    <input type="text" id="editNameInput">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editChapterInput">Chapter</label>
+                    <input type="text" id="editChapterInput">
+                    <!-- Consider replacing with a <select> if chapters are easily fetchable -->
+                </div>
+                <div class="edit-form-group">
+                    <label for="editBriefTextarea">Brief Explanation</label>
+                    <textarea id="editBriefTextarea"></textarea>
+                </div>
+                <div class="edit-form-group">
+                    <label for="editDetailedTextarea">Detailed Explanation</label>
+                    <textarea id="editDetailedTextarea"></textarea>
+                </div>
+            </div>
+            <div class="panel-footer">
+                <button class="panel-button secondary" id="editCancelBtn">Cancel</button>
+                <button class="panel-button primary" id="editSaveBtn">Save Changes</button>
+            </div>
+        </div>
+        <!-- *** End Edit Card Panel *** -->
+
+        <!-- Main Modal Content -->
+        <div class="modal-content" role="dialog" aria-labelledby="modalTheoremName" aria-modal="true">
+
+             <!-- Modal Header: Title -->
+             <div class="modal-header">
+                <h2 class="modal-theorem-name" id="modalTheoremName">Theorem Name</h2>
+                <!-- Pills moved out -->
+            </div>
+
+             <!-- Modal Body: Explanations + Toggle Button -->
+             <div class="modal-body">
+                <div class="modal-explanation modal-brief-explanation" id="modalBriefExplanation">Brief explanation...</div>
+                <!-- ** NEW Separator Element ** -->
+                <hr class="detail-separator" id="modalDetailSeparator" style="display: none;" />
+                <div class="modal-explanation modal-detailed-explanation" id="modalDetailedExplanation">Detailed explanation...</div>
+                <button class="modal-toggle-detail-btn" id="modalToggleBtn">Show Detailed<span class="keyboard-hint">(D)</span></button>
+           </div>
+
+            <!-- ** NEW ** Pills Section Above Footer -->
+            <div class="modal-pills-section">
+                <span class="status-pill" id="modalNextReviewPill" data-pill-type="next-review"></span>
+                <span class="status-pill" id="modalCardStatusPill" data-pill-type="card-status"></span>
+                <span class="status-pill" id="modalLastReviewPill" data-pill-type="last-review"></span>
+                <span class="status-pill" id="modalMasteryLevelPill" data-pill-type="mastery-level"></span>
+            </div>
+
+            <!-- Modal Footer: Action Buttons -->
+            <div class="modal-footer">
+                 <!-- NEW ORDER & BUTTONS -->
+                 <button class="action-icon-btn bury" id="modalBuryBtn" title="Bury Card" aria-label="Bury Card">
+                    <!-- Bury Icon (visible by default) -->
+                <svg class="icon-bury" viewBox="0 0 24.00 24.00" fill="currentColor" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="0.00024">
+                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                    <g id="SVGRepo_iconCarrier"> 
+                        <path d="M21.9445 14.4719L21.9661 14.5336L21.9892 14.6345L21.9981 14.7331V21.25C21.9981 21.6297 21.7159 21.9435 21.3499 21.9932L21.2481 22H2.75C2.3703 22 2.05651 21.7178 2.00685 21.3518L2 21.25V14.7506L2.00184 14.6977L2.01271 14.6122C2.02285 14.5584 2.03841 14.5072 2.05894 14.4587L4.81824 8.44003C4.92517 8.2068 5.14245 8.04682 5.39153 8.01047L5.5 8.0026L8.03982 8.00183L7.25089 9.37206L7.18282 9.50183L5.981 9.502L3.918 13.9998H20.07L18.0428 9.65383L18.9052 8.15653C18.9718 8.20739 19.0301 8.26957 19.0771 8.3411L19.1297 8.43553L21.9445 14.4719ZM13.3652 2.05565L13.4566 2.10062L18.6447 5.10375C18.9729 5.29371 19.1033 5.69521 18.9636 6.03728L18.9187 6.1289L16.112 11.001L17.25 11.0016C17.6642 11.0016 18 11.3374 18 11.7516C18 12.1313 17.7178 12.4451 17.3518 12.4948L17.25 12.5016L15.248 12.501L15.2471 12.504H11.1691L11.166 12.501L6.75 12.5016C6.33579 12.5016 6 12.1658 6 11.7516C6 11.3719 6.28215 11.0581 6.64823 11.0085L6.75 11.0016L8.573 11.001L8.39145 10.8963C8.06327 10.7063 7.93285 10.3048 8.0726 9.96272L8.11747 9.8711L12.4341 2.37536C12.6235 2.04633 13.024 1.91557 13.3652 2.05565ZM13.3559 3.77529L9.78781 9.97119L11.566 11.001H14.383L17.248 6.02818L13.3559 3.77529Z" fill="currentColor"></path> 
+                    </g>
+                </svg>
+
+                <!-- Unbury Icon (hidden by default) -->
+                <svg class="icon-unbury" viewBox="0 0 24.00 24.00" fill="currentColor" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="0.00024">
+                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                    <g id="SVGRepo_iconCarrier">
+                        <path d="M21.9445 14.4719 L21.9661 14.5336 L21.9892 14.6345 L21.9981 14.7331 V 21.25 C 21.9981 21.6297 21.7159 21.9435 21.3499 21.9932 L 21.2481 22 H 2.75 C 2.3703 22 2.05651 21.7178 2.00685 21.3518 L 2 21.25 V 14.7506 L 2.00184 14.6977 L 2.01271 14.6122 C 2.02285 14.5584 2.03841 14.5072 2.05894 14.4587 L 4.81824 8.44003 C 4.92517 8.2068 5.14245 8.04682 5.39153 8.01047 L 5.5 8.0026 L 18.9 8.0026 L 19.1297 8.43553 L 21.9445 14.4719 Z M13.3652 -0.94435 L 13.4566 -0.89938 L 18.6447 2.10375 C 18.9729 2.29371 19.1033 2.69521 18.9636 3.03728 L 18.9187 3.1289 L 16.112 8.001 L 8.573 8.001 L 8.39145 7.8963 C 8.06327 7.7063 7.93285 7.3048 8.0726 6.96272 L 8.11747 6.8711 L 12.4341 -0.62464 C 12.6235 -0.95367 13.024 -1.08443 13.3652 -0.94435 Z M13.3559 0.77529 L 9.78781 6.97119 L 11.566 8.001 H 14.383 L 17.248 3.02818 L 13.3559 0.77529 Z" fill="currentColor"></path>
+                    </g>
+                </svg>
+                </button>
+                 <button class="action-icon-btn star" id="modalStarBtn" title="Star Card" aria-label="Star Card">
+                     <svg class="icon-star-outline" fill="#ffffff" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 36.09 36.09" xml:space="preserve" stroke="#ffffff" stroke-width="0.00036090000000000004"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <path d="M36.042,13.909c-0.123-0.377-0.456-0.646-0.85-0.688l-11.549-1.172L18.96,1.43c-0.16-0.36-0.519-0.596-0.915-0.596 s-0.755,0.234-0.915,0.598L12.446,12.05L0.899,13.221c-0.394,0.04-0.728,0.312-0.85,0.688c-0.123,0.377-0.011,0.791,0.285,1.055 l8.652,7.738L6.533,34.045c-0.083,0.387,0.069,0.787,0.39,1.02c0.175,0.127,0.381,0.191,0.588,0.191 c0.173,0,0.347-0.045,0.503-0.137l10.032-5.84l10.03,5.84c0.342,0.197,0.77,0.178,1.091-0.059c0.32-0.229,0.474-0.633,0.391-1.02 l-2.453-11.344l8.653-7.737C36.052,14.699,36.165,14.285,36.042,13.909z M25.336,21.598c-0.268,0.24-0.387,0.605-0.311,0.957 l2.097,9.695l-8.574-4.99c-0.311-0.182-0.695-0.182-1.006,0l-8.576,4.99l2.097-9.695c0.076-0.352-0.043-0.717-0.311-0.957 l-7.396-6.613l9.87-1.002c0.358-0.035,0.668-0.264,0.814-0.592l4.004-9.077l4.003,9.077c0.146,0.328,0.456,0.557,0.814,0.592 l9.87,1.002L25.336,21.598z"></path> </g> </g></svg>
+                     <svg class="icon-star-filled" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#f0ad4e"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M21.12 9.88005C21.0781 9.74719 20.9996 9.62884 20.8935 9.53862C20.7873 9.4484 20.6579 9.38997 20.52 9.37005L15.1 8.58005L12.67 3.67005C12.6008 3.55403 12.5027 3.45795 12.3853 3.39123C12.2678 3.32451 12.1351 3.28943 12 3.28943C11.8649 3.28943 11.7322 3.32451 11.6147 3.39123C11.4973 3.45795 11.3991 3.55403 11.33 3.67005L8.89999 8.58005L3.47999 9.37005C3.34211 9.38997 3.21266 9.4484 3.10652 9.53862C3.00038 9.62884 2.92186 9.74719 2.87999 9.88005C2.83529 10.0124 2.82846 10.1547 2.86027 10.2907C2.89207 10.4268 2.96124 10.5512 3.05999 10.6501L6.99999 14.4701L6.06999 19.8701C6.04642 20.0091 6.06199 20.1519 6.11497 20.2826C6.16796 20.4133 6.25625 20.5267 6.36999 20.6101C6.48391 20.6912 6.61825 20.7389 6.75785 20.7478C6.89746 20.7566 7.03675 20.7262 7.15999 20.6601L12 18.1101L16.85 20.6601C16.9573 20.7189 17.0776 20.7499 17.2 20.7501C17.3573 20.7482 17.5105 20.6995 17.64 20.6101C17.7537 20.5267 17.842 20.4133 17.895 20.2826C17.948 20.1519 17.9636 20.0091 17.94 19.8701L17 14.4701L20.93 10.6501C21.0305 10.5523 21.1015 10.4283 21.1351 10.2922C21.1687 10.1561 21.1634 10.0133 21.12 9.88005Z" fill="#f0ad4e"></path> </g></svg>
+                 </button>
+                 <button class="action-icon-btn ai" id="modalAIBtn" title="Ask AI" aria-label="Ask AI">
+                      <!-- Placeholder AI Icon -->
+                      <svg fill="#ffffff" height="200px" width="200px" version="1.1" id="Icons" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <path d="M12,17c0.8-4.2,1.9-5.3,6.1-6.1c0.5-0.1,0.8-0.5,0.8-1s-0.3-0.9-0.8-1C13.9,8.1,12.8,7,12,2.8C11.9,2.3,11.5,2,11,2 c-0.5,0-0.9,0.3-1,0.8C9.2,7,8.1,8.1,3.9,8.9C3.5,9,3.1,9.4,3.1,9.9s0.3,0.9,0.8,1c4.2,0.8,5.3,1.9,6.1,6.1c0.1,0.5,0.5,0.8,1,0.8 S11.9,17.4,12,17z"></path> <path d="M22,24c-2.8-0.6-3.4-1.2-4-4c-0.1-0.5-0.5-0.8-1-0.8s-0.9,0.3-1,0.8c-0.6,2.8-1.2,3.4-4,4c-0.5,0.1-0.8,0.5-0.8,1 s0.3,0.9,0.8,1c2.8,0.6,3.4,1.2,4,4c0.1,0.5,0.5,0.8,1,0.8s0.9-0.3,1-0.8c0.6-2.8,1.2-3.4,4-4c0.5-0.1,0.8-0.5,0.8-1 S22.4,24.1,22,24z"></path> <path d="M29.2,14c-2.2-0.4-2.7-0.9-3.1-3.1c-0.1-0.5-0.5-0.8-1-0.8c-0.5,0-0.9,0.3-1,0.8c-0.4,2.2-0.9,2.7-3.1,3.1 c-0.5,0.1-0.8,0.5-0.8,1s0.3,0.9,0.8,1c2.2,0.4,2.7,0.9,3.1,3.1c0.1,0.5,0.5,0.8,1,0.8c0.5,0,0.9-0.3,1-0.8 c0.4-2.2,0.9-2.7,3.1-3.1c0.5-0.1,0.8-0.5,0.8-1S29.7,14.1,29.2,14z"></path> <path d="M5.7,22.3C5.4,22,5,21.9,4.6,22.1c-0.1,0-0.2,0.1-0.3,0.2c-0.1,0.1-0.2,0.2-0.2,0.3C4,22.7,4,22.9,4,23s0,0.3,0.1,0.4 c0.1,0.1,0.1,0.2,0.2,0.3c0.1,0.1,0.2,0.2,0.3,0.2C4.7,24,4.9,24,5,24c0.1,0,0.3,0,0.4-0.1s0.2-0.1,0.3-0.2 c0.1-0.1,0.2-0.2,0.2-0.3C6,23.3,6,23.1,6,23s0-0.3-0.1-0.4C5.9,22.5,5.8,22.4,5.7,22.3z"></path> <path d="M28,7c0.3,0,0.5-0.1,0.7-0.3C28.9,6.5,29,6.3,29,6s-0.1-0.5-0.3-0.7c-0.1-0.1-0.2-0.2-0.3-0.2c-0.2-0.1-0.5-0.1-0.8,0 c-0.1,0-0.2,0.1-0.3,0.2C27.1,5.5,27,5.7,27,6c0,0.3,0.1,0.5,0.3,0.7C27.5,6.9,27.7,7,28,7z"></path> </g> </g></svg>
+                      <!-- <svg> AI Icon SVG </svg> -->
+                 </button>
+                 <button class="action-icon-btn delete" id="modalDeleteBtn" title="Delete Card" aria-label="Delete Card">
+                      <!-- Placeholder Delete Icon -->
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"></path></svg>
+                      <!-- <svg> Delete Icon SVG </svg> -->
+                 </button>
+                 <button class="action-icon-btn edit" id="modalEditBtn" title="Edit Card" aria-label="Edit Card">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path></svg>
+                 </button>
+            </div>
+
+        </div> <!-- End modal-content -->
+    </div> <!-- End modal-overlay -->
+
+     <!-- Side Navigation Arrows -->
+     <button class="modal-side-nav prev" id="modalPrevBtn" title="Previous Card (←)" aria-label="Previous Card" disabled></button>
+     <button class="modal-side-nav next" id="modalNextBtn" title="Next Card (→)" aria-label="Next Card" disabled>></button>
+
+    <!-- =============================== -->
+    <!-- MODAL V6 MARKUP ENDS HERE       -->
+    <!-- =============================== -->
+
+
+    <script type="module" src="./js/views/chapterDetailsView.js"></script>
+
+</body>
+</html>
