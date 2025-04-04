@@ -97,11 +97,11 @@
 
         /* Active Icon State */
         .material-tab.active {
-            opacity: 1; /* Slightly more opaque when active */
+            opacity: 0.9; /* Slightly more opaque when active */
             transform: translateY(0) scale(1); /* Positioned normally, centered */
             pointer-events: auto;
             z-index: 10;
-            background-color: rgba(60, 78, 110, 0.95); /* Darker active */
+            background-color: rgba(60, 78, 110, 0.055); /* Darker active */
             border-color: var(--accent-blue); /* Keep accent border */
             color: var(--text-primary); /* Keep icon light by default */
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -744,7 +744,41 @@
 
             <!-- Add the new icon button -->
             <button class="icon-button select-chapters-button" id="selectChaptersButton" aria-label="Select Chapters for Focused Study" title="Select Chapters for Focused Study">
-                <img src="icons/chap-selection.png" alt="" width="32" height="32" aria-hidden="true">
+                <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                    <title>Icon representing a deck of taller flashcards, showing one</title>
+                  
+                    <!-- Back Card (rotated slightly more, taller) -->
+                    <!-- Increased height to 24, adjusted y to 4 to maintain vertical center -->
+                    <rect 
+                      x="6" y="4" 
+                      width="20" height="24" 
+                      rx="3" ry="3" 
+                      fill="none" 
+                      stroke="white" 
+                      stroke-width="1.5" 
+                      transform="rotate(-6 16 16)" /> 
+                      <!-- Rotation center (16, 16) is still the geometric center: x=6 + width/2=16, y=4 + height/2=16 -->
+                  
+                    <!-- Front Card Group (rotated slightly less) -->
+                    <!-- Rotation center (13, 13) needs to be correct for the group -->
+                    <g transform="rotate(4 13 13)"> 
+                       <!-- Rotation center for the group (13, 13) is still the geometric center of the front card's original position: x=4 + width/2=13, y=2 + height/2=13 -->
+                  
+                      <!-- Front Card Outline (taller) -->
+                      <!-- Increased height to 22, adjusted y to 2 to maintain vertical center -->
+                      <rect 
+                        x="4" y="2" 
+                        width="18" height="22" 
+                        rx="3" ry="3" 
+                        fill="none" 
+                        stroke="white" 
+                        stroke-width="1.5" />
+                  
+                      <!-- Number '1' -->
+                      <!-- Adjusted y position to 13 to be vertically centered in the taller card (y=2 + height/2=13) -->
+                  
+                    </g>
+                  </svg>
             </button>
         </div>
 

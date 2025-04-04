@@ -37,6 +37,25 @@
              --skip-glow-color: rgba(100, 110, 130, 0.6); /* Greyish (example) */
              --bury-glow-color: rgba(92, 184, 92, 0.6); /* Green (example) */
 
+
+                --btn-again: linear-gradient(145deg, #ab2718ec, #5f170fee);
+                --btn-hard: linear-gradient(145deg, #af761bec, #6c5e0dec);
+                --btn-good: linear-gradient(145deg, #1d75b0e8, #0f466aeb);
+                --btn-easy: linear-gradient(145deg, #1ba036ed, #0f6525ed);
+                
+                /* Modern box-shadows with color matching */
+                /* Improved shadows with color matching */
+                --shadow-again: 0 4px 15px rgba(217, 83, 79, 0.3);
+                --shadow-hard: 0 4px 15px rgba(240, 173, 78, 0.3);
+                --shadow-good: 0 4px 15px rgba(52, 152, 219, 0.3);
+                --shadow-easy: 0 4px 15px rgba(46, 204, 113, 0.3);
+                
+        /* Enhanced hover shadows */
+        --shadow-again-hover: 0 6px 20px rgba(217, 83, 79, 0.45);
+        --shadow-hard-hover: 0 6px 20px rgba(240, 173, 78, 0.45);
+        --shadow-good-hover: 0 6px 20px rgba(52, 152, 219, 0.45);
+        --shadow-easy-hover: 0 6px 20px rgba(46, 204, 113, 0.45);
+
              --ai-panel-width: 50%; /* Width of the AI panel relative to study area */
              --card-reduced-width-factor: 0.6; /* Card becomes 60% of original width */
              --pill-height-approx: 5rem; /* Estimated pill height + top space in rem */
@@ -992,43 +1011,95 @@ body.edit-panel-active .edit-panel {
     transition-delay: 0.3s, 0.3s, 0s;
 }
 
-        .quality-btn {
-            background: linear-gradient(145deg, var(--secondary-bg), var(--tertiary-bg));
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            padding: 0.8rem 1.2rem; /* Use rem */
-            border-radius: 0.7rem; /* Use rem */
-            cursor: pointer;
-            font-size: 1rem; /* Use rem */
-            font-weight: 500;
-            min-width: 7rem; /* Use rem */
-            text-align: center;
-            transition: all 0.25s ease;
-            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.35); /* Enhanced shadow */
-        }
-        /* Specific colors */
-        .quality-btn[data-quality="0"] { background: var(--accent-red); color: #fff;}
-        .quality-btn[data-quality="1"] { background: var(--accent-yellow); color: #1a1a2e; }
-        .quality-btn[data-quality="2"] { background: var(--accent-blue); color: #1a1a2e; }
-        .quality-btn[data-quality="3"] { background: var(--accent-green); color: #fff; }
+.quality-btn {
+    background: linear-gradient(145deg, var(--secondary-bg), var(--tertiary-bg));
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.8rem 1.2rem; /* Use rem */
+    border-radius: 1rem; /* Use rem */
+    cursor: pointer;
+    font-size: 1rem; /* Use rem */
+    font-weight: 600;
+    min-width: 7rem; /* Use rem */
+    text-align: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* Use smoother bezier curve */
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2); /* Enhanced shadow */
+    position: relative;
+    overflow: hidden; /* For potential effects */
+}
+/* Apply updated gradient backgrounds with matching borders */
+.quality-btn[data-quality="0"] { 
+background: var(--btn-again); 
+color: #fff;
+box-shadow: var(--shadow-again);
+border: 1px solid rgba(217, 83, 79, 0.4); 
+}
+.quality-btn[data-quality="1"] { 
+background: var(--btn-hard); 
+color: #fff;
+box-shadow: var(--shadow-hard);
+border: 1px solid rgba(240, 173, 78, 0.4);
+}
+.quality-btn[data-quality="2"] { 
+background: var(--btn-good); 
+color: #fff;
+box-shadow: var(--shadow-good);
+border: 1px solid rgba(52, 152, 219, 0.4);
+}
+.quality-btn[data-quality="3"] { 
+background: var(--btn-easy); 
+color: #fff;
+box-shadow: var(--shadow-easy);
+border: 1px solid rgba(46, 204, 113, 0.4);
+}
 
-        .quality-btn:hover:not(:disabled) {
-            border-color: var(--accent-blue);
-            color: white;
-            transform: translateY(-5px) scale(1.05); /* More hover lift */
-            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
-        }
-        /* Add subtle glow on hover for good/easy */
-         .quality-btn[data-quality="2"]:hover:not(:disabled) {
-             box-shadow: 0 0 10px var(--quality-btn-good-glow), 0 0 18px var(--quality-btn-good-glow), 0 8px 18px rgba(0, 0, 0, 0.45);
-         }
-         .quality-btn[data-quality="3"]:hover:not(:disabled) {
-             box-shadow: 0 0 10px var(--quality-btn-easy-glow), 0 0 18px var(--quality-btn-easy-glow), 0 8px 18px rgba(0, 0, 0, 0.45);
-         }
+/* Refined hover effects */
+.quality-btn:hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.02); /* Subtler lift */
+    color: white;
+}
 
-         .quality-btn .key-hint { display: block; font-size: 0.75rem; color: rgba(255,255,255,0.7); margin-top: 0.3rem; }
-        .quality-btn[data-quality="1"] .key-hint,
-        .quality-btn[data-quality="2"] .key-hint { color: rgba(26, 26, 46, 0.7); }
+/* Button-specific hover effects */
+.quality-btn[data-quality="0"]:hover:not(:disabled) {
+    box-shadow: var(--shadow-again-hover);
+}
+.quality-btn[data-quality="1"]:hover:not(:disabled) {
+    box-shadow: var(--shadow-hard-hover);
+}
+.quality-btn[data-quality="2"]:hover:not(:disabled) {
+    box-shadow: var(--shadow-good-hover);
+}
+.quality-btn[data-quality="3"]:hover:not(:disabled) {
+    box-shadow: var(--shadow-easy-hover);
+}
+
+        /* Optional: Add subtle pulse effect on hover */
+.quality-btn:hover:not(:disabled)::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 150%;
+    height: 150%;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    animation: pulse 0.8s ease-out;
+}
+
+@keyframes pulse {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+
+/* Fix text color on all buttons */
+.quality-btn .key-hint { 
+    display: block; 
+    font-size: 0.75rem; 
+    color: rgba(255, 255, 255, 0.8); /* Make ALL key hints white with slight transparency */
+    margin-top: 0.3rem; 
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); /* Add subtle text shadow for better readability */
+}
 
                 /* Select pill based on class on body/study-area */
         body.ai-panel-active .session-pill, /* If class is on body */
@@ -1095,13 +1166,13 @@ body.edit-panel-active .edit-panel {
     text-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
-/* --- Completion Stats --- */
+/* === Enhanced Completion Stats Grid === */
 .completion-stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Responsive columns */
+    grid-template-columns: repeat(3, 1fr);
     gap: 2rem;
     width: 100%;
-    max-width: 500px; /* Max width for stats grid */
+    max-width: 650px;
     margin: 0 auto;
 }
 
@@ -1109,55 +1180,205 @@ body.edit-panel-active .edit-panel {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 1rem;
+    background: linear-gradient(145deg, rgba(44, 58, 86, 0.3), rgba(31, 42, 64, 0.05));
+    border-radius: 25px;
+    border: 1px solid rgba(74, 90, 126, 0.6);
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    min-height: 175px; /* Ensure consistent height */
+}
+
+/* Hover effects */
+.stat-item:hover {
+    transform: translateY(-5px);
+    border-color: var(--hover-border-color);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.stat-item:hover::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.12), transparent 70%);
+    pointer-events: none;
+}
+
+/* Icon container styling */
+.stat-icon {
+    width: 3rem;
+    height: 3rem;
+    display: flex;
     justify-content: center;
-    padding: 1rem;
-    background-color: rgba(31, 42, 64, 0.7); /* Semi-transparent background */
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    position: relative; /* For potential absolute elements like circle */
-}
-
-.stat-value {
-    font-size: 2rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    line-height: 1;
-}
-
-.stat-label {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
+    align-items: center;
+    margin-bottom: 1.2rem;
+    transition: transform 0.3s ease, color 0.3s ease;
+    position: relative;
+    /* Ensure consistent vertical positioning */
     margin-top: 0.5rem;
 }
 
-/* Accuracy Circle Styling (Example) */
-.stat-accuracy {
-    position: relative;
+.stat-icon svg {
+    width: 2.4rem; /* More consistent icon size */
+    height: 2.4rem;
+    fill: currentColor;
+    /* Center icons perfectly */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
+
+/* Type-specific icon colors */
+.stat-cards .stat-icon { color: var(--accent-purple); }
+.stat-time .stat-icon { color: var(--accent-red); }
+.stat-accuracy .stat-icon { color: var(--accent-green); }
+
+/* Type-specific hover glows */
+.stat-cards:hover::after {
+    background: radial-gradient(circle at center, rgba(150, 91, 222, 0.12), transparent 70%);
+}
+.stat-time:hover::after {
+    background: radial-gradient(circle at center, rgba(240, 89, 78, 0.12), transparent 70%);
+}
+.stat-accuracy:hover::after {
+    background: radial-gradient(circle at center, rgba(46, 204, 113, 0.12), transparent 70%);
+}
+
+.stat-item:hover .stat-icon {
+    transform: scale(1.15);
+    opacity: 1;
+}
+
+/* Value styling */
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    margin: 0.6rem 0;
+    height: 2.5rem; /* Fixed height for better alignment */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-value .unit {
+    font-size: 1.2rem;
+    margin-left: 0.2rem;
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+/* Better label consistency */
+.stat-label {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-top: 0.6rem;
+    transition: color 0.3s ease;
+    text-align: center;
+    height: 1.5rem; /* Fixed height to ensure alignment */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.stat-item:hover .stat-label {
+    color: var(--text-primary);
+}
+
+/* Accuracy specific styling to match other stats */
+.stat-accuracy .accuracy-container {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    margin: 0.2rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .accuracy-circle-bg,
 .accuracy-circle {
     position: absolute;
-    top: 50%; left: 50%;
-    width: 95%; height: 95%;
-    transform: translate(-50%, -50%) rotate(-90deg); /* Center and start at top */
+    top: 50%;
+    left: 50%;
+    width: 120%;
+    height: 120%;
+    transform: translate(-50%, -50%) rotate(-90deg);
     fill: none;
-    stroke-width: 3; /* Adjust thickness */
+    stroke-width: 2;
 }
+
 .accuracy-circle-bg path {
-    stroke: var(--secondary-bg); /* Background track color */
+    stroke: rgba(255, 255, 255, 0.12);
 }
+
 .accuracy-circle .accuracy-value-path {
-    stroke: var(--accent-green); /* Progress color */
-    stroke-linecap: round; /* Rounded ends */
-    /* stroke-dasharray/offset set by JS */
-    stroke-dasharray: 100 100; /* Circumference */
-    stroke-dashoffset: 100; /* Start empty */
-    transition: stroke-dashoffset 0.8s ease-out;
+    stroke: var(--accent-green);
+    stroke-linecap: round;
+    stroke-dasharray: 100 100;
+    stroke-dashoffset: 25; /* Default to 75% - will be set by JS */
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .stat-accuracy .stat-value {
-    position: relative; /* Ensure value is above SVG */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.7rem;
+    margin: 0;
     z-index: 1;
-     font-size: 1.5rem; /* Smaller font inside circle */
+    height: auto; /* Reset height for positioned element */
+}
+
+/* Time stat styling with better vertical alignment */
+.stat-time .time-parts {
+    display: flex;
+    align-items: center; /* Changed from baseline to center */
+    justify-content: center;
+    height: 2.5rem; /* Match the height of other stat values */
+}
+
+.stat-time .time-part {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 0.4rem;
+}
+
+.stat-time .time-value {
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.stat-time .time-unit {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+}
+
+/* Ensure hover border effects match the stat colors */
+.stat-cards:hover {
+    border-color: var(--accent-purple);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(91, 192, 222, 0.2);
+}
+
+.stat-time:hover {
+    border-color: var(--accent-red);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(240, 173, 78, 0.2);
+}
+
+.stat-accuracy:hover {
+    border-color: var(--accent-green);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(46, 204, 113, 0.2);
 }
 
 
@@ -1204,7 +1425,7 @@ body.edit-panel-active .edit-panel {
 }
 
 .completion-btn-floating.study-global { /* Blue */
-    background: linear-gradient(145deg, var(--accent-blue), #31b0d5);
+    background: linear-gradient(145deg, var(--accent-blue), #0c5369ec);
     color: #fff;
     border-color: var(--accent-blue);
 }
@@ -1215,7 +1436,7 @@ body.edit-panel-active .edit-panel {
 }
 
 .completion-btn-floating.study-other { /* Yellow */
-    background: linear-gradient(145deg, var(--accent-yellow), #ec971f);
+    background: linear-gradient(145deg, var(--accent-yellow), #6c440deb);
     color: #fff;
     border-color: var(--accent-yellow);
 }
@@ -1228,6 +1449,8 @@ body.edit-panel-active .edit-panel {
 
 /* --- Floating Other Materials Popup --- */
 /* Position relative to the overlay */
+/* --- Floating Other Materials Popup --- */
+/* Position relative to the overlay */
 .other-materials-popup-floating {
     position: absolute; /* Position within overlay */
     bottom: 10%; /* Adjust vertical position */
@@ -1235,7 +1458,7 @@ body.edit-panel-active .edit-panel {
     transform: translateX(-50%) translateY(20px); /* Start below */
 
     padding: 1rem;
-    background-color: var(--primary-bg);
+    background-color:  #101a31ef;
     border-radius: 12px;
     border: 1px solid var(--border-color);
     width: 90%;
