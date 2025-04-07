@@ -20,16 +20,13 @@ class ChapterDetailsView {
         this.breadcrumbMaterialLink = this.breadcrumbsEl?.querySelector('a');
         this.breadcrumbChapterSpan = this.breadcrumbsEl?.querySelector('.breadcrumb-chapter-name');
         // Study Button is now outside header, get by ID
-                // ** New Button IDs **
-        this.studyDueButton = document.getElementById('studyDueBtn'); // Renamed from studyNowButton
-        this.studyAllButton = document.getElementById('studyAllBtn'); // New button
 
         // --- Analytics & Graph ---
         // Using more specific IDs would be better than nth-child selectors
         this.masteryProgressEl = this.mainContent?.querySelector('.chapter-analytics progress');
         this.masteryValueEl = this.mainContent?.querySelector('.chapter-analytics .value');
         this.totalCardsEl = document.getElementById('statTotalCards');
-        this.dueCardsEl = document.getElementById('statDueCards');
+        this.criticalCardsEl = document.getElementById('statCriticalCards'); // NEW Ref for Critical Cards
         this.learningCardsEl = document.getElementById('statLearningCards');
         this.masteredCardsEl = document.getElementById('statMasteredCards'); // New
         // this.newCardsEl = document.getElementById('statNewCards'); // If you add a 'New' box
@@ -82,6 +79,20 @@ class ChapterDetailsView {
         this.editSaveBtn = document.getElementById('editSaveBtn');
         this.editCancelBtn = document.getElementById('editCancelBtn');
 
+        // --- NEW: Floating Pill Elements ---
+        this.floatingStudyPill = document.getElementById('floatingStudyPill');
+        this.pillChapterSwitcher = document.getElementById('pillChapterSwitcher');
+        this.pillChapterSwitcherInner = document.getElementById('pillChapterSwitcherInner');
+        this.pillNewCardsCount = document.getElementById('pillNewCardsCount');
+        this.pillDueCardsCount = document.getElementById('pillDueCardsCount');
+        this.pillStudyButtonWrapper = this.floatingStudyPill?.querySelector('.study-button-wrapper');
+        this.pillStudyDueButton = document.getElementById('pillStudyDueButton');
+        this.pillOptionsTrigger = document.getElementById('pillOptionsTrigger');
+        this.studyOptionsPopup = document.getElementById('studyOptionsPopup');
+        this.pillStudyAllButton = document.getElementById('pillStudyAllButton'); // New button ID from HTML
+        this.pillReviewBatchSize = document.getElementById('pillReviewBatchSize');
+        this.pillChapterTooltip = document.getElementById('pillChapterTooltip');
+
         // --- State ---
         this.currentMaterial = null; this.currentChapter = null;
         this.allCards = []; this.filteredCardIds = [];
@@ -94,7 +105,7 @@ class ChapterDetailsView {
         // ** New State **
         this.isCardSelectionMode = false; // For selecting cards in the grid
         this.selectedCardIds = new Set(); // Store IDs of selected cards
-        this.isLoading = { cards: false, analytics: false, timeline: false, modalAction: false, srsThresholds: false, modalLoad: false, bulkAction: false }; // Add bulkAction state
+        this.isLoading = { cards: false, analytics: false, timeline: false, modalAction: false, srsThresholds: false, modalLoad: false, bulkAction: false, headerRename: false, allChapters: false, materialSettings: false }; // Add bulkAction state
         this.timelineChartInstance = null;
         // --- ADD SRS Thresholds State ---
         this.srsThresholds = { // Store defaults initially
@@ -106,15 +117,22 @@ class ChapterDetailsView {
         this.isAIViewActive = false;
         this.isEditViewActive = false;
 
-        // --- Debounced Preview Function ---
-        this.debouncedPreviewUpdate = debounce(this._updatePreviewContent, 300); // 300ms debounce
+        // --- NEW State ---
+        this.allChaptersInMaterial = []; // Store { chapter: string, mastery: number }
+        this.currentMaterialSettings = null; // Cache settings { defaultBatchSize: number, ... }
+        this.isStudyOptionsPopupVisible = false;
+        this.chapterScrollInterval = null;
+        this.chapterScrollSpeed = 0;
+        this.currentChapterScroll = 0;
+        this.activeTooltipChapter = null;
+
+        // --- Debounced Functions ---
+        this.debouncedPreviewUpdate = debounce(this._updatePreviewContent, 300);
+        this.saveBatchSizeDebounced = debounce(this._saveBatchSizeSetting, 1000); // Debounce for batch size save
 
         // --- Bind Methods ---
         this._handleFilterClick = this._handleFilterClick.bind(this);
         this._handleCardGridClick = this._handleCardGridClick.bind(this);
-        // ** Bind New Handlers **
-        this._handleStudyDueClick = this._handleStudyDueClick.bind(this); // Renamed handler
-        this._handleStudyAllClick = this._handleStudyAllClick.bind(this);
         this._toggleCardSelectionMode = this._toggleCardSelectionMode.bind(this);
         this._handleBulkStar = this._handleBulkStar.bind(this);
         this._handleBulkBury = this._handleBulkBury.bind(this);
@@ -142,6 +160,23 @@ class ChapterDetailsView {
         this._handleHeaderRenameInputBlur = this._handleHeaderRenameInputBlur.bind(this);
         this._confirmHeaderRename = this._confirmHeaderRename.bind(this);
         this._cancelHeaderRename = this._cancelHeaderRename.bind(this);
+                // --- NEW/UPDATED Bindings ---
+        this._handleStudyDueClick = this._handleStudyDueClick.bind(this); // Now pill button
+        this._handleStudyAllClick = this._handleStudyAllClick.bind(this); // Now pill popup button
+        this._loadAllChaptersForSwitcher = this._loadAllChaptersForSwitcher.bind(this);
+        this._renderChapterSwitcher = this._renderChapterSwitcher.bind(this);
+        this._updateActiveChapterTab = this._updateActiveChapterTab.bind(this);
+        this._loadCurrentMaterialSettings = this._loadCurrentMaterialSettings.bind(this);
+        this._handleBatchSizeChange = this._handleBatchSizeChange.bind(this);
+        this._saveBatchSizeSetting = this._saveBatchSizeSetting.bind(this);
+        this._toggleStudyOptionsPopup = this._toggleStudyOptionsPopup.bind(this);
+        this._hideStudyOptionsPopup = this._hideStudyOptionsPopup.bind(this);
+        this._handleChapterSwitch = this._handleChapterSwitch.bind(this);
+        this._handleChapterScroll = this._handleChapterScroll.bind(this);
+        this._updateChapterScrollState = this._updateChapterScrollState.bind(this);
+        this._generateChapterIcon = this._generateChapterIcon.bind(this);
+        this._debounce = this._debounce.bind(this); // Bind debounce utility
+        this._handleChapterSwitcherMouseLeave = this._handleChapterSwitcherMouseLeave.bind(this);
 
     }
 
@@ -149,11 +184,22 @@ class ChapterDetailsView {
      * Initializes the view: parses URL, fetches data, sets up listeners.
      */
     async initialize() {
-        if (!this.breadcrumbChapterSpan || !this.studyDueButton || !this.studyAllButton || !this.selectCardsToggleBtn || !this.bulkActionsGroup || !this.modalDetailSeparator || !this.mainContent || !this.cardGridEl || !this.modalOverlay || !this.modalBody || !this.globalModalCloseBtn || !this.modalPrevBtn || !this.modalNextBtn || !this.modalAIBtn || !this.modalDeleteBtn || !this.aiChatPanel || !this.breadcrumbChapterSpan || !this.masteredCardsEl || !this.editCardPanel || !this.editNameInput || !this.editSaveBtn || !this.editCancelBtn) {
-            console.error("ChapterDetailsView: Missing critical elements (check modal buttons, side navs, AI panel).");
-            this._showError("Failed to initialize chapter details interface.");
-            return;
-        }
+       // --- Check critical elements ---
+       const criticalElements = [
+        this.breadcrumbChapterSpan, this.mainContent, this.cardGridEl, this.modalOverlay,
+        this.modalBody, this.globalModalCloseBtn, this.modalPrevBtn, this.modalNextBtn,
+        this.modalAIBtn, this.modalDeleteBtn, this.aiChatPanel, this.editCardPanel,
+        this.editNameInput, this.editSaveBtn, this.editCancelBtn,
+        this.floatingStudyPill, this.pillChapterSwitcher, this.pillChapterSwitcherInner, // Check new pill elements
+        this.pillNewCardsCount, this.pillDueCardsCount, this.pillStudyDueButton,
+        this.pillOptionsTrigger, this.studyOptionsPopup, this.pillStudyAllButton,
+        this.pillReviewBatchSize, this.criticalCardsEl // Check new critical card element
+    ];
+    if (criticalElements.some(el => !el)) {
+        console.error("ChapterDetailsView: Missing critical elements (check new pill, switcher inner, critical stats).");
+        this._showError("Failed to initialize chapter details interface.");
+        return;
+    }
 
         if (typeof Chart === 'undefined' && this.timelineGraphContainer) {
              console.warn("Chart.js not found. Timeline graph will not be rendered.");
@@ -166,30 +212,66 @@ class ChapterDetailsView {
 
 
         try {
-            this._parseUrlParams();
+            this._parseUrlParams(); // Sets this.currentMaterial, this.currentChapter, this.currentChapterNameDecoded
             this._setupEventListeners();
-            this._updateLoadingState('srsThresholds', true); // Add state for thresholds load
-            await this._loadSrsThresholds();
-             this._updateLoadingState('cards', true);
-            await this._loadInitialCards();
-            await Promise.all([ this._loadAnalytics(), this._loadTimeline() ]);
 
-        } catch (error) { // Catch errors from parsing or threshold loading too
+            // --- Sequential and Parallel Loading ---
+
+            // 1. Load things needed early and don't depend on each other
+            this._updateLoadingState('allChapters', true);
+            this._updateLoadingState('materialSettings', true);
+            this._updateLoadingState('srsThresholds', true); // Set loading state early
+
+            await Promise.all([
+                this._loadAllChaptersForSwitcher(), // Fetch chapter list for switcher
+                this._loadCurrentMaterialSettings(), // Fetch material settings (needed for thresholds & batch size)
+            ]);
+
+            // 2. Now that material settings are loaded, extract thresholds
+            // This is now synchronous as it uses cached data
+            this._loadSrsThresholds(); // This also turns off 'srsThresholds' loading state
+
+            // 3. Load cards, analytics, and timeline (can run in parallel now)
+            this._updateLoadingState('cards', true);
+            this._updateLoadingState('analytics', true);
+            this._updateLoadingState('timeline', true);
+
+            await Promise.all([
+                this._loadInitialCards(), // Needs SRS thresholds loaded
+                this._loadAnalytics(),
+                this._loadTimeline()
+            ]);
+            // Loading states for these are turned off within their respective functions
+
+        } catch (error) {
             console.error("Error during initialization:", error);
-            if (!this.currentMaterial || !this.currentChapter) return; // Stop if parsing failed
-            this._showError(`Failed to initialize chapter view: ${error.message}`);
+            // Don't stop if parsing failed, show error instead
+            if (!this.currentMaterial || !this.currentChapter) {
+                 this._showError(`Failed to initialize: Missing URL parameters.`);
+            } else {
+                 this._showError(`Failed to initialize chapter view: ${error.message}`);
+            }
         } finally {
-            this._updateLoadingState('srsThresholds', false);
-            this._updateLoadingState('cards', false); // Turn off general loading state
+            // Turn off all initial loading states
+            Object.keys(this.isLoading).forEach(key => {
+                if (this.isLoading[key]) this._updateLoadingState(key, false);
+            });
         }
 
-        console.log(`Chapter Details View Initialized for: ${this.currentMaterial} / ${this.currentChapter}`);
+        console.log(`Chapter Details View Initialized for: ${this.currentMaterial} / ${this.currentChapterNameDecoded}`);
     }
 
-    /**
-     * Parses material and chapter from URL query parameters.
-     * @private
-     */
+        // --- Debounce Utility ---
+        _debounce(func, delay) {
+            let timeoutId;
+            return (...args) => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    func.apply(this, args);
+                }, delay);
+            };
+        }
+
     /**
      * Parses URL params and updates the new breadcrumb structure.
      * @private
@@ -202,6 +284,7 @@ class ChapterDetailsView {
         if (!this.currentMaterial || !this.currentChapter) { /* ... error handling ... */ throw new Error("Missing params"); }
 
         const decodedChapter = decodeURIComponent(this.currentChapter);
+        this.currentChapterNameDecoded = decodedChapter;
 
         // Update Header Content using new structure
         if (this.breadcrumbMaterialLink) {
@@ -225,8 +308,6 @@ class ChapterDetailsView {
         this.filterButtonContainer?.addEventListener('click', this._handleFilterClick);
         this.cardGridEl?.addEventListener('click', this._handleCardGridClick); // Now handles selection too
         // ** New/Updated Buttons **
-        this.studyDueButton?.addEventListener('click', this._handleStudyDueClick); // Renamed handler
-        this.studyAllButton?.addEventListener('click', this._handleStudyAllClick);
         this.selectCardsToggleBtn?.addEventListener('click', this._toggleCardSelectionMode);
         this.bulkStarBtn?.addEventListener('click', this._handleBulkStar);
         this.bulkBuryBtn?.addEventListener('click', this._handleBulkBury);
@@ -234,6 +315,20 @@ class ChapterDetailsView {
 
         // --- NEW: Header Rename Listener ---
         this.breadcrumbChapterSpan?.addEventListener('dblclick', this._handleHeaderRenameDblClick);
+
+        // --- NEW Pill Listeners ---
+        this.pillChapterSwitcher?.addEventListener('click', this._handleChapterSwitch);
+        this.pillChapterSwitcher?.addEventListener('wheel', this._handleChapterScroll, { passive: false });
+        this.pillStudyDueButton?.addEventListener('click', this._handleStudyDueClick);
+        this.pillOptionsTrigger?.addEventListener('click', this._toggleStudyOptionsPopup);
+        this.pillStudyAllButton?.addEventListener('click', this._handleStudyAllClick); // Listener for the new button
+        this.pillReviewBatchSize?.addEventListener('input', this._handleBatchSizeChange);
+        this.pillChapterSwitcher?.addEventListener('mouseover', this._handleChapterTabMouseover.bind(this));
+        this.pillChapterSwitcher?.addEventListener('mouseout', this._handleChapterTabMouseout.bind(this));
+        // Listen for scroll on the INNER container to detect which tabs are visible
+        this.pillChapterSwitcherInner?.addEventListener('scroll', this._handleChapterSwitcherScroll.bind(this), { passive: true }); // Use passive if not preventing default
+        // Add this line in _setupEventListeners
+this.pillChapterSwitcher?.addEventListener('mouseleave', this._handleChapterSwitcherMouseLeave.bind(this));
 
         // --- Modal & Related Listeners ---
         this.globalModalCloseBtn?.addEventListener('click', this._hideModal);
@@ -259,10 +354,43 @@ class ChapterDetailsView {
         this.editDetailedTextarea?.addEventListener('input', () => this.debouncedPreviewUpdate('detailed'));
         console.log("DEBUG: Attached modal V6 listeners.");
 
-        // Keyboard listeners
-        document.addEventListener('keydown', this._handleKeyDown);
-        console.log("--- Exiting _setupEventListeners (V6 Modal) ---");
-    }
+       // --- Global Listeners for Closing Popup ---
+       document.addEventListener('click', (event) => {
+        // Hide Study Options Popup
+        if (this.isStudyOptionsPopupVisible &&
+            !this.studyOptionsPopup.contains(event.target) &&
+            !this.pillStudyButtonWrapper?.contains(event.target) /* Check wrapper too */ ) {
+             this._hideStudyOptionsPopup();
+        }
+         // Hide Rename Input
+         if (this.activeHeaderRenameInput && !this.activeHeaderRenameInput.contains(event.target)) {
+            // Use timeout to allow Enter/Escape to process first
+            setTimeout(() => {
+                 if (this.isHeaderRenaming && this.activeHeaderRenameInput) {
+                     this._cancelHeaderRename();
+                 }
+            }, 100);
+        }
+    }, true); // Use capture phase
+
+    window.addEventListener('scroll', this._hideStudyOptionsPopup, true);
+    window.addEventListener('resize', this._hideStudyOptionsPopup);
+    document.addEventListener('keydown', (event) => {
+         if (event.key === 'Escape') {
+             if (this.isHeaderRenaming) { this._cancelHeaderRename(); return; }
+             if (this.isStudyOptionsPopupVisible) { this._hideStudyOptionsPopup(); return; }
+             // Existing modal escape logic
+             if (!this.isModalVisible) return;
+             if (this.isEditViewActive) { this._handleEditCancel(); }
+             else if (this.isAIViewActive) { this._toggleAIView(false); }
+             else { this._hideModal(); }
+         }
+    });
+
+    // Keyboard listeners (Keep existing modal shortcuts)
+    document.addEventListener('keydown', this._handleKeyDown); // Ensure this doesn't conflict with popup escape
+    console.log("--- Exiting _setupEventListeners (Pill Version) ---");
+}
 
     /**
      * Handles keydown events for modal interactions.
@@ -296,22 +424,151 @@ class ChapterDetailsView {
         }
     }
 
-        /**
-     * ADDED: Fetches SRS threshold settings.
+    /**
+     * Shows the chapter tooltip when hovering over a tab.
+     * @param {MouseEvent} event
      * @private
      */
-        async _loadSrsThresholds() {
-            console.log("Fetching SRS thresholds...");
-            try {
-                const thresholds = await apiClient.getSrsThresholds();
-                this.srsThresholds = { ...this.srsThresholds, ...thresholds }; // Merge fetched with defaults
-                console.log("SRS Thresholds loaded:", this.srsThresholds);
-            } catch (error) {
-                console.error("Failed to load SRS thresholds, using defaults:", error);
-                // Keep default values stored in this.srsThresholds
-                this._showError("Could not load SRS settings, using defaults.");
+    _handleChapterTabMouseover(event) {
+    const tab = event.target.closest('.chapter-tab');
+    if (tab && this.pillChapterTooltip) {
+        const chapterName = tab.dataset.chapterName;
+        if (chapterName) {
+            this._showChapterTooltip(chapterName);
+        }
+    }
+    }
+
+    /**
+     * Hides the chapter tooltip when the mouse leaves the switcher area.
+     * @private
+     */
+    _handleChapterTabMouseout(event) {
+    // Check if the mouse is still within the switcher container or tooltip itself
+    if (!this.pillChapterSwitcher?.contains(event.relatedTarget) &&
+        !this.pillChapterTooltip?.contains(event.relatedTarget)) {
+        this._hideChapterTooltip();
+    }
+    }
+
+            /**
+         * Updates the tooltip based on the currently centered tab during scroll.
+         * (This is a simpler approach than precise intersection calculation)
+         * @private
+         */
+        _handleChapterSwitcherScroll() {
+            if (!this.pillChapterSwitcher || !this.pillChapterSwitcherInner || !this.pillChapterTooltip) return;
+
+            // --- Find the visually centered tab ---
+            const switcherRect = this.pillChapterSwitcher.getBoundingClientRect();
+            const switcherCenter = switcherRect.left + switcherRect.width / 2;
+
+            let centeredTab = null;
+            let minDistance = Infinity;
+
+            const tabs = this.pillChapterSwitcherInner.querySelectorAll('.chapter-tab');
+            tabs.forEach(tab => {
+                const tabRect = tab.getBoundingClientRect();
+                // Check if tab is at least partially visible horizontally
+                if (tabRect.right > switcherRect.left && tabRect.left < switcherRect.right) {
+                    const tabCenter = tabRect.left + tabRect.width / 2;
+                    const distance = Math.abs(tabCenter - switcherCenter);
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        centeredTab = tab;
+                    }
+                }
+            });
+
+            if (centeredTab) {
+                const chapterName = centeredTab.dataset.chapterName;
+                if (chapterName && chapterName !== this.activeTooltipChapter) {
+                    this._showChapterTooltip(chapterName);
+                }
+            } else if (this.activeTooltipChapter) {
+                // If no tab is centered (e.g., during fast scroll), hide tooltip
+                // Or keep the last known one? Let's hide for now.
+                // this._hideChapterTooltip(); // Decide if hiding is preferred
             }
-       }
+        }
+
+        // Add this method to your ChapterDetailsView class
+_handleChapterSwitcherMouseLeave() {
+    // Only reset if there was scroll
+    if (this.currentChapterScroll !== 0) {
+        // Reset scroll position with animation
+        this.pillChapterSwitcherInner.style.transition = 'transform 0.3s ease-out';
+        this.currentChapterScroll = 0;
+        this.pillChapterSwitcherInner.style.transform = 'translateX(0px)';
+        this._updateChapterScrollState();
+        
+        // Clear transition after animation completes
+        setTimeout(() => {
+            if (this.pillChapterSwitcherInner) {
+                this.pillChapterSwitcherInner.style.transition = '';
+            }
+        }, 300);
+    }
+}
+
+
+        /**
+         * Helper to display the tooltip with the given text.
+         * @param {string} chapterName
+         * @private
+         */
+        _showChapterTooltip(chapterName) {
+            if (!this.pillChapterTooltip || !chapterName) return;
+            this.pillChapterTooltip.textContent = chapterName;
+            this.pillChapterTooltip.classList.add('visible');
+            this.activeTooltipChapter = chapterName; // Track active tooltip
+        }
+
+        /**
+         * Helper to hide the tooltip.
+         * @private
+         */
+        _hideChapterTooltip() {
+            if (!this.pillChapterTooltip) return;
+            this.pillChapterTooltip.classList.remove('visible');
+            this.activeTooltipChapter = null; // Clear tracker
+        }
+
+    /**
+     * Extracts SRS thresholds from the cached material settings.
+     * Relies on _loadCurrentMaterialSettings having run successfully first.
+     * @private
+     */
+    _loadSrsThresholds() {
+        console.log("Attempting to load SRS thresholds from cached material settings...");
+        // No API call here - use cached settings
+        try {
+           if (this.currentMaterialSettings && this.currentMaterialSettings.srsThresholds) {
+                // Merge fetched thresholds with defaults (in case some are missing in API response)
+                const apiThresholds = this.currentMaterialSettings.srsThresholds;
+                this.srsThresholds = {
+                    learningReps: apiThresholds.learningReps ?? this.srsThresholds.learningReps,
+                    masteredEase: apiThresholds.masteredEase ?? this.srsThresholds.masteredEase,
+                    masteredReps: apiThresholds.masteredReps ?? this.srsThresholds.masteredReps,
+                    criticalEase: apiThresholds.criticalEase ?? this.srsThresholds.criticalEase,
+                };
+                console.log("SRS Thresholds loaded from material settings:", this.srsThresholds);
+           } else {
+               // Keep defaults if settings or thresholds within settings are missing
+                console.warn("Material settings or SRS thresholds not found in cache. Using default thresholds:", this.srsThresholds);
+                // Optionally show a non-blocking warning to the user
+                // this._showError("Could not load SRS settings, using defaults.", true);
+           }
+        } catch (error) {
+            console.error("Error processing cached SRS thresholds:", error);
+            // Keep defaults on error
+            console.warn("Using default SRS thresholds due to processing error.");
+        } finally {
+             // Ensure loading state is turned off regardless
+             this._updateLoadingState('srsThresholds', false);
+        }
+   }
     /**
      * Fetches the initial list of cards (full details) for the current chapter.
      * @private
@@ -343,25 +600,21 @@ class ChapterDetailsView {
     }
 
     /**
-     * Fetches analytics data for the current chapter.
+     * Fetches analytics data for the *current chapter*.
+     * UPDATED: Populates pill stats and new 'Critical' box.
      * @private
      */
-     async _loadAnalytics() {
+    async _loadAnalytics() {
         this._updateLoadingState('analytics', true);
+        let stats = null;
         try {
-            const stats = await apiClient.getChapterStats(this.currentMaterial, this.currentChapter);
-            this._renderAnalytics(stats);
+            // API uses encoded chapter name
+            stats = await apiClient.getChapterStats(this.currentMaterial, this.currentChapter);
         } catch (error) {
              console.error("Failed to load chapter analytics:", error);
-             if(this.masteryValueEl) {
-                 this.masteryValueEl.textContent = 'N/A';
-                 this.masteryProgressEl.value = 0;
-             }
-             if(this.totalCardsEl) this.totalCardsEl.textContent = '-';
-             if(this.dueCardsEl) this.dueCardsEl.textContent = '-';
-             if(this.learningCardsEl) this.learningCardsEl.textContent = '-';
-
+             this._showError(`Could not load chapter stats: ${error.message}`);
         } finally {
+             this._renderAnalytics(stats); // Render even if stats is null (handles default/error state)
              this._updateLoadingState('analytics', false);
         }
     }
@@ -388,6 +641,78 @@ class ChapterDetailsView {
              this.timelineGraphContainer.innerHTML = `<p style="color: red; text-align: center;">Error loading timeline: ${error.message}</p>`;
         } finally {
             this._updateLoadingState('timeline', false);
+        }
+    }
+
+        // --- NEW: Chapter Switcher Data Loading ---
+/**
+ * Fetches the list of all chapters for the current material to populate the switcher.
+ * The API returns detailed chapter objects with the structure:
+ * {chapter, mastery, totalCards, buriedCards, criticalCards, dueCards, remainingNewCards}
+ * @private
+ */
+async _loadAllChaptersForSwitcher() {
+    if (!this.currentMaterial) return;
+    this._updateLoadingState('allChapters', true);
+    console.log(`Fetching all chapters for material: ${this.currentMaterial}`);
+    try {
+        // getChapterMastery returns detailed chapter objects as shown in the API response
+        const chaptersData = await apiClient.getChapterMastery(this.currentMaterial);
+        this.allChaptersInMaterial = chaptersData || [];
+        
+        // Sort alphabetically for consistent order in the switcher
+        this.allChaptersInMaterial.sort((a, b) => a.chapter.localeCompare(b.chapter));
+        
+        console.log(`Loaded ${this.allChaptersInMaterial.length} chapters for switcher.`);
+        this._renderChapterSwitcher(); // Render the switcher UI
+    } catch (error) {
+        console.error(`Failed to load chapters for switcher:`, error);
+        this.allChaptersInMaterial = [];
+        this._renderChapterSwitcher(); // Render empty/error state
+        this._showError(`Could not load chapter list for switcher: ${error.message}`);
+    } finally {
+        this._updateLoadingState('allChapters', false);
+    }
+}
+
+     // --- NEW: Material Settings Loading ---
+    /**
+      * Fetches and caches settings for the current material.
+      * Updates the batch size input in the pill.
+      * @private
+      */
+    async _loadCurrentMaterialSettings() {
+        if (!this.currentMaterial) {
+            console.warn("_loadCurrentMaterialSettings: No current material set.");
+            if (this.pillReviewBatchSize) this.pillReviewBatchSize.value = 20; // Fallback
+            this._updateLoadingState('materialSettings', false); // Ensure state is off
+            return;
+        }
+        this._updateLoadingState('materialSettings', true);
+        try {
+            console.log(`Fetching settings for material: ${this.currentMaterial}`);
+            const settings = await apiClient.getMaterialSettings(this.currentMaterial);
+            this.currentMaterialSettings = settings; // Cache the full settings object
+
+            // Assuming 'defaultBatchSize' is directly on settings
+            const defaultBatchSize = settings?.defaultBatchSize ?? 20;
+
+            if (this.pillReviewBatchSize) {
+                this.pillReviewBatchSize.value = defaultBatchSize;
+                console.log(`Material settings loaded, batch size set to: ${defaultBatchSize}`);
+            } else {
+                console.warn("Pill Batch size input element not found.");
+            }
+
+        } catch (error) {
+            console.error(`Failed to load material settings for ${this.currentMaterial}:`, error);
+            this.currentMaterialSettings = null; // Indicate failure
+            if (this.pillReviewBatchSize) {
+                this.pillReviewBatchSize.value = 20; // Fallback on error
+            }
+            this._showError(`Could not load material settings. Using default batch size.`, true);
+        } finally {
+            this._updateLoadingState('materialSettings', false);
         }
     }
 
@@ -643,29 +968,55 @@ class ChapterDetailsView {
         return tempDiv.textContent || tempDiv.innerText || '';
      }
 
-    /**
-     * Updates the analytics section with fetched data.
-     * MODIFIED: Populates 4 stat boxes using new IDs.
-     * @param {object | null} stats - Statistics object from API (e.g., { mastery, totalCards, dueCards, learningCards, masteredCards, newCards })
-     * @private
-     */
-    _renderAnalytics(stats) {
-        const mastery = stats?.mastery ?? 0;
-        const totalCards = stats?.totalCards ?? '-';
-        const dueCards = stats?.dueCards ?? '-';
-        const learningCards = stats?.learningCards ?? '-';
-        const masteredCards = stats?.masteredCards ?? '-'; // Use actual field name from API
-        // const newCards = stats?.newCards ?? '-'; // Use if available
+/**
+ * Renders the analytics section.
+ * UPDATED: Uses 'criticalCards' field and populates pill stats.
+ * @param {object | null} stats - Statistics object from API
+ * @private
+ */
+_renderAnalytics(stats) {
+    // Main Analytics Section
+    const mastery = stats?.mastery ?? 0;
+    const totalCards = stats?.totalCards ?? '-';
+    const learningCards = stats?.learningCards ?? '-';
+    const masteredCards = stats?.masteredCards ?? '-';
+    const criticalCards = stats?.criticalCards ?? '-'; // Use new field
 
-        if (this.masteryProgressEl) this.masteryProgressEl.value = mastery;
-        if (this.masteryValueEl) this.masteryValueEl.textContent = `${mastery.toFixed(0)}%`;
+    if (this.masteryProgressEl) this.masteryProgressEl.value = mastery;
+    if (this.masteryValueEl) this.masteryValueEl.textContent = `${mastery.toFixed(0)}%`;
 
-        if (this.totalCardsEl) this.totalCardsEl.textContent = totalCards;
-        if (this.dueCardsEl) this.dueCardsEl.textContent = dueCards;
-        if (this.learningCardsEl) this.learningCardsEl.textContent = learningCards;
-        if (this.masteredCardsEl) this.masteredCardsEl.textContent = masteredCards; // Populate new box
-        // if (this.newCardsEl) this.newCardsEl.textContent = newCards;
+    // Update ONLY the text content of stat boxes but preserve their styling
+    if (this.totalCardsEl) {
+        // Find the stat-value span within the card-stat-box
+        const valueSpan = this.totalCardsEl.closest('.card-stat-box')?.querySelector('.stat-value');
+        if (valueSpan) valueSpan.textContent = totalCards;
     }
+    
+    if (this.criticalCardsEl) {
+        const valueSpan = this.criticalCardsEl.closest('.card-stat-box')?.querySelector('.stat-value');
+        if (valueSpan) valueSpan.textContent = criticalCards;
+    }
+    
+    if (this.learningCardsEl) {
+        const valueSpan = this.learningCardsEl.closest('.card-stat-box')?.querySelector('.stat-value');
+        if (valueSpan) valueSpan.textContent = learningCards;
+    }
+    
+    if (this.masteredCardsEl) {
+        const valueSpan = this.masteredCardsEl.closest('.card-stat-box')?.querySelector('.stat-value');
+        if (valueSpan) valueSpan.textContent = masteredCards;
+    }
+
+    // Pill Stats Section
+    const pillDueCount = stats?.totalDueCards ?? '?';
+    const pillNewCount = stats?.remainingNewCards ?? '?';
+
+    if (this.pillDueCardsCount) this.pillDueCardsCount.textContent = pillDueCount;
+    if (this.pillNewCardsCount) this.pillNewCardsCount.textContent = pillNewCount;
+
+    // Optional: Disable study buttons if counts are 0?
+    if (this.pillStudyDueButton) this.pillStudyDueButton.disabled = !(parseInt(pillDueCount, 10) > 0);
+}
 
     /**
      * Renders the timeline graph using Chart.js.
@@ -756,62 +1107,139 @@ class ChapterDetailsView {
     }
 
 
-    /**
-     * Filters the card list and re-renders the grid.
-     * MODIFIED: Added detailed checks at the VERY beginning.
-     * @param {string} filterType - 'all', 'due', 'learning', 'mastered', 'starred'.
-     * @private
-     */
-    _applyFilter(filterType) {
+/**
+ * Filters the card list and re-renders the grid OR fetches from API for specific filters.
+ * @param {string} filterType - 'all', 'due', 'learning', 'mastered', 'starred', 'buried'.
+ * @private
+ */
+async _applyFilter(filterType) { // Ensure it remains async
 
-        // --- Handle Buried Filter via API Call ---
-        if (filterType === 'buried') {
-            this._fetchAndRenderBuriedCards();
-            return; // Stop here for buried filter
-        }
+    console.log(`Applying filter: ${filterType}`); // Log filter type
 
-        const now = new Date();
-        const { learningReps } = this.srsThresholds;
-        console.log(`DEBUG V8: Applying filter "${filterType}" with learningReps=${learningReps}`);
-
-        // --- Check allCards AFTER checking thresholds ---
-         if (!Array.isArray(this.allCards)) {
-             console.error("DEBUG: ERROR - this.allCards is not an array!", this.allCards);
-             this.filteredCardIds = [];
-             this._renderCardGrid();
-             return;
-        }
-
-        this.filteredCardIds = this.allCards // Filter the non-buried list
-            .filter(card => {
-                // Card is guaranteed non-buried here unless filterType was 'buried' (handled above)
-                if (!card || !card.srs_data) return false;
-
-                const isStarred = !!card.is_starred;
-                const nextReviewTimestamp = card.srs_data.next_review;
-                const lastReviewTimestamp = card.srs_data.last_review;
-                const repetitions = card.srs_data.repetitions ?? 0;
-                const nextReviewDate = nextReviewTimestamp ? new Date(nextReviewTimestamp.seconds * 1000 + (nextReviewTimestamp.nanoseconds || 0) / 1e6) : null;
-                const lastReviewDate = lastReviewTimestamp ? new Date(lastReviewTimestamp.seconds * 1000 + (lastReviewTimestamp.nanoseconds || 0) / 1e6) : null;
-                const isDue = !nextReviewDate || nextReviewDate <= now;
-
-                switch (filterType) {
-                    case 'starred': return isStarred;
-                    case 'due': return isDue;
-                    case 'learning': return !!lastReviewDate && !isDue && repetitions <= learningReps;
-                    case 'mastered':
-                        // Definition for non-buried mastered cards
-                        const isLearning = !!lastReviewDate && !isDue && repetitions <= learningReps;
-                        return !!lastReviewDate && !isDue && !isLearning;
-                    case 'all': default: return true; // All non-buried
-                }
-            })
-            .map(card => card.id);
-
-        console.log(`DEBUG V8 (Local Filter): Result IDs (${this.filteredCardIds.length}):`, JSON.stringify(this.filteredCardIds));
-        // Render using the filtered IDs from the non-buried list
-        this._renderCardGrid(); // Pass null to use this.filteredCardIds
+    // --- Handle API-driven filters first ---
+    if (filterType === 'buried') {
+        this._fetchAndRenderBuriedCards(); // Fetches buried via API
+        return;
     }
+    if (filterType === 'due') {
+        await this._fetchAndRenderDueCards(); // Fetches due *for this chapter* via API
+        return; // Stop here for due filter
+    }
+
+    // --- Handle Client-Side Filters (learning, mastered, starred, all) ---
+    // These filters operate on the `this.allCards` list loaded by _loadInitialCards
+
+    // Ensure allCards is ready (contains all non-buried cards for the chapter)
+    if (!Array.isArray(this.allCards)) {
+         console.error("Client-side filter error: this.allCards is not an array!", this.allCards);
+         this._showError("Cannot apply filter: Card data missing.");
+         this.filteredCardIds = [];
+         this._renderCardGrid();
+         return;
+    }
+
+    // Ensure thresholds are ready for learning/mastered
+    if (!this.srsThresholds) {
+         console.warn("Client-side filter warning: SRS Thresholds not loaded yet.");
+         // Attempt to load them synchronously? Risky. Better to show temporary error/default.
+         // await this._loadSrsThresholds(); // Only if _loadSrsThresholds is robust
+         this.filteredCardIds = this.allCards.map(c => c.id); // Default to 'all' non-buried
+         this._showError("Cannot apply filter: Settings still loading. Showing all cards.");
+         this._renderCardGrid();
+         return;
+    }
+
+    const now = new Date();
+    const { learningReps } = this.srsThresholds; // Use the correct threshold
+    console.log(`DEBUG: Applying client-side filter "${filterType}" with learningReps=${learningReps}`);
+
+    // Filter `this.allCards` which should contain *all* non-buried cards for this chapter
+    this.filteredCardIds = this.allCards
+        .filter(card => {
+            // Basic check: card exists, has SRS data, and is NOT buried
+            // (allCards should already exclude buried, but double-check is safe)
+            if (!card || !card.srs_data || card.is_buried) return false;
+
+            const isStarred = !!card.is_starred;
+            // Need lastReviewDate and repetitions for learning/mastered checks
+            const lastReviewTimestamp = card.srs_data.last_review;
+            const lastReviewDate = lastReviewTimestamp ? new Date(lastReviewTimestamp.seconds * 1000 + (lastReviewTimestamp.nanoseconds || 0) / 1e6) : null;
+            const repetitions = card.srs_data.repetitions ?? 0;
+
+            // Check if the card has been seen at least once for learning/mastered states
+            const hasBeenReviewed = !!lastReviewDate;
+
+            // We don't need isDue check here because 'due' is handled by API.
+            // We only filter the non-due, non-buried cards based on their state.
+
+            switch (filterType) {
+                case 'starred':
+                    return isStarred; // Filter *all* non-buried cards by star status
+                case 'learning':
+                    // Definition: Has been reviewed, and repetitions are within the learning threshold.
+                    return hasBeenReviewed && repetitions <= learningReps;
+                case 'mastered':
+                     // Definition: Has been reviewed, and repetitions are beyond the learning threshold.
+                    return hasBeenReviewed && repetitions > learningReps;
+                case 'all':
+                default:
+                    // Return all cards currently held in `this.allCards` (which are the non-buried ones for the chapter)
+                    return true;
+            }
+        })
+        .map(card => card.id);
+
+    console.log(`DEBUG (Local Filter '${filterType}'): Result IDs (${this.filteredCardIds.length})`);
+    this._renderCardGrid(); // Render using the locally filtered IDs
+}
+
+/**
+ * Helper to fetch DUE cards *for the current chapter* from the API and render them.
+ * @private
+ */
+async _fetchAndRenderDueCards() {
+    // Ensure we have context
+    if (!this.currentMaterial || !this.currentChapter) {
+         console.error("Cannot fetch due cards: Missing material or chapter context.");
+         this._showError("Cannot load due cards: context missing.");
+         this.filteredCardIds = [];
+         this._renderCardGrid(); // Render empty grid
+         return;
+    }
+
+    console.log(`Fetching DUE cards for Chapter: ${this.currentChapterNameDecoded} in Material: ${this.currentMaterial}`);
+    this._updateLoadingState('cards', true); // Use 'cards' loading state for the grid
+    this.cardGridEl.innerHTML = '<p>Loading due cards...</p>'; // Show loading in grid
+
+    try {
+        // *** FIX: Add the chapter parameter to the API call ***
+        const dueCards = await apiClient.getCards({
+             material: this.currentMaterial,
+             chapter: this.currentChapter, // Pass the *encoded* chapter name
+             due: true,
+             buried: false // Explicitly exclude buried cards from the due list
+             // batchSize: undefined // Don't apply batch limit for viewing list
+         });
+
+        // --- IMPORTANT ---
+        // DO NOT overwrite this.allCards here.
+        // `allCards` should always hold the full set loaded initially by _loadInitialCards
+        // so that switching back to 'all', 'learning', etc. works correctly.
+        // Only update the filtered IDs for rendering.
+        this.filteredCardIds = (dueCards || []).map(card => card.id);
+
+        console.log(`Fetched ${this.filteredCardIds.length} DUE card IDs from API for chapter.`);
+        this._renderCardGrid(); // Render the grid with only the due card IDs
+
+    } catch (error) {
+         console.error("Failed to fetch due cards:", error);
+         this._showError(`Error fetching due cards: ${error.message}`);
+         this.filteredCardIds = []; // Clear grid on error
+         this._renderCardGrid();
+    } finally {
+         this._updateLoadingState('cards', false); // Turn off 'cards' loading state
+    }
+}
 
         /**
      * Fetches buried cards via API and renders them directly.
@@ -888,27 +1316,32 @@ class ChapterDetailsView {
     }
 
     /**
-     * Handles click on the "Study Due Cards" button.
+     * Handles click on the pill's "Study Due Cards" button.
+     * Reads batch size from pill input.
      * @private
      */
-    _handleStudyDueClick() { // Renamed handler
-        console.log(`Initiating study session for DUE cards in chapter: ${this.currentChapter}`);
-        const url = `study-session.html?material=${encodeURIComponent(this.currentMaterial)}&chapters=${this.currentChapter}`;
+    _handleStudyDueClick() {
+        console.log(`Initiating study session for DUE cards in chapter: ${this.currentChapterNameDecoded}`);
+        const batchSize = parseInt(this.pillReviewBatchSize?.value, 10) || 0; // Read from pill input
+        // URL uses encoded chapter name
+        const url = `study-session.html?material=${encodeURIComponent(this.currentMaterial)}&chapters=${this.currentChapter}${batchSize > 0 ? '&batchSize=' + batchSize : ''}`;
         window.location.href = url;
-        // Assumes studyView.js defaults to DUE for single chapter if no other flags present
     }
 
-    /**
-     * Handles click on the "Study All Cards" button.
+   /**
+     * Handles click on the pill popup's "Study All Cards" button.
+     * Reads batch size from pill input.
      * @private
      */
-    _handleStudyAllClick() {
-         console.log(`Initiating study session for ALL non-buried cards in chapter: ${this.currentChapter}`);
-         // Need a way to tell studyView to fetch ALL non-buried, not just due. Add a parameter?
-         const url = `study-session.html?material=${encodeURIComponent(this.currentMaterial)}&chapters=${this.currentChapter}&mode=all`; // Added mode=all
-         window.location.href = url;
-         // NOTE: studyView.js needs to be updated to check for `mode=all` and call `apiClient.getCards({material, chapter, buried: false})` instead of `due: true`.
-    }
+   _handleStudyAllClick() {
+    console.log(`Initiating study session for ALL non-buried cards in chapter: ${this.currentChapterNameDecoded}`);
+    const batchSize = parseInt(this.pillReviewBatchSize?.value, 10) || 0; // Read from pill input
+    // URL uses encoded chapter name, add mode=all
+    const url = `study-session.html?material=${encodeURIComponent(this.currentMaterial)}&chapters=${this.currentChapter}&mode=all${batchSize > 0 ? '&batchSize=' + batchSize : ''}`;
+    window.location.href = url;
+    // NOTE: studyView.js needs to handle mode=all correctly.
+    this._hideStudyOptionsPopup(); // Close popup after clicking
+}
 
          /**
       * Toggles card selection mode on/off.
@@ -1109,6 +1542,338 @@ class ChapterDetailsView {
            this._loadAnalytics(); // Update counts
       }
 
+    
+         /**
+     * Renders the chapter switcher tabs in the floating pill.
+     * @private
+     */
+_renderChapterSwitcher() {
+    if (!this.pillChapterSwitcher || !this.pillChapterSwitcherInner) {
+         console.error("Chapter switcher element(s) not found.");
+         return;
+    }
+    this.pillChapterSwitcherInner.innerHTML = ''; // Clear previous tabs
+
+    if (!this.allChaptersInMaterial || this.allChaptersInMaterial.length === 0) {
+        this.pillChapterSwitcherInner.innerHTML = '<span class="no-chapters" style="padding: 0 10px; font-size: 0.9em; color: var(--text-secondary);">No Chapters</span>';
+        this.pillChapterSwitcher.classList.remove('has-multiple', 'has-3plus-chapters');
+        return;
+    }
+
+    const hasMultiple = this.allChaptersInMaterial.length > 1;
+    const has3Plus = this.allChaptersInMaterial.length >= 3;
+    this.pillChapterSwitcher.classList.toggle('has-multiple', hasMultiple);
+    this.pillChapterSwitcher.classList.toggle('has-3plus-chapters', has3Plus);
+
+    this.allChaptersInMaterial.forEach((chapterData, index) => {
+        const chapterName = chapterData.chapter; // Already decoded from API
+        const tab = document.createElement('button');
+        tab.classList.add('chapter-tab'); 
+        tab.dataset.chapterName = chapterName; // Store decoded name
+        tab.dataset.index = index;
+
+        const iconHtml = this._generateChapterIcon(chapterName); // Generate icon
+        tab.innerHTML = iconHtml;
+        tab.title = chapterName;
+        tab.setAttribute('aria-label', `Select chapter: ${chapterName}`);
+
+        this.pillChapterSwitcherInner.appendChild(tab);
+    });
+
+    this._updateActiveChapterTab(); 
+    this._updateChapterScrollState();
+}
+
+    /**
+     * Generates a simple icon HTML based on the first 3 letters of the chapter name.
+     * @param {string} chapterName - The decoded chapter name.
+     * @returns {string} HTML string for the icon.
+     * @private
+     */
+     _generateChapterIcon(chapterName) {
+        const letters = chapterName.substring(0, 3).toUpperCase();
+        // Simple div with letters - ensure CSS for .generated-icon exists
+        return `<div class="generated-icon">${letters}</div>`;
+    }
+
+    /**
+     * Updates the active state and position classes for the chapter switcher tabs.
+     * @private
+     */
+/**
+     * Updates the active state and position classes for the chapter switcher tabs,
+     * AND sets the required width on the inner container for scrolling.
+     * @private
+     */
+_updateActiveChapterTab() {
+    // console.log(`DEBUG: _updateActiveChapterTab - START - currentChapterNameDecoded: ${this.currentChapterNameDecoded}`);
+    if (!this.pillChapterSwitcher || !this.pillChapterSwitcherInner || !this.currentChapterNameDecoded) {
+        console.warn("DEBUG: _updateActiveChapterTab - Missing elements or chapter name.");
+        return;
+    }
+
+    const tabs = Array.from(this.pillChapterSwitcherInner.querySelectorAll('.chapter-tab'));
+    const totalTabs = tabs.length;
+    if (totalTabs === 0) {
+        // Reset inner width if empty
+         this.pillChapterSwitcherInner.style.width = '100%'; // Or initial width
+         this._updateChapterScrollState();
+        return;
+    }
+
+    // console.log(`DEBUG: _updateActiveChapterTab - Found ${totalTabs} tabs. Comparing against '${this.currentChapterNameDecoded}'.`);
+
+    let activeIndex = -1;
+    // --- Track the calculated center position (translateX offset) of the first and last tabs ---
+
+
+    // --- First Pass: Find Active Index ---
+    tabs.forEach((tab, index) => {
+        const tabChapterName = tab.dataset.chapterName;
+        if (tabChapterName === this.currentChapterNameDecoded) {
+            activeIndex = index;
+        }
+         // Reset classes (important to do before recalculating)
+         tab.classList.remove('is-active', 'is-prev-1', 'is-prev-2', 'is-prev-3', 'is-next-1', 'is-next-2', 'is-next-3');
+         tab.style.removeProperty('--tx'); // Clear previous --tx
+    });
+
+    // Handle case where active chapter not found (e.g., deleted chapter in URL)
+    if (activeIndex === -1) {
+        console.warn(`Active chapter '${this.currentChapterNameDecoded}' not found in tabs. Defaulting active to index 0.`);
+        activeIndex = 0; // Default to the first tab as active
+        if(tabs.length > 0) {
+            tabs[0].classList.add('is-active'); // Mark first as active visually
+        } else {
+             this.pillChapterSwitcherInner.style.width = '100%';
+             this._updateChapterScrollState();
+             return; // No tabs to process
+        }
+    } else {
+        tabs[activeIndex].classList.add('is-active'); // Mark the correct tab as active
+    }
+
+       // --- Second Pass: Apply Classes and Calculate Positions/Width ---
+       let firstTabTx = 0;
+       let lastTabTx = 0;
+       const tabWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pill-icon-size') || '40');
+       const tabGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pill-icon-gap') || '10');
+
+        tabs.forEach((tab, index) => {
+           const distance = index - activeIndex;
+           let currentTxNum = 0; // TranslateX offset relative to the container center
+
+           // Clear classes first
+           tab.classList.remove('is-active', 'is-prev-1', 'is-prev-2', 'is-prev-3', 'is-next-1', 'is-next-2', 'is-next-3');
+           tab.style.removeProperty('--tx');
+
+           if(index === activeIndex){
+                tab.classList.add('is-active');
+           } else {
+                // Use --expand-translate vars for positioning ALL non-active tabs
+                const expandVar = `--expand-translate-${Math.abs(distance)}`;
+                const fallbackCalc = (Math.abs(distance) * (tabWidth + tabGap)) - (tabGap / 2);
+                const translateValueStr = getComputedStyle(document.documentElement).getPropertyValue(expandVar) || `${fallbackCalc}px`;
+                const translateValue = parseFloat(translateValueStr.replace('px', '')) || fallbackCalc;
+                currentTxNum = distance < 0 ? -translateValue : translateValue;
+
+                // Apply VISUAL position class ONLY for nearby tabs (e.g., up to 2)
+                if (Math.abs(distance) <= 2) { // Apply classes only for visible/peeking ones
+                     tab.classList.add(distance < 0 ? `is-prev-${Math.abs(distance)}` : `is-next-${distance}`);
+                }
+
+                // Set --tx variable for CSS transform for ALL non-active tabs
+                const translateXCss = `calc(-50% + ${currentTxNum}px)`;
+                tab.style.setProperty('--tx', translateXCss);
+           }
+
+           // --- Store Tx for first and last tabs (based on calculated position) ---
+           if (index === 0) { firstTabTx = currentTxNum; }
+           if (index === totalTabs - 1) { lastTabTx = currentTxNum; }
+
+       }); // End forEach tab
+
+
+       // --- Calculate and Set Inner Container Width ---
+       const firstTabLeftEdge = firstTabTx - (tabWidth / 2);
+       const lastTabRightEdge = lastTabTx + (tabWidth / 2);
+       const totalSpan = lastTabRightEdge - firstTabLeftEdge;
+       const buffer = tabGap * 2;
+       const requiredWidth = totalSpan + buffer;
+
+       // console.log(`DEBUG: FirstTabTx: ${firstTabTx.toFixed(1)}, LastTabTx: ${lastTabTx.toFixed(1)}, TotalSpan: ${totalSpan.toFixed(1)}, RequiredWidth: ${requiredWidth.toFixed(1)}`);
+
+       // Set the calculated width on the inner container
+       const minRequiredWidth = this.pillChapterSwitcher.offsetWidth + tabGap;
+       this.pillChapterSwitcherInner.style.width = `${Math.max(requiredWidth, minRequiredWidth)}px`;
+
+       this._updateChapterScrollState();
+   }
+
+    /**
+     * Updates the scroll indicator state for the chapter switcher.
+     * @private
+     */
+    _updateChapterScrollState() {
+        if (!this.pillChapterSwitcher || !this.pillChapterSwitcherInner) return;
+        const containerWidth = this.pillChapterSwitcher.offsetWidth;
+        const innerWidth = this.pillChapterSwitcherInner.scrollWidth;
+        const scrollLeft = this.currentChapterScroll || 0;
+        const maxScroll = Math.max(0, innerWidth - containerWidth);
+
+        this.pillChapterSwitcher.classList.toggle('is-scrollable-left', scrollLeft > 0);
+        this.pillChapterSwitcher.classList.toggle('is-scrollable-right', scrollLeft < maxScroll);
+    }
+
+       // --- Event Handlers ---
+
+    /**
+     * Handles clicks on the chapter switcher tabs. Navigates to the selected chapter.
+     * @param {Event} event
+     * @private
+     */
+    _handleChapterSwitch(event) {
+        const clickedTab = event.target.closest('.chapter-tab');
+        if (!clickedTab || !this.pillChapterSwitcher?.classList.contains('has-multiple')) return;
+
+        const chapterName = clickedTab.dataset.chapterName; // Decoded name
+        const anyLoading = Object.values(this.isLoading).some(state => state);
+
+        if (chapterName && chapterName !== this.currentChapterNameDecoded && !anyLoading) {
+            console.log(`Switching to chapter: ${chapterName}`);
+            // Construct the URL and navigate
+            const encodedChapter = encodeURIComponent(chapterName);
+            const url = `flashcards-view.html?material=${encodeURIComponent(this.currentMaterial)}&chapter=${encodedChapter}`;
+            window.location.href = url; // Reload the page for the new chapter
+        } else if (chapterName === this.currentChapterNameDecoded) {
+            console.log("Clicked active chapter, no change.");
+        }
+    }
+
+    /**
+     * Handles wheel scroll events on the chapter switcher pill.
+     * @param {Event} event
+     * @private
+     */
+     _handleChapterScroll(event) {
+        if (!this.pillChapterSwitcher?.classList.contains('has-multiple') || !this.pillChapterSwitcherInner) return;
+
+        event.preventDefault(); // Prevent page scroll
+
+        const scrollAmount = event.deltaY || event.deltaX;
+        const direction = scrollAmount > 0 ? 1 : -1;
+        const scrollSpeedMultiplier = 50; // Adjust sensitivity
+
+        const containerWidth = this.pillChapterSwitcher.offsetWidth;
+        const innerWidth = this.pillChapterSwitcherInner.scrollWidth;
+        const maxScroll = Math.max(0, innerWidth - containerWidth);
+
+        let newScroll = this.currentChapterScroll + (direction * scrollSpeedMultiplier); // Adjust direction if needed
+        newScroll = Math.max(0, Math.min(newScroll, maxScroll));
+
+        if (this.currentChapterScroll !== newScroll) {
+            this.currentChapterScroll = newScroll;
+            this.pillChapterSwitcherInner.style.transform = `translateX(-${this.currentChapterScroll}px)`;
+            this._updateChapterScrollState();
+        }
+    }
+
+    /**
+     * Toggles the study options popup visibility.
+     * @private
+     */
+    _toggleStudyOptionsPopup() {
+        this.isStudyOptionsPopupVisible = !this.isStudyOptionsPopupVisible;
+        this.studyOptionsPopup.classList.toggle('visible', this.isStudyOptionsPopupVisible);
+        this.pillStudyButtonWrapper?.classList.toggle('popup-open', this.isStudyOptionsPopupVisible);
+        this.pillOptionsTrigger?.setAttribute('aria-expanded', this.isStudyOptionsPopupVisible);
+
+         // Adjust display property for visibility/animation
+        if (this.isStudyOptionsPopupVisible) {
+            this.studyOptionsPopup.style.display = 'flex'; // Or 'block' depending on CSS
+        } else {
+            // Delay hiding display to allow animation
+            setTimeout(() => {
+                 if (!this.isStudyOptionsPopupVisible && this.studyOptionsPopup) {
+                     this.studyOptionsPopup.style.display = 'none';
+                 }
+            }, 250); // Match CSS transition duration
+        }
+        console.log("Popup toggled:", this.isStudyOptionsPopupVisible);
+    }
+
+    /**
+     * Hides the study options popup.
+     * @private
+     */
+    _hideStudyOptionsPopup() {
+        if (!this.isStudyOptionsPopupVisible) return;
+        this.isStudyOptionsPopupVisible = false;
+        this.studyOptionsPopup?.classList.remove('visible');
+        this.pillStudyButtonWrapper?.classList.remove('popup-open');
+        this.pillOptionsTrigger?.setAttribute('aria-expanded', 'false');
+         // Delay hiding display
+         setTimeout(() => {
+             if (this.studyOptionsPopup) { // Check again in case it was reopened quickly
+                 this.studyOptionsPopup.style.display = 'none';
+             }
+         }, 250);
+        console.log("Popup hidden");
+    }
+
+    /**
+     * Handles change events on the batch size input.
+     * @param {Event} event
+     * @private
+     */
+    _handleBatchSizeChange(event) {
+        const newSize = parseInt(event.target.value, 10);
+        if (isNaN(newSize) || newSize < 1) {
+             console.warn("Invalid batch size input:", event.target.value);
+             event.target.value = this.currentMaterialSettings?.defaultBatchSize || 20; // Revert
+             return;
+        }
+        console.log("Batch size changed to:", newSize, "- Debouncing save...");
+        this.saveBatchSizeDebounced(newSize); // Call debounced save
+    }
+
+     /**
+      * Saves the batch size setting for the material via API.
+      * @param {number} newSize
+      * @private
+      */
+     async _saveBatchSizeSetting(newSize) {
+         if (!this.currentMaterial) return;
+         console.log(`Attempting to save batch size ${newSize} for material ${this.currentMaterial}`);
+
+         // Update local cache optimistically
+         if (this.currentMaterialSettings) {
+            this.currentMaterialSettings.defaultBatchSize = newSize;
+         } else {
+             this.currentMaterialSettings = { defaultBatchSize: newSize }; // Initialize if null
+         }
+
+         this._updateLoadingState('materialSettings', true); // Show loading during save
+
+         try {
+             // API expects object with settings to update
+             await apiClient.updateMaterialSettings(this.currentMaterial, {
+                 defaultBatchSize: newSize
+             });
+             console.log("Batch size saved successfully via API.");
+             // Optional: Show temporary success message
+              this._showError("Batch size saved.", true);
+         } catch (error) {
+             console.error("Failed to save batch size via API:", error);
+             this._showError(`Failed to save batch size: ${error.message}`);
+             // Revert UI input if save fails?
+              if (this.pillReviewBatchSize && this.currentMaterialSettings) {
+                   this.pillReviewBatchSize.value = this.currentMaterialSettings.defaultBatchSize || 20; // Use cached value before optimistic update
+              }
+         } finally {
+              this._updateLoadingState('materialSettings', false);
+         }
+     }
 
     // --- Modal Methods ---
 
@@ -1774,28 +2539,63 @@ class ChapterDetailsView {
 
     // --- Utility Methods ---
 
+    // --- Utility Methods ---
+
+    /**
+     * Updates loading state for different parts and disables relevant UI.
+     * @param {string} part - Key from this.isLoading object.
+     * @param {boolean} isLoading - True if loading, false otherwise.
+     * @private
+     */
     _updateLoadingState(part, isLoading) {
+        if (typeof this.isLoading[part] === 'undefined') {
+            console.warn(`_updateLoadingState called for unknown part: ${part}`);
+            return;
+        }
+        if (this.isLoading[part] === isLoading) return; // No change
+
         this.isLoading[part] = isLoading;
         console.log(`Loading state for ${part}: ${isLoading}`);
-        const anyMajorLoading = this.isLoading.cards || this.isLoading.analytics || this.isLoading.timeline || this.isLoading.srsThresholds;
-        const anyModalInteractionLoading = this.isLoading.modalLoad || this.isLoading.modalAction || this.isLoading.bulkAction;
+
+        const anyMajorLoading = this.isLoading.cards || this.isLoading.analytics || this.isLoading.timeline || this.isLoading.srsThresholds || this.isLoading.allChapters || this.isLoading.materialSettings;
+        const anyModalInteractionLoading = this.isLoading.modalLoad || this.isLoading.modalAction || this.isLoading.bulkAction || this.isLoading.editSave;
+        const anyPillInteractionLoading = this.isLoading.materialSettings || this.isLoading.allChapters; // Disable pill during critical loads
 
         // Dim grid/controls if major data is loading
-        this.mainContent?.classList.toggle('loading-major', anyMajorLoading);
-        // Disable interactions during modal/bulk actions
-         [this.modalStarBtn, this.modalBuryBtn, this.modalDeleteBtn, this.modalEditBtn, this.modalAIBtn, this.bulkStarBtn, this.bulkBuryBtn, this.bulkDeleteBtn].forEach(btn => {
-            if (btn) btn.disabled = anyModalInteractionLoading;
-         });
-         this.selectCardsToggleBtn.disabled = anyMajorLoading; // Disable select toggle during loads
-     }
+        this.mainContent?.classList.toggle('loading-major', anyMajorLoading || this.isLoading.headerRename);
 
-    _showError(message, temporary = false /* Added optional param */) {
+        // Disable modal interactions
+        [this.modalStarBtn, this.modalBuryBtn, this.modalDeleteBtn, this.modalEditBtn, this.modalAIBtn].forEach(btn => { if (btn) btn.disabled = anyModalInteractionLoading || anyMajorLoading; });
+        this.modalPrevBtn.disabled = this.isLoading.modalLoad || this.isLoading.modalAction || this.currentModalCardIndex <= 0;
+        this.modalNextBtn.disabled = this.isLoading.modalLoad || this.isLoading.modalAction || this.currentModalCardIndex < 0 || this.currentModalCardIndex >= this.filteredCardIds.length - 1;
+
+        // Disable bulk actions / selection toggle
+        [this.bulkStarBtn, this.bulkBuryBtn, this.bulkDeleteBtn, this.selectCardsToggleBtn].forEach(btn => { if (btn) btn.disabled = anyMajorLoading || anyModalInteractionLoading; });
+
+        // Disable Pill Interactions
+        this.pillChapterSwitcher?.querySelectorAll('button').forEach(btn => { if (btn) btn.disabled = anyPillInteractionLoading || anyMajorLoading; });
+        if(this.pillStudyDueButton) this.pillStudyDueButton.disabled = anyPillInteractionLoading || anyMajorLoading || this.isLoading.analytics || (parseInt(this.pillDueCardsCount?.textContent || '0', 10) <= 0); // Also disable if 0 due
+        if(this.pillOptionsTrigger) this.pillOptionsTrigger.disabled = anyPillInteractionLoading || anyMajorLoading;
+        if(this.pillStudyAllButton) this.pillStudyAllButton.disabled = anyPillInteractionLoading || anyMajorLoading; // Inside popup
+        if(this.pillReviewBatchSize) this.pillReviewBatchSize.disabled = anyPillInteractionLoading; // Disable batch during settings/chapter load
+
+        // Disable header rename during its own process or major loads
+        if(this.breadcrumbChapterSpan) this.breadcrumbChapterSpan.style.pointerEvents = (this.isLoading.headerRename || anyMajorLoading) ? 'none' : '';
+    }
+
+    _showError(message, temporary = false) {
         console.error("ChapterDetailsView Error:", message);
         // Simple alert for now, replace with a better UI element if desired
-        // Consider making temporary errors less intrusive
         if (temporary) {
            // TODO: Implement a temporary notification bar/toast
            console.log(`INFO (Temporary): ${message}`);
+           // Example: Display in a temporary element
+           const tempNotice = document.getElementById('temp-notice'); // Assuming an element exists
+           if (tempNotice) {
+               tempNotice.textContent = message;
+               tempNotice.style.display = 'block';
+               setTimeout(() => { tempNotice.style.display = 'none'; }, 3000);
+           }
         } else {
             alert(`Error: ${message}`);
         }
@@ -1806,6 +2606,24 @@ class ChapterDetailsView {
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
     // KaTeX auto-render might run on initial HTML, but we need manual calls for dynamic content.
+    // Check if already initialized (simple flag)
+    if (window.chapterDetailsViewInitialized) {
+        console.warn("ChapterDetailsView: Attempting to initialize again. Skipping.");
+        return;
+    }
+    window.chapterDetailsViewInitialized = true;
+
     const view = new ChapterDetailsView();
-    view.initialize();
+    view.initialize().catch(err => {
+        console.error("Unhandled error during view initialization:", err);
+        // Display a critical error message to the user
+        const body = document.body;
+        if (body) {
+            body.innerHTML = `<div style="padding: 20px; color: red; text-align: center; font-size: 1.2em;">
+                <h2>Initialization Error</h2>
+                <p>Could not load the chapter details. Please try again later.</p>
+                <p><small>${err.message || 'Unknown error'}</small></p>
+            </div>`;
+        }
+    });
 });

@@ -1024,8 +1024,7 @@ body.edit-panel-active .edit-panel {
     text-align: center;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* Use smoother bezier curve */
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2); /* Enhanced shadow */
-    position: relative;
-    overflow: hidden; /* For potential effects */
+
 }
 /* Apply updated gradient backgrounds with matching borders */
 .quality-btn[data-quality="0"] { 
@@ -1111,13 +1110,13 @@ border: 1px solid rgba(46, 204, 113, 0.4);
 
         /* --- Quality Buttons Adjustment (Hide when AI panel is active?) --- */
         /* Hide immediately when panel is active */
-        .study-area.ai-panel-active .quality-buttons {
+        .study-area.panel-active .quality-buttons {
             opacity: 0 !important;
             visibility: hidden !important;
             transition: none !important; /* No transition when hiding due to AI */
         }
 
-        body.ai-panel-active .quality-buttons {
+        body.panel-active .quality-buttons {
             opacity: 0 !important;
             visibility: hidden !important;
             transition: none !important;
@@ -1551,6 +1550,185 @@ border: 1px solid rgba(46, 204, 113, 0.4);
         color: var(--text-secondary);
         font-style: italic;
         }
+
+                /* --- NEW: Custom Modal Styles --- */
+                .modal-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(26, 26, 46, 0.7); /* Dark semi-transparent overlay */
+                    display: none; /* Hidden by default */
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 1050; /* Above other elements but below system UI potentially */
+                    backdrop-filter: blur(3px); /* Optional: blur background */
+                    -webkit-backdrop-filter: blur(3px);
+                    display: none; /* Start with display none */
+                    opacity: 0; /* Add for transition */
+                    visibility: hidden; /* Add for transition */
+                    transition: opacity 0.3s ease, visibility 0s linear 0.3s; /* Add transition */
+                }
+                .modal-overlay.visible {
+                    display: flex;
+                    opacity: 1; /* Add for transition */
+                    visibility: visible; /* Add for transition */
+                    transition-delay: 0s; /* Add for transition */
+                }
+        
+                .modal-content {
+                    background-color: #1f2a40; /* Match container background */
+                    padding: 25px 30px;
+                    border-radius: 10px;
+                    border: 1px solid #4a5a7e;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+                    color: #e0e0e0;
+                    max-width: 450px; /* Limit width */
+                    width: 90%; /* Responsive width */
+                    text-align: center;
+                    animation: modal-fade-in 0.3s ease-out; /* Fade-in animation */
+                    position: relative; /* Ensure it respects the overlay's z-index */
+                    z-index: 2001; /* Optional: Explicitly higher than overlay bg if needed */
+                }
+        
+                @keyframes modal-fade-in {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+        
+        
+                .modal-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 20px;
+                    gap: 10px;
+                }
+                .modal-header .modal-icon svg {
+                    width: 28px;
+                    height: 28px;
+                }
+                /* Specific icon colors */
+                 .modal-icon.warning svg { fill: #f0ad4e; } /* Yellow for warning */
+                 .modal-icon.error svg { fill: #d9534f; } /* Red for error */
+        
+                .modal-title {
+                    font-size: 1.4em;
+                    font-weight: bold;
+                    color: #ffffff;
+                    margin: 0; /* Reset margin */
+                }
+        
+                .modal-message {
+                    font-size: 1em;
+                    line-height: 1.6;
+                    margin-bottom: 25px;
+                    color: #c0c0d0; /* Slightly lighter than main text */
+                }
+                .modal-message strong { /* Highlight chapter names */
+                     color: #ffffff;
+                     font-weight: 600;
+                }
+        
+                .modal-actions {
+                    display: flex;
+                    justify-content: center; /* Center buttons */
+                    gap: 15px;
+                    margin-top: 10px;
+                }
+        
+                /* Basic button style - adapt if you have global button styles */
+                .modal-button {
+                    padding: 10px 25px;
+                    border-radius: 6px;
+                    border: none;
+                    cursor: pointer;
+                    font-size: 0.95em;
+                    font-weight: 500;
+                    transition: background-color 0.2s ease, transform 0.1s ease;
+                }
+                .modal-button:hover {
+                     transform: translateY(-1px);
+                }
+                .modal-button.primary { /* e.g., Confirm Delete */
+                    background-color: #d9534f;
+                    color: white;
+                    box-shadow: 0 2px 5px rgba(217, 83, 79, 0.3);
+                }
+                .modal-button.primary:hover { background-color: #c9302c; }
+        
+                .modal-button.secondary { /* e.g., Cancel, OK */
+                    background-color: #4a5a7e;
+                    color: #e0e0e0;
+                    border: 1px solid #6a7aac;
+                }
+                .modal-button.secondary:hover { background-color: #6a7aac; color: #ffffff; }
+
+            /* --- Study Session Completion Screen Enhancements --- */
+
+/* Container for the remaining due section */
+#completionRemainingDue {
+    display: flex; /* Use flexbox for horizontal layout */
+    align-items: center; /* Vertically align items */
+    gap: 12px; /* Space between elements */
+    margin-top: 15px; /* Space above this section */
+    padding: 10px 15px; /* Add some padding */
+    background-color: rgba(255, 255, 255, 0.05); /* Slight background highlight */
+    border-radius: 8px; /* Rounded corners */
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    justify-content: center; /* Center items when wrapped */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
+}
+
+/* Style for the text label */
+#completionRemainingDue span {
+    color: var(--text-secondary); /* Use secondary text color */
+    font-size: 0.9em;
+}
+
+/* Style for the count number */
+#completionRemainingDue strong#compStatRemainingDue {
+    color: var(--text-primary); /* Use primary text color */
+    font-weight: 600;
+    min-width: 20px; /* Ensure space even for single digits */
+    text-align: center;
+    display: inline-block;
+}
+
+/* Style for the batch size input */
+#studyRemainingBatchSizeInput {
+    width: 70px; /* Slightly wider for better usability */
+    padding: 6px 8px;
+    font-size: 0.9em;
+    border-radius: 5px;
+    border: 1px solid var(--border-color, #444); /* Use theme border color */
+    background-color: var(--background-secondary, #333); /* Use theme input background */
+    color: var(--text-primary, #eee); /* Use theme text color */
+    text-align: center;
+    box-sizing: border-box; /* Include padding/border in width */
+}
+
+#studyRemainingBatchSizeInput:focus {
+    outline: none;
+    border-color: var(--accent-color, #5bc0de); /* Highlight focus */
+    box-shadow: 0 0 0 2px rgba(91, 192, 222, 0.3); /* Subtle glow */
+}
+
+/* Style for the "Study Remaining" button */
+#studyRemainingDueBtn {
+    /* It should inherit .button and .primary styles */
+    /* Add specific adjustments if needed */
+    padding: 8px 12px;
+    font-size: 0.9em;
+}
+
+/* Ensure disabled state (already handled by .button[disabled]?) */
+#studyRemainingDueBtn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    /* background-color: #555; */ /* Adjust if needed */
+}
 
 
         /* --- Responsiveness --- */

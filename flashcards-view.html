@@ -22,7 +22,64 @@
             --ai-glow-start: #6a11cb; --ai-glow-end: #2575fc; /* Purple to Blue */
             --ai-glow-color-1: rgba(106, 17, 203, 0.6); /* Purpleish */
             --ai-glow-color-2: rgba(37, 117, 252, 0.5); /* Blueish */
+            --success-green: #5cb85c;
             --button-glow-color: rgba(91, 192, 222, 0.6); /* Glow color for study button */
+            --new-color: #6930b4; /* Purple */
+            --new-color-border: #8240d9; /* Lighter purple for border */
+            --due-color: #1cad1c; /* Green */
+            --due-color-border: #25ca25; /* Lighter green for border */
+               /* --- Sizing & Peeking/Expansion (Keep V9 - Refined Peek) --- */
+    /* Most critical variables with sensible defaults */
+    --pill-icon-size: 40px;
+    --scale-0: 1;
+    --scale-1: 0.85;
+    --scale-2: 0.7;
+    --container-min-width-2-materials: 60px;
+    --container-min-width-3plus-chapters: 80px;
+    --container-min-width-expanded-2: 200px;
+    --peek-center-offset-1: 20px;
+    --peek-center-offset-2-abs: 40px;
+        --expand-translate-1: 45px; /* INCREASED from 45px to 65px */
+        --expand-translate-2: 90px; /* INCREASED from 90px to 130px */
+        --expand-translate-3: 135px; /* INCREASED from 135px to 195px */
+        --expand-translate-4: 180px; /* Add this */
+        --expand-translate-5: 225px; /* Add this if needed */
+        --expand-translate-6: 270px;
+        --expand-translate-7: 315px;
+        --expand-translate-8: 360px;
+        --expand-translate-9: 405px;
+        --expand-translate-10: 450px;
+        --expand-translate-11: 495px;
+        --expand-translate-12: 540px;
+        --expand-translate-13: 585px;
+        --expand-translate-14: 630px;
+        --expand-translate-15: 675px;
+        --expand-translate-16: 720px;
+        --expand-translate-17: 765px;
+        --expand-translate-18: 810px;
+        --expand-translate-19: 855px;
+        --expand-translate-20: 900px;
+        --expand-translate-21: 945px;
+        --expand-translate-22: 990px;
+        --expand-translate-23: 1035px;
+        --expand-translate-24: 1080px;
+        --expand-translate-25: 1125px;
+        --expand-translate-26: 1170px;
+        --expand-translate-27: 1215px;
+        --expand-translate-28: 1260px;
+        --expand-translate-29: 1305px;
+        --expand-translate-30: 1350px;
+        
+
+    /* --- Container Sizing (ADJUSTED for 2 vs 3+ Materials) --- */
+    /* Width needed for center + ONE side peeking (Level 1) */
+    --peek-outer-edge-dist-1: calc(var(--peek-center-offset-1) + var(--width-1) / 2);
+    /* Calculate width: Center button width + distance from center to edge of ONE L1 peek + buffer */
+    --container-min-width-2-materials: calc(var(--width-0) + var(--peek-outer-edge-dist-1) - (var(--width-0)/2) + 2px);
+    /* Width needed for center + TWO sides peeking (Level 2) */
+    --peek-outer-edge-dist-2: calc(var(--peek-center-offset-2-abs) + var(--width-2) / 2);
+    --container-min-width-3plus-materials: calc(var(--peek-outer-edge-dist-2) * 2 + 200px);
+
         }
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -32,14 +89,14 @@
         body.modal-open { overflow: hidden; }
         .chapter-details-container {
             max-width: 1200px; margin: 0 auto; background-color: #1f2a40;
-            padding: 30px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            padding: 30px; border-radius: 20px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
              transition: filter 0.3s ease; /* For blurring */
         }
         .chapter-details-container.blurred { filter: blur(5px) brightness(0.7); pointer-events: none; user-select: none; }
 
 
         /* --- Header (Unchanged) --- */
-        .chapter-header {
+        .material-header {
              display: flex; flex-wrap: wrap; justify-content: space-between; /* Keep space-between for potential right-side elements */
              align-items: center;
              margin-bottom: 10px; /* Keep margin */
@@ -47,7 +104,7 @@
              border-bottom: none; /* REMOVE border */
              gap: 15px;
          }
-        .chapter-title-section {} /* Keep this wrapper */
+        .material-title-section {} /* Keep this wrapper */
         .breadcrumbs {
              font-size: 1.1em; /* Slightly larger base size */
              color: var(--text-secondary);
@@ -84,7 +141,7 @@
              font-size: 1.9em; /* Match breadcrumb-chapter-name */
              font-weight: bold; /* Match breadcrumb-chapter-name */
              border: 1px solid var(--accent-blue);
-             border-radius: 4px;
+             border-radius: 12px;
              background-color: var(--secondary-bg); /* Slightly different bg */
              color: var(--text-primary);
              outline: none;
@@ -111,12 +168,12 @@
             height: 100%; /* Make container fill grid cell height */
         }
         .section-title { font-size: 1.1em; text-align: center; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 0px solid var(--border-color); padding-bottom: 8px; flex-shrink: 0; } /* Prevent title shrinking */
-        .chapter-analytics { background-color: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; flex-grow: 1; /* Allow analytics box to grow */ }
-        .timeline-graph-placeholder { background-color: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: 8px; min-height: 200px; /* Adjust min-height as needed */ display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-style: italic; text-align: center; padding: 20px; box-sizing: border-box; height: 100%; }
+        .chapter-analytics { background-color: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; flex-grow: 1; /* Allow analytics box to grow */ }
+        .timeline-graph-placeholder { background-color: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: 18px; min-height: 200px; /* Adjust min-height as needed */ display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-style: italic; text-align: center; padding: 20px; box-sizing: border-box; height: 100%; }
 
         /* --- >> MODIFIED: Analytics Items --- */
         .analytics-item { margin-bottom: 15px; font-size: 0.95em; }
-        .analytics-item label { color: var(--text-secondary); display: block; margin-bottom: 8px; font-size: 0.9em; }
+        .analytics-item label { color: var(--text-secondary); display: block; margin-bottom: 8px; font-size: 0.9em; text-align: center;}
         .analytics-item .value { font-weight: bold; font-size: 1.1em; white-space: nowrap; }
         /* Progress Bar Item Layout */
         .mastery-progress-item { /* Specific class or target uniquely */
@@ -148,38 +205,157 @@
              justify-content: space-between; /* Distribute space */
              margin-top: 10px; /* Space below progress bar */
         }
-        .card-stat-box {
-             background-color: var(--primary-bg); border: 1px solid var(--border-color);
-             border-radius: 6px; padding: 10px; /* Reduced padding */
-             text-align: center;
-             flex: 1 1 0; /* Allow shrinking and growing from 0 base */
-             min-width: 60px; /* Prevent too much shrinking */
-             max-width: 23%; /* Approx max width for 4 items + gaps */
-        }
-        .card-stat-box .stat-value { display: block; font-size: 1.4em; /* Reduced size */ font-weight: bold; color: var(--text-primary); margin-bottom: 2px; }
-        .card-stat-box .stat-label { font-size: 0.75em; /* Reduced size */ color: var(--text-secondary); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+/* Enhanced Stat Box Styling - Base for all stat boxes */
+/* Enhanced Stat Box Styling - Base for all stat boxes */
+.card-stat-box {
+    background-color: var(--primary-bg); 
+    border: 1px solid var(--border-color);
+    border-radius: 12px; 
+    padding: 12px 10px;
+    text-align: center;
+    flex: 1 1 0; 
+    min-width: 60px; 
+    max-width: 23%;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+}
 
-                 /* --- >> MODIFIED: Filters & Bulk Actions Section --- */
-                 .controls-section { /* New wrapper for filters and bulk actions */
-             display: flex;
-             justify-content: space-between;
-             align-items: center;
-             flex-wrap: wrap; /* Allow wrapping */
-             gap: 15px; /* Gap between left/right groups */
-             margin-bottom: 25px;
-             padding-bottom: 15px; /* Add padding back here */
-             border-bottom: 1px solid var(--border-color); /* Add border back here */
-         }
-         .filter-buttons-group {
-             display: flex;
-             flex-wrap: wrap;
-             gap: 10px;
-         }
-         .bulk-actions-group {
-             display: flex;
-             align-items: center;
-             gap: 10px;
-         }
+/* Content wrapper for icon and number */
+.card-stat-box .stat-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    margin-bottom: 8px;
+}
+
+
+
+/* Card icon styling */
+.card-stat-box .card-icon {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+    stroke: currentColor;
+    opacity: 0.8;
+}
+
+/* Value styling */
+.card-stat-box .stat-value {
+    font-size: 1.2em;
+    font-weight: 700;
+}
+
+/* Label styling */
+.card-stat-box .stat-label {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    margin-top: auto;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Remove the old icon positioning that might interfere */
+.stat-box .stat-icon,
+.card-stat-box .stat-icon {
+    display: none;
+}
+
+/* Critical Cards - Orange/Yellow Warning Style */
+.card-stat-box.critical-cards {
+    border-color: rgba(240, 173, 78, 0.6); 
+    background-color: rgba(240, 173, 78, 0.15);
+    box-shadow: 0 2px 6px rgba(240, 173, 78, 0.15);
+}
+
+.card-stat-box.critical-cards .stat-value {
+    color: var(--accent-yellow);
+    font-weight: 700;
+}
+
+.card-stat-box.critical-cards .card-icon {
+    color: var(--accent-yellow);
+}
+
+.card-stat-box.critical-cards:hover {
+    background-color: rgba(240, 173, 78, 0.25);
+    border-color: rgba(240, 173, 78, 0.8);
+    box-shadow: 0 3px 8px rgba(240, 173, 78, 0.25);
+}
+
+/* Learning Cards - Blue Theme */
+.card-stat-box.learning-cards {
+    border-color: rgba(91, 192, 222, 0.6);
+    background-color: rgba(91, 192, 222, 0.15);
+    box-shadow: 0 2px 6px rgba(91, 192, 222, 0.15);
+}
+
+.card-stat-box.learning-cards .stat-value {
+    color: var(--accent-blue);
+    font-weight: 700;
+}
+
+.card-stat-box.learning-cards .card-icon {
+    color: var(--accent-blue);
+}
+
+.card-stat-box.learning-cards:hover {
+    background-color: rgba(91, 192, 222, 0.25);
+    border-color: rgba(91, 192, 222, 0.8);
+    box-shadow: 0 3px 8px rgba(91, 192, 222, 0.25);
+}
+
+/* Mastered Cards - Green Theme */
+.card-stat-box.mastered-cards {
+    border-color: rgba(92, 184, 92, 0.6);
+    background-color: rgba(92, 184, 92, 0.15);
+    box-shadow: 0 2px 6px rgba(92, 184, 92, 0.15);
+}
+
+.card-stat-box.mastered-cards .stat-value {
+    color: var(--accent-green);
+    font-weight: 700;
+}
+
+.card-stat-box.mastered-cards .card-icon {
+    color: var(--accent-green);
+}
+
+.card-stat-box.mastered-cards:hover {
+    background-color: rgba(92, 184, 92, 0.25);
+    border-color: rgba(92, 184, 92, 0.8);
+    box-shadow: 0 3px 8px rgba(92, 184, 92, 0.25);
+}
+
+
+/* Fix controls section layout */
+.controls-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.filter-buttons-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex-grow: 1;
+}
+
+.bulk-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
          .bulk-action-btn { /* Style for the small icon buttons */
              background: none;
              border: 1px solid var(--border-color);
@@ -216,7 +392,7 @@
              color: var(--text-secondary);
              border: 1px solid var(--border-color);
              padding: 8px 15px;
-             border-radius: 6px;
+             border-radius: 14px;
              cursor: pointer;
              font-size: 0.9em;
              transition: all 0.2s ease;
@@ -352,7 +528,7 @@
          }
         /* --- Card Grid (Unchanged) --- */
         .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-        .theorem-card-minimal { background-color: #2c3a56; border: 1px solid #4a5a7e; border-radius: 8px; padding: 15px; transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; cursor: pointer; position: relative; min-height: 100px; display: flex; flex-direction: column; }
+        .theorem-card-minimal { background-color: #2c3a56; border: 1px solid #4a5a7e; border-radius: 16px; padding: 15px; transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; cursor: pointer; position: relative; min-height: 100px; display: flex; flex-direction: column; }
         .theorem-card-minimal:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3); border-color: #6a7aac; }
         .theorem-name-minimal { font-size: 1.1em; font-weight: bold; color: #ffffff; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .explanation-preview { font-size: 0.9em; color: #a0a0c0; line-height: 1.4; flex-grow: 1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
@@ -398,7 +574,7 @@
 
         /* Modal Content Container - Base */
         .modal-content {
-         background-color: var(--primary-bg); border-radius: 12px; /* ... etc ... */
+         background-color: var(--primary-bg); border-radius: 22px; /* Updated border radius */
          width: 90%; max-width: 800px; height: 90vh; max-height: 700px;
          display: flex; flex-direction: column; overflow: hidden;
          /* --- Use position fixed/absolute within overlay --- */
@@ -714,7 +890,7 @@ transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1),
             right: 3%; top: 5vh; /* Default position */
             width: 45%; max-width: 550px;
             height: 90vh; max-height: 700px;
-            background-color: var(--primary-bg); border-radius: 12px;
+            background-color: var(--primary-bg); border-radius: 20px; /* Updated border radius */
             box-shadow: 0 5px 25px rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color);
             z-index: 1015;
             /* Initial State: Hidden */
@@ -742,7 +918,7 @@ transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1),
         height: 90vh; max-height: 700px; /* Match modal height */
 
         /* Style like modal */
-        background-color: var(--primary-bg); border-radius: 12px;
+        background-color: var(--primary-bg); border-radius: 20px; /* Updated border radius */
         box-shadow: 0 5px 25px rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color);
         z-index: 1015; display: flex; align-items: center; justify-content: center;
         color: var(--text-secondary); font-style: italic; padding: 20px; box-sizing: border-box;
@@ -860,7 +1036,7 @@ transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1),
              width: 100%;
              padding: 10px 12px;
              border: 1px solid var(--border-color);
-             border-radius: 5px;
+             border-radius: 8px; /* Updated border radius */
              background-color: var(--secondary-bg);
              color: var(--text-primary);
              font-size: 1em;
@@ -890,7 +1066,7 @@ transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1),
          /* Simple button styles for edit panel footer */
          .panel-button {
              padding: 8px 20px;
-             border-radius: 5px;
+             border-radius: 8px; /* Updated border radius */
              border: none;
              cursor: pointer;
              font-size: 0.95em;
@@ -909,6 +1085,504 @@ transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1),
          .panel-button.secondary:hover { background-color: var(--hover-border-color); color: var(--text-primary); transform: translateY(-1px);}
          /* --- End Edit Panel Styles --- */
 
+        /* --- Main Pill Container --- */
+.floating-study-pill { /* Keep V9 styles */
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 950; display: inline-flex; align-items: center; gap: 8px; flex-wrap: nowrap; background-color: rgba(31, 42, 64, 0.93); color: var(--text-primary); padding: 5px 8px; border-radius: 36px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(74, 90, 126, 0.35); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); width: auto; max-width: 90vw;
+}
+
+.chapter-switcher-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px); /* Position above the main pill */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(31, 42, 64, 0.95); /* Match pill background */
+    color: var(--text-primary);
+    padding: 5px 12px;
+    border-radius: 12px;
+    font-size: 0.9em;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 955; /* Above pill but potentially below other things */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+    pointer-events: none; /* Don't let it interfere */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    /* Max width if needed */
+    /* max-width: 200px; */
+    /* text-overflow: ellipsis; */
+    /* overflow: hidden; */
+}
+
+.chapter-switcher-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-3px); /* Slight upward movement */
+}
+
+/* --- Chapter Switcher Pill Container --- */
+.chapter-switcher-pill {
+    order: 1;
+    position: relative; /* Context for tooltip and absolute tabs */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Adaptive width based on JS class */
+    min-width: var(--container-min-width-2-materials, 80px); /* Default for 1-2 */
+    max-width: 100px; /* Adjust based on your tab size */
+    height: calc(var(--pill-icon-size, 40px) + 8px);
+    padding: 0;
+    overflow: hidden; /* Hide overflowing tabs */
+    border-radius: 60px;
+    transition: min-width 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.chapter-switcher-pill.has-3plus-chapters { /* Use specific class if needed */
+    min-width: var(--container-min-width-3plus-materials, 110px); /* Width for 3+ */
+}
+
+/* --- Inner Container for Scrolling --- */
+.chapter-switcher-pill-inner {
+    display: flex; /* Lays out tabs */
+    flex-wrap: nowrap;
+    align-items: center;
+    position: relative; /* Needed for absolute positioning of tabs relative to it */
+    height: 100%;
+    /* Width is determined by content (the absolute positioned tabs don't directly set it) */
+    width: auto; /* Allow content to determine width */
+    transform: translateX(0px); /* Initial scroll position */
+    transition: transform 0.25s ease-out; /* Smooth scroll transition */
+}
+
+
+/* --- Inner Container for Scrolling --- */
+.chapter-switcher-pill-inner {
+    display: flex; /* Keep flex */
+    flex-wrap: nowrap;
+    align-items: center;
+    position: relative; /* Context for absolute tabs */
+    height: 100%;
+    /* Width is set dynamically by JS to encompass ALL tabs */
+    /* width: auto; /* Remove explicit/conflicting width rules here */
+    transform: translateX(0px); /* Initial scroll position */
+    transition: transform 0.25s ease-out; /* Smooth scroll transition */
+}
+
+
+/* --- Base Chapter Tab Style --- */
+.chapter-tab {
+    /* ... Sizing, Appearance, Basic Layout (Keep as before) ... */
+    width: var(--pill-icon-size);
+    height: var(--pill-icon-size);
+    border-radius: 50%;
+    padding: 0;
+    background-color: #3a4a6e;
+    border: 1px solid #5a6a8e;
+    color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    /* Default state for ALL tabs (position set by JS via --tx) */
+    /* Use default scale-2, low opacity initially */
+    transform: translate(var(--tx, -50%), -50%) scale(var(--scale-2));
+    opacity: 0.4; /* Default low opacity */
+    z-index: 5;
+    pointer-events: none; /* Default non-interactive */
+
+    /* Transitions */
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.3s ease,
+                box-shadow 0.3s ease,
+                border-color 0.3s ease,
+                z-index 0s linear 0.35s;
+}
+
+/* --- Default State (Non-Hover) Positioning & Visibility --- */
+/* These rules override the base .chapter-tab styles for specific positions */
+
+.chapter-switcher-pill.has-multiple .chapter-tab.is-active {
+    transform: translate(-50%, -50%) scale(var(--scale-0)); /* Center, full scale */
+    opacity: 1;
+    z-index: 10;
+    pointer-events: auto;
+    border-color: var(--accent-blue);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35), 0 0 6px rgba(91, 192, 222, 0.3);
+}
+
+.chapter-switcher-pill.has-multiple .chapter-tab.is-prev-1 {
+    transform: translate(calc(-50% - var(--peek-center-offset-1)), -50%) scale(var(--scale-1));
+    opacity: 0.7;
+    z-index: 9;
+    pointer-events: auto;
+}
+.chapter-switcher-pill.has-multiple .chapter-tab.is-next-1 {
+    transform: translate(calc(-50% + var(--peek-center-offset-1)), -50%) scale(var(--scale-1));
+    opacity: 0.7;
+    z-index: 9;
+    pointer-events: auto;
+}
+
+.chapter-switcher-pill.has-multiple .chapter-tab.is-prev-2 {
+    transform: translate(calc(-50% - var(--peek-center-offset-2-abs)), -50%) scale(var(--scale-2));
+    opacity: 0.5;
+    z-index: 8;
+    pointer-events: auto;
+}
+.chapter-switcher-pill.has-multiple .chapter-tab.is-next-2 {
+    transform: translate(calc(-50% + var(--peek-center-offset-2-abs)), -50%) scale(var(--scale-2));
+    opacity: 0.5;
+    z-index: 8;
+    pointer-events: auto;
+}
+/* Add rules for is-prev-4, is-next-4 if needed, they will also use base .chapter-tab */
+
+
+/* --- Hover State Expansion --- */
+
+/* General style for ALL tabs on hover (expand them) */
+.chapter-switcher-pill.has-multiple:hover .chapter-tab {
+    transform: translate(var(--tx, -50%), -50%) scale(var(--scale-0)); /* Use --tx, full scale */
+    opacity: 0.8; /* Base hover opacity */
+    pointer-events: auto; /* All become interactive */
+    z-index: 6;
+    border-color: #5a6a8e;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+}
+/* Active tab during hover */
+.chapter-switcher-pill.has-multiple:hover .chapter-tab.is-active {
+    transform: translate(-50%, calc(-50% - 1px)) scale(1.03);
+    opacity: 1;
+    z-index: 10;
+    border-color: var(--accent-blue);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 8px rgba(91, 192, 222, 0.5);
+}
+/* Direct hover over non-active tab during hover */
+.chapter-switcher-pill.has-multiple:hover .chapter-tab:not(.is-active):hover {
+    transform: translate(var(--tx, -50%), calc(-50% - 3px)) scale(1.03);
+    opacity: 1;
+    background-color: var(--accent-blue);
+    border-color: transparent;
+    color: var(--primary-bg);
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3)) drop-shadow(0 0 2px rgba(91, 192, 222, 0.7));
+    z-index: 7;
+}
+/* Style icon/text color on direct hover */
+.chapter-switcher-pill.has-multiple:hover .chapter-tab:not(.is-active):hover svg,
+.chapter-switcher-pill.has-multiple:hover .chapter-tab:not(.is-active):hover .generated-icon {
+    /* fill: currentColor; */ /* Use if SVG */
+     color: var(--primary-bg); /* Change generated text color */
+}
+
+
+/* --- Icon/Text Styles --- */
+.chapter-tab svg { /* Style if using SVGs */
+    width: calc(var(--pill-icon-size) * 0.55);
+    height: calc(var(--pill-icon-size) * 0.55);
+    fill: var(--accent-blue);
+    transition: fill 0.2s ease;
+}
+.chapter-tab .generated-icon { /* Style for generated text icons */
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--accent-blue);
+    padding: 2px;
+    border-radius: 3px;
+    transition: color 0.2s ease;
+}
+
+
+/* --- Scroll Indicators (Keep as is) --- */
+.chapter-switcher-pill::before, .chapter-switcher-pill::after { content: ''; position: absolute; top: 0; bottom: 0; width: 15px; z-index: 15; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
+.chapter-switcher-pill::before { left: 0; background: linear-gradient(to right, rgba(31, 42, 64, 0.95), rgba(31, 42, 64, 0)); }
+.chapter-switcher-pill::after { right: 0; background: linear-gradient(to left, rgba(31, 42, 64, 0.95), rgba(31, 42, 64, 0)); }
+.chapter-switcher-pill.is-scrollable-left::before, .chapter-switcher-pill.is-scrollable-right::after { opacity: 1; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.chapter-switcher-pill .chapter-tab.is-loading svg { width: calc(var(--pill-icon-size) * 0.6); height: calc(var(--pill-icon-size) * 0.6); fill: var(--text-secondary); animation: spin 1.5s linear infinite;}
+
+.chapter-tab .generated-icon {
+    font-size: 11px; /* Adjust size */
+    font-weight: bold;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--accent-blue); /* Or text-primary */
+    padding: 2px;
+    border-radius: 3px;
+    /* background-color: rgba(91, 192, 222, 0.1); Optional background */
+}
+.chapter-switcher-pill.has-multiple:hover .chapter-tab:not(.is-active):hover .generated-icon {
+    color: var(--primary-bg); /* Icon color change on tab hover */
+}
+
+/* --- 2. Study Button Wrapper (CENTERED, AI GLOW EFFECT) --- */
+.study-button-wrapper {
+    order: 2; position: relative; display: flex; flex-shrink: 0; margin: 0 5px;
+    /* Keep V10 Glow */
+    filter: drop-shadow(0 0 4px rgba(100, 200, 240, 0.6));
+    animation: pulse-glow-filter 2.5s infinite ease-in-out;
+    transition: filter 0.25s ease;
+}
+.study-button-wrapper:hover {
+    filter: drop-shadow(0 0 8px rgba(123, 208, 232, 0.85));
+    animation-play-state: paused;
+}
+
+
+.study-button-wrapper .action-button.study-due-button {
+    padding: 10px 22px 10px 26px;
+    font-size: 1.05em;
+    border-radius: 26px 0 0 26px;
+    /* *** VIBRANT GRADIENT *** */
+    background: linear-gradient(135deg, #63d0ff 0%, #4aa7c3 60%, #5bc0de 100%);
+    color: var(--text-on-button); /* White text */
+    border: none;
+    font-weight: 700;
+    /* *** REMOVE box-shadow, use wrapper's filter *** */
+    box-shadow: none;
+    /* Add inner shadow for depth */
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2),
+                inset 0 -1px 1px rgba(0, 0, 0, 0.15);
+    transition: background 0.2s ease, transform 0.15s ease; /* Remove shadow transition */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 1; /* Ensure button part is clickable */
+    height: 44px;
+    box-sizing: border-box;
+}
+/* Hover state directly on button for transform */
+.study-button-wrapper .action-button.study-due-button:hover {
+    /* Brighter gradient on hover */
+    background: linear-gradient(135deg, #8ce0ff 0%, #5cbde0 60%, #7bd0e8 100%);
+    transform: translateY(-1px); /* Subtle lift */
+}
+
+.study-options-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 44px;
+    padding: 0;
+    margin-left: -1px;
+    /* *** MATCH GRADIENT *** */
+    background: linear-gradient(135deg, #63d0ff 0%, #4aa7c3 60%, #5bc0de 100%);
+    border: none;
+    /* border-left: 1px solid rgba(var(--text-on-button), 0.1); */ /* Remove border */
+    border-radius: 0 26px 26px 0;
+    color: var(--text-on-button);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    /* *** REMOVE shadow, use wrapper's filter *** */
+    box-shadow: none;
+     /* Add inner shadow matching button */
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2),
+                inset 0 -1px 1px rgba(0, 0, 0, 0.15),
+                inset -1px 0 1px rgba(0,0,0,0.1); /* Left inset shadow */
+    z-index: 0;
+}
+/* Hover state directly on trigger */
+.study-options-trigger:hover {
+    background: linear-gradient(135deg, #8ce0ff 0%, #5cbde0 60%, #7bd0e8 100%);
+}
+
+.study-options-trigger svg { 
+    width: 22px; 
+    height: 22px; 
+    fill: currentColor; 
+    transition: transform 0.3s ease; /* Smoother animation */
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2)); /* Matching text shadow effect */
+}
+
+.study-button-wrapper.popup-open .study-options-trigger svg { 
+    transform: rotate(180deg); 
+}
+
+
+/* --- 3. Study Stats (Round with Colored BG & Icons) --- */
+.study-stats.simplified {
+    order: 3; display: flex; align-items: center; gap: 6px; padding: 0; margin: 0; flex-shrink: 0; padding-left: 0px; padding-right: 15px;
+}
+
+.stat-box {
+    position: relative; display: flex; justify-content: center; align-items: center; width: 34px; height: 34px; padding: 0; border-radius: 50%;
+    border: 1px solid; /* *** Thinner border: 1px *** */
+    /* *** Background Color set via var below *** */
+    background-color: rgba(var(--rgb-color), 0.25); /* Use var, MORE opaque */
+    box-shadow: inset 0 0 4px rgba(0,0,0,0.25); /* Slightly stronger inset */
+    overflow: hidden;
+}
+
+/* Ensure stat box icons are visible */
+.study-stats.simplified .stat-box svg.stat-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 150%;
+    height: 150%;
+    fill: currentColor;
+    opacity: 0.20;
+    z-index: 0;
+    pointer-events: none;
+    display: block; /* Ensure it's displayed */
+}
+
+/* Override any display:none that might be affecting these icons */
+.study-stats.simplified .stat-box .stat-icon {
+    display: block !important;
+}
+
+/* Specific colors */
+.stat-box.new-cards-stat {
+    border-color: var(--new-color-border); /* Purple border */
+    color: var(--new-color); /* Purple icon color */
+    --rgb-color: 105, 48, 180; /* Purple in RGB format (from #6930b4) */
+}
+.stat-box.due-cards-stat {
+    border-color: var(--due-color-border); /* Green border */
+    color: var(--due-color); /* Green icon color - FIXED: was incorrectly using new-color */
+    --rgb-color: 28, 173, 28; /* Green in RGB format (from #1cad1c) */
+}
+/* Keep value white */
+.stat-box .stat-value { color: var(--text-primary); }
+
+.study-options-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: auto; /* Matches button height */
+    padding: 0;
+    margin-left: -1px;
+    background-color: var(--accent-blue);
+    border: none;
+    border-left: 1px solid rgba(var(--text-on-button), 0.15); /* Subtle separator */
+    border-radius: 0 20px 20px 0;
+    color: var(--text-on-button);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    box-shadow: inset -1px 0px 1px rgba(0,0,0,0.1); /* Inset shadow for depth */
+    z-index: 0;
+}
+.study-options-trigger:hover {
+    background-color: #7bd0e8;
+}
+.study-options-trigger svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+    transition: transform 0.2s ease;
+}
+.study-button-wrapper.popup-open .study-options-trigger svg {
+    transform: rotate(180deg);
+}
+
+/* --- Study Options Popup --- */
+.study-options-popup {
+    position: absolute;
+    bottom: calc(100% + 6px); /* Closer gap */
+    right: 0;
+    width: 145px; /* Fixed width maybe? */
+    background-color: #232e44dc; /* Match context menu */
+    border-radius: 18px; /* Match context menu */
+    border: 1px solid #4a5a7e; /* Match context menu */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* Match context menu */
+    padding: 8px; /* Tighter padding */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 960;
+    opacity: 0;
+    transform: translateY(8px);
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+.study-options-popup.visible {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+/* Focused Study Button inside Popup */
+.study-options-popup .action-button.focused-study-button {
+    /* Style similarly to V4.5 action button */
+    padding: 8px 12px;
+    font-size: 0.9em;
+    border-radius: 14px;
+    background-color: var(--success-green);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Simple shadow */
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.1);
+    font-weight: 500; /* Normal weight */
+    transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap;
+    width: 100%;
+    text-align: center;
+}
+.study-options-popup .action-button.focused-study-button:hover {
+    background-color: #4cae4c;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 7px rgba(0,0,0,0.3);
+}
+.study-options-popup .action-button.focused-study-button.is-selecting-chapters {
+     background-color: var(--warning-orange);
+     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+.study-options-popup .action-button.focused-study-button.is-selecting-chapters:hover {
+     background-color: #ec971f;
+     box-shadow: 0 3px 7px rgba(0,0,0,0.3);
+}
+
+/* Batch Size inside Popup */
+.study-options-popup .batch-size-control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-direction: row;
+    border-top: 0px solid rgba(74, 90, 126, 0.3); /* Lighter separator */
+    padding-top: 6px;
+    margin-top: 4px;
+}
+.study-options-popup .batch-size-label {
+    font-size: 0.85em;
+    margin: 0;
+    color: var(--text-secondary);
+}
+.study-options-popup .batch-size-input {
+    background-color: var(--tertiary-bg);
+    border: 1px solid rgba(74, 90, 126, 0.5); /* Subtle border */
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 4px 6px; /* Tighter padding */
+    font-size: 0.9em;
+    width: 45px; /* Slightly narrower */
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.study-options-popup .batch-size-input { -moz-appearance: textfield; }
+.study-options-popup .batch-size-input::-webkit-outer-spin-button,
+.study-options-popup .batch-size-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.study-options-popup .batch-size-input:focus {
+     border-color: var(--accent-blue);
+     box-shadow: 0 0 4px rgba(91, 192, 222, 0.3);
+}
 
         /* Responsiveness */
         /* Adjust responsiveness for new AI layout */
@@ -994,8 +1668,8 @@ transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1),
     <!-- Main Page Content (Unchanged) -->
     <div class="chapter-details-container" id="mainContent">
         <!-- ... Header, Analytics, Filters, Grid ... -->
-        <div class="chapter-header">
-            <div class="chapter-title-section">
+        <div class="material-header">
+            <div class="material-title-section">
                  <div class="breadcrumbs">
                      <a href="index.html">Mathematics</a>
                      <span class="breadcrumb-separator">/</span>
@@ -1022,14 +1696,49 @@ transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1),
                     <div class="analytics-item">
                         <label>Card Status</label>
                          <div class="card-status-container">
-                             <!-- Existing -->
-                             <div class="card-stat-box"> <span class="stat-value" id="statTotalCards">-</span> <span class="stat-label">Total</span> </div>
-                             <div class="card-stat-box"> <span class="stat-value" id="statDueCards">-</span> <span class="stat-label">Due</span> </div>
+                            <!-- Total Cards - neutral styling -->
+                            <div class="card-stat-box total-cards">
+                                <div class="stat-content">
+                                    <svg class="card-icon" width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                                        <title>Icon representing a deck of taller flashcards, showing one</title>
+                                        <!-- Back Card (rotated slightly more, taller) -->
+                                        <rect x="6" y="4" width="20" height="24" rx="3" ry="3" fill="none" stroke="currentColor" stroke-width="1.5" transform="rotate(-6 16 16)" /> 
+                                        <!-- Front Card Group (rotated slightly less) -->
+                                        <g transform="rotate(4 13 13)"> 
+                                            <!-- Front Card Outline (taller) -->
+                                            <rect x="4" y="2" width="18" height="22" rx="3" ry="3" fill="none" stroke="currentColor" stroke-width="1.5" />
+                                        </g>
+                                    </svg>
+                                    <span class="stat-value" id="statTotalCards">-</span>
+                                </div>
+                                <span class="stat-label">Total</span>
+                            </div>
+                            <!-- Critical Cards - keep warning icon but restructure layout -->
+                            <div class="card-stat-box critical-cards" id="statCriticalCards" title="Cards needing urgent review">
+                                <div class="stat-content">
+                                    <svg class="card-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><title>ionicons-v5-r</title><path d="M85.57,446.25H426.43a32,32,0,0,0,28.17-47.17L284.18,82.58c-12.09-22.44-44.27-22.44-56.36,0L57.4,399.08A32,32,0,0,0,85.57,446.25Z" style="fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px"></path><path d="M250.26,195.39l5.74,122,5.73-121.95a5.74,5.74,0,0,0-5.79-6h0A5.74,5.74,0,0,0,250.26,195.39Z" style="fill:none;;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px"></path><path d="M256,397.25a20,20,0,1,1,20-20A20,20,0,0,1,256,397.25Z"></path></g></svg>
+                                    <span class="stat-value">-</span>
+                                </div>
+                                <span class="stat-label">Critical</span>
+                            </div>
                              <!-- Added -->
-                             <div class="card-stat-box"> <span class="stat-value" id="statLearningCards">-</span> <span class="stat-label">Learning</span> </div>
-                             <div class="card-stat-box"> <span class="stat-value" id="statMasteredCards">-</span> <span class="stat-label">Mastered</span> </div>
-                             <!-- Add 'New' if API provides it reliably, or calculate Total - (Due+Learning+Mastered+Buried) -->
-                             <!-- <div class="card-stat-box"> <span class="stat-value" id="statNewCards">-</span> <span class="stat-label">New</span> </div> -->
+                            <!-- Learning Cards with restructured layout -->
+                            <div class="card-stat-box learning-cards" id="statLearningCards" title="Cards in learning phase">
+                                <div class="stat-content">
+                                    <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 463 463" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <path d="M151.245,222.446C148.054,237.039,135.036,248,119.5,248c-4.142,0-7.5,3.357-7.5,7.5s3.358,7.5,7.5,7.5 c23.774,0,43.522-17.557,46.966-40.386c14.556-1.574,27.993-8.06,38.395-18.677c2.899-2.959,2.85-7.708-0.109-10.606 c-2.958-2.897-7.707-2.851-10.606,0.108C184.947,202.829,172.643,208,159.5,208c-26.743,0-48.5-21.757-48.5-48.5 c0-4.143-3.358-7.5-7.5-7.5s-7.5,3.357-7.5,7.5C96,191.715,120.119,218.384,151.245,222.446z"></path> <path d="M183,287.5c0-4.143-3.358-7.5-7.5-7.5c-35.014,0-63.5,28.486-63.5,63.5c0,0.362,0.013,0.725,0.019,1.088 C109.23,344.212,106.39,344,103.5,344c-4.142,0-7.5,3.357-7.5,7.5s3.358,7.5,7.5,7.5c26.743,0,48.5,21.757,48.5,48.5 c0,4.143,3.358,7.5,7.5,7.5s7.5-3.357,7.5-7.5c0-26.611-16.462-49.437-39.731-58.867c-0.178-1.699-0.269-3.418-0.269-5.133 c0-26.743,21.757-48.5,48.5-48.5C179.642,295,183,291.643,183,287.5z"></path> <path d="M439,223.5c0-17.075-6.82-33.256-18.875-45.156c1.909-6.108,2.875-12.426,2.875-18.844 c0-30.874-22.152-56.659-51.394-62.329C373.841,91.6,375,85.628,375,79.5c0-19.557-11.883-36.387-28.806-43.661 C317.999,13.383,287.162,0,263.5,0c-13.153,0-24.817,6.468-32,16.384C224.317,6.468,212.653,0,199.5,0 c-23.662,0-54.499,13.383-82.694,35.839C99.883,43.113,88,59.943,88,79.5c0,6.128,1.159,12.1,3.394,17.671 C62.152,102.841,40,128.626,40,159.5c0,6.418,0.965,12.735,2.875,18.844C30.82,190.244,24,206.425,24,223.5 c0,13.348,4.149,25.741,11.213,35.975C27.872,270.087,24,282.466,24,295.5c0,23.088,12.587,44.242,32.516,55.396 C56.173,353.748,56,356.626,56,359.5c0,31.144,20.315,58.679,49.79,68.063C118.611,449.505,141.965,463,167.5,463 c27.995,0,52.269-16.181,64-39.674c11.731,23.493,36.005,39.674,64,39.674c25.535,0,48.889-13.495,61.71-35.437 c29.475-9.385,49.79-36.92,49.79-68.063c0-2.874-0.173-5.752-0.516-8.604C426.413,339.742,439,318.588,439,295.5 c0-13.034-3.872-25.413-11.213-36.025C434.851,249.241,439,236.848,439,223.5z M167.5,448c-21.029,0-40.191-11.594-50.009-30.256 c-0.973-1.849-2.671-3.208-4.688-3.751C88.19,407.369,71,384.961,71,359.5c0-3.81,0.384-7.626,1.141-11.344 c0.702-3.447-1.087-6.92-4.302-8.35C50.32,332.018,39,314.626,39,295.5c0-8.699,2.256-17.014,6.561-24.379 C56.757,280.992,71.436,287,87.5,287c4.142,0,7.5-3.357,7.5-7.5s-3.358-7.5-7.5-7.5C60.757,272,39,250.243,39,223.5 c0-14.396,6.352-27.964,17.428-37.221c2.5-2.09,3.365-5.555,2.14-8.574C56.2,171.869,55,165.744,55,159.5 c0-26.743,21.757-48.5,48.5-48.5s48.5,21.757,48.5,48.5c0,4.143,3.358,7.5,7.5,7.5s7.5-3.357,7.5-7.5 c0-33.642-26.302-61.243-59.421-63.355C104.577,91.127,103,85.421,103,79.5c0-13.369,8.116-24.875,19.678-29.859 c0.447-0.133,0.885-0.307,1.308-0.527C127.568,47.752,131.447,47,135.5,47c12.557,0,23.767,7.021,29.256,18.325 c1.81,3.727,6.298,5.281,10.023,3.47c3.726-1.809,5.28-6.296,3.47-10.022c-6.266-12.903-18.125-22.177-31.782-25.462 C165.609,21.631,184.454,15,199.5,15c13.509,0,24.5,10.99,24.5,24.5v97.051c-6.739-5.346-15.25-8.551-24.5-8.551 c-4.142,0-7.5,3.357-7.5,7.5s3.358,7.5,7.5,7.5c13.509,0,24.5,10.99,24.5,24.5v180.279c-9.325-12.031-22.471-21.111-37.935-25.266 c-3.999-1.071-8.114,1.297-9.189,5.297c-1.075,4.001,1.297,8.115,5.297,9.189C206.8,343.616,224,366.027,224,391.5 C224,422.654,198.654,448,167.5,448z M395.161,339.807c-3.215,1.43-5.004,4.902-4.302,8.35c0.757,3.718,1.141,7.534,1.141,11.344 c0,25.461-17.19,47.869-41.803,54.493c-2.017,0.543-3.716,1.902-4.688,3.751C335.691,436.406,316.529,448,295.5,448 c-31.154,0-56.5-25.346-56.5-56.5c0-2.109-0.098-4.2-0.281-6.271c0.178-0.641,0.281-1.314,0.281-2.012V135.5 c0-13.51,10.991-24.5,24.5-24.5c4.142,0,7.5-3.357,7.5-7.5s-3.358-7.5-7.5-7.5c-9.25,0-17.761,3.205-24.5,8.551V39.5 c0-13.51,10.991-24.5,24.5-24.5c15.046,0,33.891,6.631,53.033,18.311c-13.657,3.284-25.516,12.559-31.782,25.462 c-1.81,3.727-0.256,8.214,3.47,10.022c3.726,1.81,8.213,0.257,10.023-3.47C303.733,54.021,314.943,47,327.5,47 c4.053,0,7.933,0.752,11.514,2.114c0.422,0.22,0.86,0.393,1.305,0.526C351.883,54.624,360,66.13,360,79.5 c0,5.921-1.577,11.627-4.579,16.645C322.302,98.257,296,125.858,296,159.5c0,4.143,3.358,7.5,7.5,7.5s7.5-3.357,7.5-7.5 c0-26.743,21.757-48.5,48.5-48.5s48.5,21.757,48.5,48.5c0,6.244-1.2,12.369-3.567,18.205c-1.225,3.02-0.36,6.484,2.14,8.574 C417.648,195.536,424,209.104,424,223.5c0,26.743-21.757,48.5-48.5,48.5c-4.142,0-7.5,3.357-7.5,7.5s3.358,7.5,7.5,7.5 c16.064,0,30.743-6.008,41.939-15.879c4.306,7.365,6.561,15.68,6.561,24.379C424,314.626,412.68,332.018,395.161,339.807z"></path> <path d="M359.5,240c-15.536,0-28.554-10.961-31.745-25.554C358.881,210.384,383,183.715,383,151.5c0-4.143-3.358-7.5-7.5-7.5 s-7.5,3.357-7.5,7.5c0,26.743-21.757,48.5-48.5,48.5c-13.143,0-25.447-5.171-34.646-14.561c-2.898-2.958-7.647-3.007-10.606-0.108 s-3.008,7.647-0.109,10.606c10.402,10.617,23.839,17.103,38.395,18.677C315.978,237.443,335.726,255,359.5,255 c4.142,0,7.5-3.357,7.5-7.5S363.642,240,359.5,240z"></path> <path d="M335.5,328c-2.89,0-5.73,0.212-8.519,0.588c0.006-0.363,0.019-0.726,0.019-1.088c0-35.014-28.486-63.5-63.5-63.5 c-4.142,0-7.5,3.357-7.5,7.5s3.358,7.5,7.5,7.5c26.743,0,48.5,21.757,48.5,48.5c0,1.714-0.091,3.434-0.269,5.133 C288.462,342.063,272,364.889,272,391.5c0,4.143,3.358,7.5,7.5,7.5s7.5-3.357,7.5-7.5c0-26.743,21.757-48.5,48.5-48.5 c4.142,0,7.5-3.357,7.5-7.5S339.642,328,335.5,328z"></path> </g> </g></svg>
+                                    <span class="stat-value">-</span>
+                                </div>
+                                <span class="stat-label">Learning</span>
+                            </div>
+
+                            <!-- Mastered Cards - add mastered-cards class -->
+                            <div class="card-stat-box mastered-cards" id="statMasteredCards" title="Cards you've mastered">
+                                <div class="stat-content">
+                                    <svg class="card-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M11.5283 1.5999C11.7686 1.29437 12.2314 1.29437 12.4717 1.5999L14.2805 3.90051C14.4309 4.09173 14.6818 4.17325 14.9158 4.10693L17.7314 3.3089C18.1054 3.20292 18.4799 3.475 18.4946 3.86338L18.6057 6.78783C18.615 7.03089 18.77 7.24433 18.9984 7.32823L21.7453 8.33761C22.1101 8.47166 22.2532 8.91189 22.0368 9.23478L20.4078 11.666C20.2724 11.8681 20.2724 12.1319 20.4078 12.334L22.0368 14.7652C22.2532 15.0881 22.1101 15.5283 21.7453 15.6624L18.9984 16.6718C18.77 16.7557 18.615 16.9691 18.6057 17.2122L18.4946 20.1366C18.4799 20.525 18.1054 20.7971 17.7314 20.6911L14.9158 19.8931C14.6818 19.8267 14.4309 19.9083 14.2805 20.0995L12.4717 22.4001C12.2314 22.7056 11.7686 22.7056 11.5283 22.4001L9.71949 20.0995C9.56915 19.9083 9.31823 19.8267 9.08421 19.8931L6.26856 20.6911C5.89463 20.7971 5.52014 20.525 5.50539 20.1366L5.39427 17.2122C5.38503 16.9691 5.22996 16.7557 5.00164 16.6718L2.25467 15.6624C1.88986 15.5283 1.74682 15.0881 1.96317 14.7652L3.59221 12.334C3.72761 12.1319 3.72761 11.8681 3.59221 11.666L1.96317 9.23478C1.74682 8.91189 1.88986 8.47166 2.25467 8.33761L5.00165 7.32823C5.22996 7.24433 5.38503 7.03089 5.39427 6.78783L5.50539 3.86338C5.52014 3.475 5.89463 3.20292 6.26857 3.3089L9.08421 4.10693C9.31823 4.17325 9.56915 4.09173 9.71949 3.90051L11.5283 1.5999Z" stroke-width="1.5"></path> <path d="M9 12L11 14L15 10" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
+                                    <span class="stat-value">-</span>
+                                </div>
+                                <span class="stat-label">Mastered</span>
+                            </div>
                          </div>
                      </div>
                 </div>
@@ -1042,57 +1751,6 @@ transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1),
             </div>
         </div>
 
-        <!-- Study Buttons (Moved & Added) -->
-        <div class="study-button-container">
-            <button class="study-now-button" id="studyDueBtn">Study Due Cards</button> <!-- Renamed ID -->
-            <button class="icon-button study-all-button" id="studyAllBtn" aria-label="Study All Cards" title="Study All Cards">
-                <!-- Cards stack SVG icon -->
-                <svg width="100" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                  
-                    <!-- Card 4 (Deepest in the stack) -->
-                    <!-- Further offset (x=8, y=2), increased negative rotation -->
-                    <rect 
-                      x="8" y="2" 
-                      width="20" height="24" 
-                      rx="3" ry="3" 
-                      fill="none" 
-                      stroke="white" 
-                      stroke-width="1.5" 
-                      transform="rotate(-12 18 14)" /> 
-                      <!-- Rotation center: x=8 + width/2=18, y=2 + height/2=14 -->
-                  
-                    <!-- Card 3 -->
-                    <!-- Original "Back Card", now the third from front -->
-                    <!-- Position (x=6, y=4), standard negative rotation -->
-                     <rect 
-                      x="6" y="4" 
-                      width="20" height="24" 
-                      rx="3" ry="3" 
-                      fill="none" 
-                      stroke="white" 
-                      stroke-width="1.5" 
-                      transform="rotate(-6 16 16)" /> 
-                      <!-- Rotation center: x=6 + width/2=16, y=4 + height/2=16 -->
-                  
-                    <!-- Card 2 & Text '1' Group (Front Card Group) -->
-                    <!-- Rotated slightly positive -->
-                    <g transform="rotate(4 13 13)"> 
-                       <!-- Rotation center: x=4 + width/2=13, y=2 + height/2=13 -->
-                  
-                      <!-- Card 2 Outline (Front Card Outline) -->
-                      <rect 
-                        x="4" y="2" 
-                        width="18" height="22" 
-                        rx="3" ry="3" 
-                        fill="none" 
-                        stroke="white" 
-                        stroke-width="1.5" />
-                  
-                  
-                    </g>
-                  </svg>
-            </button>
-        </div>
                 <!-- Controls: Filters & Bulk Actions (New Structure) -->
                 <div class="controls-section">
                     <div class="filter-buttons-group">
@@ -1257,6 +1915,63 @@ transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1),
     <!-- MODAL V6 MARKUP ENDS HERE       -->
     <!-- =============================== -->
 
+    <!-- ADD THE FLOATING STUDY PILL (Similar to chapter-folders.html) -->
+<div class="floating-study-pill" id="floatingStudyPill">
+    <!-- Add inside floatingStudyPill element -->
+<div class="chapter-switcher-tooltip" id="pillChapterTooltip" aria-live="polite"></div>
+
+    <!-- 1. Chapter Switcher Area -->
+    <div class="chapter-switcher-pill" id="pillChapterSwitcher"> <!-- Changed ID -->
+        <div class="chapter-switcher-pill-inner" id="pillChapterSwitcherInner"> <!-- Added Inner -->
+            <!-- Chapter buttons added by JS -->
+             <button class="chapter-tab is-loading" aria-label="Loading chapters..."> <!-- Renamed class -->
+                <svg viewBox="0 0 24 24" style="animation: spin 1.5s linear infinite;"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"></path></svg>
+             </button>
+        </div>
+    </div>
+
+    <!-- 2. Study Stats (Simplified) -->
+    <div class="study-stats simplified">
+        <div class="stat-box new-cards-stat" title="New cards available today (Chapter)">
+            <!-- New Card Icon SVG -->
+             <svg class="stat-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 7H11v4H7v2h4v4h2v-4h4v-2h-4V7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+             </svg>
+            <span class="stat-value" id="pillNewCardsCount">-</span>
+        </div>
+        <div class="stat-box due-cards-stat" title="Cards due for review (Chapter)">
+            <!-- Due/Clock Icon SVG -->
+            <svg class="stat-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                 <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+            </svg>
+            <span class="stat-value" id="pillDueCardsCount">-</span>
+        </div>
+    </div>
+
+    <!-- 3. Study Button Wrapper -->
+    <div class="study-button-wrapper">
+        <button class="action-button study-due-button" id="pillStudyDueButton">
+            Study Due
+        </button>
+        <button class="study-options-trigger" id="pillOptionsTrigger" aria-label="Show study options" aria-haspopup="true" aria-expanded="false">
+            <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"></path></svg>
+        </button>
+
+        <!-- Study Options Popup -->
+        <div class="study-options-popup" id="studyOptionsPopup" role="menu" style="display: none;">
+            <!-- Study All Button -->
+            <button class="action-button focused-study-button" id="pillStudyAllButton" role="menuitem"> <!-- Changed ID and Text -->
+                Study All Cards
+            </button>
+            <!-- Batch Size Input -->
+            <div class="batch-size-control" role="presentation">
+                <label for="pillReviewBatchSize" class="batch-size-label">Batch Size:</label>
+                <input type="number" id="pillReviewBatchSize" name="review-batch-size" class="batch-size-input" min="1" step="5" value="20" title="Max cards per study session (Material Setting)">
+            </div>
+        </div>
+    </div>
+
+</div>
 
     <script type="module" src="./js/views/chapterDetailsView.js"></script>
 

@@ -212,24 +212,63 @@
 
             <h2 id="completionMessage" class="completion-title">Session Complete!</h2>
 
-            <!-- Stats Display -->
             <div class="completion-stats-grid" id="completionStats">
-                <div class="stat-item">
-                    <span class="stat-value" id="compStatTotal">--</span>
-                    <span class="stat-label">Cards Studied</span>
+                <!-- Cards Studied Stat -->
+                <div class="stat-item stat-cards">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21,2H3C1.9,2,1,2.9,1,4v16c0,1.1,0.9,2,2,2h18c1.1,0,2-0.9,2-2V4C23,2.9,22.1,2,21,2z M21,20H3V6h18V20z M9,10H7v2h2V10z 
+                                  M13,10h-2v2h2V10z M17,10h-2v2h2V10z M9,14H7v2h2V14z M13,14h-2v2h2V14z M17,14h-2v2h2V14z"/>
+                        </svg>
+                    </div>
+                    <div id="compStatTotal" class="stat-value">42</div>
+                    <div class="stat-label">Cards Studied</div>
                 </div>
-                 <div class="stat-item stat-accuracy">
-                     <!-- Placeholder for potential circular progress -->
-                     <svg class="accuracy-circle-bg" viewBox="0 0 36 36"><path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path></svg>
-                     <svg class="accuracy-circle" viewBox="0 0 36 36"><path class="accuracy-value-path" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path></svg>
-                    <span class="stat-value" id="compStatAccuracy">--%</span>
-                    <span class="stat-label">Accuracy</span>
+                
+                <!-- Accuracy Stat -->
+                <div class="stat-item stat-accuracy">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12,2C6.5,2,2,6.5,2,12s4.5,10,10,10s10-4.5,10-10S17.5,2,12,2z M12,20c-4.4,0-8-3.6-8-8s3.6-8,8-8s8,3.6,8,8
+                                  S16.4,20,12,20z M16.2,7.8l-6.4,6.4l-2.1-2.1L6.5,13.4l3.3,3.3l7.7-7.7L16.2,7.8z"/>
+                        </svg>
+                    </div>
+                    <div class="accuracy-container">
+                        <svg class="accuracy-circle-bg" viewBox="0 0 36 36">
+                            <path d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+                        </svg>
+                        <svg class="accuracy-circle" viewBox="0 0 36 36">
+                            <path class="accuracy-value-path" id="accuracyPath" d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+                        </svg>
+                        <div id="compStatAccuracy" class="stat-value">85<span class="unit">%</span></div>
+                    </div>
+                    <div class="stat-label">Accuracy</div>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-value" id="compStatTime">--:--</span>
-                    <span class="stat-label">Total Time</span>
+                
+                <!-- Time Stat -->
+                <div class="stat-item stat-time">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M11.99,2C6.47,2,2,6.48,2,12s4.47,10,9.99,10C17.52,22,22,17.52,22,12S17.52,2,11.99,2z M12,20c-4.42,0-8-3.58-8-8
+                                  s3.58-8,8-8s8,3.58,8,8S16.42,20,12,20z M12.5,7H11v6l5.25,3.15l0.75-1.23l-4.5-2.67V7z"/>
+                        </svg>
+                    </div>
+                    <div id="compStatTime" class="time-parts">
+                        <div class="time-part">
+                            <div class="time-value minutes">14</div>
+                            <div class="time-unit">min</div>
+                        </div>
+                        <div class="time-part">
+                            <div class="time-value seconds">32</div>
+                            <div class="time-unit">sec</div>
+                        </div>
+                    </div>
+                    <div class="stat-label">Study Time</div>
                 </div>
-                 <!-- Add more stats if needed (Correct, Incorrect?) -->
             </div>
 
             <!-- Floating Action Buttons -->
@@ -293,6 +332,13 @@
                         </svg>
                     <span>Study Another</span>
                 </button>
+
+                            <!-- NEW Section for Remaining Due -->
+            <div id="completionRemainingDue" class="remaining-due-section" style="display: none; margin-top: 20px; align-items: center; gap: 10px;">
+                <span>Remaining Due: <strong id="compStatRemainingDue">-</strong></span>
+                <input type="number" id="studyRemainingBatchSizeInput" min="1" value="20" style="width: 60px;">
+                <button id="studyRemainingDueBtn" class="button primary" disabled>Study Remaining</button>
+            </div>
             </div>
 
         </div> <!-- End completion-content -->

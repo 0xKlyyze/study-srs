@@ -6,12 +6,51 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script> 
     <title>Kaizen - Manage Chapters v4</title>
     <style>
-        :root {
-        --switcher-icon-size: 48px; /* Base size of icons */
-        --switcher-icon-gap: 10px; /* Gap when expanded */
-        --switcher-stack-offset: 6px; /* Vertical offset for stacked look */
-        --accent-blue: #5bc0de; /* Ensure this exists */
-        }
+/* --- Root Variables (Keep relevant ones) --- */
+:root {
+    /* Colors & Base Settings from V4.5 */
+    --accent-blue: #5bc0de;
+    --primary-bg: #1f2a40;
+    --secondary-bg: #2c3a56;
+    --tertiary-bg: #1a1a2e;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0c0;
+    --text-on-accent: #ffffff; /* White Text on Accent Blue */
+    --text-on-button: #ffffff; /* Dark Text for Accent Blue Button */
+    --danger-red: #d9534f;
+    --success-green: #5cb85c;
+    --warning-orange: #f0ad4e;
+    --due-color : #1cad1c; /* Color for Due cards */
+    --due-color-border: #2a8e2ae2; /* Border color for Due cards */
+    --new-color: #774ab5; /* Color for New cards */
+    --new-color-border: #533a78de; /* Border color for New cards */
+
+    /* --- Sizing & Peeking/Expansion (Keep V9 - Refined Peek) --- */
+    --pill-icon-size: 40px;
+    --pill-icon-gap: 10px;
+    --scale-0: 1.0; --scale-1: 0.85; --scale-2: 0.7;
+    --width-0: var(--pill-icon-size);
+    --width-1: calc(var(--pill-icon-size) * var(--scale-1));
+    --width-2: calc(var(--pill-icon-size) * var(--scale-2));
+    /* Refined Peek Offsets (Less aggressive) */
+    --peek-center-offset-1: calc( (var(--width-0) / 2 * var(--scale-0)) + (var(--width-1) * (0.5 - 0.35)) );
+    --peek-center-offset-2-rel: calc( (var(--width-1) / 2 * var(--scale-1)) + (var(--width-2) * (0.5 - 0.35)) );
+    --peek-center-offset-2-abs: calc(var(--peek-center-offset-1) + var(--peek-center-offset-2-rel));
+    --expand-translate-1: calc(var(--width-0) * 0.5 + var(--pill-icon-gap) * 0.5 + var(--width-0) * 0.5);
+    --expand-translate-2: calc(var(--expand-translate-1) + var(--width-0) + var(--pill-icon-gap));
+    --expand-translate-3: calc(var(--expand-translate-2) + var(--width-0) + var(--pill-icon-gap));
+
+    /* --- Container Sizing (ADJUSTED for 2 vs 3+ Materials) --- */
+    /* Width needed for center + ONE side peeking (Level 1) */
+    --peek-outer-edge-dist-1: calc(var(--peek-center-offset-1) + var(--width-1) / 2);
+    /* Calculate width: Center button width + distance from center to edge of ONE L1 peek + buffer */
+    --container-min-width-2-materials: calc(var(--width-0) + var(--peek-outer-edge-dist-1) - (var(--width-0)/2) + 2px);
+    /* Width needed for center + TWO sides peeking (Level 2) */
+    --peek-outer-edge-dist-2: calc(var(--peek-center-offset-2-abs) + var(--width-2) / 2);
+    --container-min-width-3plus-materials: calc(var(--peek-outer-edge-dist-2) * 2 + 4px);
+    /* Hover width calculation */
+    --container-min-width-expanded-2: calc(var(--expand-translate-2) * 1.1 + var(--width-0));
+}
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             background: linear-gradient(135deg, #1a1a2e, #16213e);
@@ -24,145 +63,369 @@
 
         .management-container {
             max-width: 1200px; margin: 0 auto; background-color: #1f2a40;
-            padding: 30px;padding-top: 8px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            padding: 30px;padding-top: 8px; border-radius: 16px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
         }
+        /* --- NEW FLOATING STUDY PILL STYLES (Refined) --- */
 
-        /* --- NEW: Center Stacking/Expanding Material Switcher --- */
-        .material-switcher {
-            position: fixed;
-            top: 20px;       /* Position from top */
-            left: 50%;       /* Center horizontally */
-            transform: translateX(-50%); /* Fine-tune centering */
-            z-index: 500;
-            /* --- Container size needs to adapt on hover --- */
-            min-width: var(--switcher-icon-size); /* Base width */
-            height: calc(var(--switcher-icon-size) + 10px); /* Base height + padding */
-            display: flex; /* Use flex to help align items */
-            justify-content: center; /* Center items horizontally within container */
-            align-items: flex-start; /* Align items to the top (due to padding) */
-            padding: 5px;
-            background-color: transparent;
-            /* Smooth transition for potential width changes (though we use transforms) */
-            transition: width 0.3s ease-out;
-        }
+/* --- Keyframes for Glow Animation (Filter Based) --- */
+@keyframes pulse-glow-filter {
+    0% { filter: drop-shadow(0 0 3px rgba(91, 192, 222, 0.5)); }
+    50% { filter: drop-shadow(0 0 7px rgba(123, 208, 232, 0.7)); } /* Brighter cyan/blue */
+    100% { filter: drop-shadow(0 0 3px rgba(91, 192, 222, 0.5)); }
+}
 
-        .material-tab {
-            width: var(--switcher-icon-size);
-            height: var(--switcher-icon-size);
-            border-radius: 50%;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
+/* --- Main Pill Container --- */
+.floating-study-pill { /* Keep V9 styles */
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 950; display: inline-flex; align-items: center; gap: 8px; flex-wrap: nowrap; background-color: rgba(31, 42, 64, 0.93); color: var(--text-primary); padding: 5px 8px; border-radius: 36px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(74, 90, 126, 0.35); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); width: auto; max-width: 90vw;
+}
 
-            /* Base Appearance (Subtle) */
-            background-color: rgba(44, 58, 86, 0.75);
-            border: 1px solid rgba(74, 90, 126, 0.5);
-            color: var(--text-secondary, #a0a0c0);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(3px);
-            -webkit-backdrop-filter: blur(3px);
+/* --- 1. Material Switcher (ADAPTIVE WIDTH) --- */
+.material-switcher-pill {
+    order: 1; position: relative; display: flex; justify-content: center; align-items: center;
+    /* *** DEFAULT MIN-WIDTH (for 1 or 2 materials) using new calc *** */
+    min-width: var(--container-min-width-2-materials);
+    height: calc(var(--pill-icon-size) + 8px); padding: 0; overflow: hidden; border-radius: 60px;
+    transition: min-width 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0; margin: 0;
+}
+/* JS ADDS 'has-3plus-materials' class for wider state */
+.material-switcher-pill.has-3plus-materials {
+    min-width: var(--container-min-width-3plus-materials);
+}
 
-            /* Positioning & Transitions */
-            position: absolute;
-            /* Center the stack initially */
-            top: 5px; /* Align with container padding */
-            /* 'left: 50%; transform: translateX(-50%)' within absolute is tricky */
-            /* We will position relative to the container's center using translateX */
-            left: calc(50% - (var(--switcher-icon-size) / 2)); /* Center the button itself */
-
-            opacity: 0; /* Hidden by default */
-            /* --- Start slightly offset and scaled --- */
-            transform: translateY(var(--switcher-stack-offset)) scale(0.95);
-            transform-origin: center center;
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-                        opacity 0.3s ease-out,
-                        /* Transition transform for horizontal movement */
-                        background-color 0.2s ease,
-                        border-color 0.2s ease,
-                        color 0.2s ease,
-                        box-shadow 0.2s ease;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .material-tab svg {
-             width: calc(var(--switcher-icon-size) * 0.5);
-             height: calc(var(--switcher-icon-size) * 0.5);
-             fill: var(--accent-blue);
-             transition: fill 0.2s ease;
-         }
+/* Inner Container & Tab styles remain the same as V9 */
+.material-switcher-pill-inner { display: flex; flex-wrap: nowrap; align-items: center; position: relative; height: 100%; transition: transform 0.25s ease-out; }
+.material-switcher-pill .material-tab { /* Core styles */ width: var(--pill-icon-size); height: var(--pill-icon-size); border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(var(--scale-0)); background-color: #3a4a6e; border: 1px solid #5a6a8e; color: var(--text-primary); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05); transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, box-shadow 0.3s ease, z-index 0s linear 0.35s; }
+.material-switcher-pill .material-tab svg { width: calc(var(--pill-icon-size) * 0.55); height: calc(var(--pill-icon-size) * 0.55); fill: var(--accent-blue); transition: fill 0.2s ease; }
+/* Peeking Styles */
+.material-switcher-pill.has-multiple .material-tab:not(.is-active):not(.is-prev-1):not(.is-next-1):not(.is-prev-2):not(.is-next-2) { opacity: 0; transform: translate(-50%, -50%) scale(0.5); pointer-events: none; z-index: 1; }
+.material-switcher-pill.has-multiple .material-tab.is-active { transform: translate(-50%, -50%) scale(var(--scale-0)); opacity: 1; z-index: 10; pointer-events: auto; border-color: var(--accent-blue); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), 0 0 8px rgba(91, 192, 222, 0.4); }
+.material-switcher-pill.has-multiple .material-tab.is-prev-1 { transform: translate(calc(-50% - var(--peek-center-offset-1)), -50%) scale(var(--scale-1)); opacity: 0.7; z-index: 9; pointer-events: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+.material-switcher-pill.has-multiple .material-tab.is-next-1 { transform: translate(calc(-50% + var(--peek-center-offset-1)), -50%) scale(var(--scale-1)); opacity: 0.7; z-index: 9; pointer-events: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+.material-switcher-pill.has-multiple .material-tab.is-prev-2 { transform: translate(calc(-50% - var(--peek-center-offset-2-abs)), -50%) scale(var(--scale-2)); opacity: 0.5; z-index: 8; pointer-events: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.material-switcher-pill.has-multiple .material-tab.is-next-2 { transform: translate(calc(-50% + var(--peek-center-offset-2-abs)), -50%) scale(var(--scale-2)); opacity: 0.5; z-index: 8; pointer-events: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+/* Hover Styles */
+.material-switcher-pill.has-multiple:hover { min-width: var(--container-min-width-expanded-2); height: calc(var(--pill-icon-size) + 17px); }
+.material-switcher-pill.has-multiple:hover .material-tab { transform: translate(-50%, -50%) scale(var(--scale-0)); opacity: 1; pointer-events: auto; z-index: 5; box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3); border-color: #5a6a8e; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-active { transform: translate(-50%, calc(-50% - 1px)) scale(1.03); z-index: 10; border-color: var(--accent-blue); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 8px rgba(91, 192, 222, 0.5); }
+.material-switcher-pill.has-multiple:hover .material-tab.is-prev-1 { transform: translate(calc(-50% - var(--expand-translate-1)), -50%) scale(var(--scale-0)); z-index: 6; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-next-1 { transform: translate(calc(-50% + var(--expand-translate-1)), -50%) scale(var(--scale-0)); z-index: 6; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-prev-2 { transform: translate(calc(-50% - var(--expand-translate-2)), -50%) scale(var(--scale-0)); z-index: 5; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-next-2 { transform: translate(calc(-50% + var(--expand-translate-2)), -50%) scale(var(--scale-0)); z-index: 5; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-prev-3 { transform: translate(calc(-50% - var(--expand-translate-3)), -50%) scale(var(--scale-0)); z-index: 4; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-next-3 { transform: translate(calc(-50% + var(--expand-translate-3)), -50%) scale(var(--scale-0)); z-index: 4; }
+.material-switcher-pill.has-multiple:hover .material-tab:not(.is-active):hover { transform: translate(var(--tx, -50%), calc(-50% - 3px)) scale(1.03); background-color: var(--accent-blue); border-color: transparent; color: var(--primary-bg); /* No shadow, rely on filter */ filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3)) drop-shadow(0 0 2px rgba(91, 192, 222, 0.7)); z-index: 7; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-prev-1:hover { --tx: calc(-50% - var(--expand-translate-1)); }
+.material-switcher-pill.has-multiple:hover .material-tab.is-next-1:hover { --tx: calc(-50% + var(--expand-translate-1)); }
+/* ... Add more --tx definitions ... */
+.material-switcher-pill.has-multiple:hover .material-tab:not(.is-active):hover svg { fill: currentColor; }
+/* Scroll indicators */
+.material-switcher-pill::before, .material-switcher-pill::after { content: ''; position: absolute; top: 0; bottom: 0; width: 15px; z-index: 15; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
+.material-switcher-pill::before { left: 0; background: linear-gradient(to right, rgba(31, 42, 64, 0.95), rgba(31, 42, 64, 0)); }
+.material-switcher-pill::after { right: 0; background: linear-gradient(to left, rgba(31, 42, 64, 0.95), rgba(31, 42, 64, 0)); }
+.material-switcher-pill.is-scrollable-left::before, .material-switcher-pill.is-scrollable-right::after { opacity: 1; }
+/* Loading Spinner */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.material-switcher-pill .material-tab.is-loading svg { width: calc(var(--pill-icon-size) * 0.6); height: calc(var(--pill-icon-size) * 0.6); fill: var(--text-secondary); animation: spin 1.5s linear infinite;}
 
 
-        /* Active Icon State */
-        .material-tab.active {
-            opacity: 1; /* Slightly more opaque when active */
-            transform: translateY(0) scale(1); /* Positioned normally, centered */
-            pointer-events: auto;
-            z-index: 10;
-            background-color: rgba(60, 78, 110, 0.95); /* Darker active */
-            border-color: var(--accent-blue); /* Keep accent border */
-            color: var(--text-primary); /* Keep icon light by default */
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
-
-        .material-tab.active svg {
-            fill: var(--accent-blue); /* Match border color */
-            transform: scale(1.05); /* Slightly larger icon when active */
-        }
-         /* Add visual cue for multiple icons only if more than one exists */
-         /* Applied via JS potentially, or complex sibling CSS */
-         .material-switcher.has-multiple .material-tab.active {
-             /* Add subtle bottom shadow/border to hint at stack */
-              box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35),
-                          0 2px 3px -1px rgba(0, 0, 0, 0.4); /* Hint of element below */
-              /* border-bottom: 2px solid rgba(0,0,0,0.2); */ /* Alternative cue */
-         }
+/* --- 2. Study Button Wrapper (CENTERED, AI GLOW EFFECT) --- */
+.study-button-wrapper {
+    order: 2; position: relative; display: flex; flex-shrink: 0; margin: 0 5px;
+    /* Keep V10 Glow */
+    filter: drop-shadow(0 0 4px rgba(100, 200, 240, 0.6));
+    animation: pulse-glow-filter 2.5s infinite ease-in-out;
+    transition: filter 0.25s ease;
+}
+.study-button-wrapper:hover {
+    filter: drop-shadow(0 0 8px rgba(123, 208, 232, 0.85));
+    animation-play-state: paused;
+}
 
 
-        /* Hover State on CONTAINER - Expand (Logic Unchanged) */
-        .material-switcher:hover .material-tab:not(.active) {
-            opacity: 0.9;
-            pointer-events: auto;
-            z-index: 5;
-            transform: translateY(0) scale(1) translateX( calc( (var(--i) - (var(--n) - 1) / 2) * (var(--switcher-icon-size) + var(--switcher-icon-gap)) ) );
-             transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-                         opacity 0.3s ease-out,
-                         background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
-        }
+.study-button-wrapper .action-button.study-due-button {
+    padding: 10px 22px 10px 26px;
+    font-size: 1.05em;
+    border-radius: 26px 0 0 26px;
+    /* *** VIBRANT GRADIENT *** */
+    background: linear-gradient(135deg, #63d0ff 0%, #4aa7c3 60%, #5bc0de 100%);
+    color: var(--text-on-button); /* White text */
+    border: none;
+    font-weight: 700;
+    /* *** REMOVE box-shadow, use wrapper's filter *** */
+    box-shadow: none;
+    /* Add inner shadow for depth */
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2),
+                inset 0 -1px 1px rgba(0, 0, 0, 0.15);
+    transition: background 0.2s ease, transform 0.15s ease; /* Remove shadow transition */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 1; /* Ensure button part is clickable */
+    height: 44px;
+    box-sizing: border-box;
+}
+/* Hover state directly on button for transform */
+.study-button-wrapper .action-button.study-due-button:hover {
+    /* Brighter gradient on hover */
+    background: linear-gradient(135deg, #8ce0ff 0%, #5cbde0 60%, #7bd0e8 100%);
+    transform: translateY(-1px); /* Subtle lift */
+}
 
-       /* --- UPDATED: Hover State on INDIVIDUAL NON-ACTIVE Icon (when expanded) --- */
-       .material-switcher:hover .material-tab:not(.active):hover {
-            opacity: 1; /* Fully opaque */
-            /* Maintain horizontal position, scale up more, lift slightly */
-            transform: translateY(-3px) scale(1.1) translateX( calc( (var(--i) - (var(--n) - 1) / 2) * (var(--switcher-icon-size) + var(--switcher-icon-gap)) ) );
-            background-color: var(--accent-blue); /* Use accent color for background */
-            color: var(--primary-bg, #1f2a40);       /* Dark icon */
-            border-color: transparent;              /* Hide border */
-            box-shadow: 0 0 12px 2px rgba(91, 192, 222, 0.5), /* Stronger glow */
-                        0 5px 15px rgba(0, 0, 0, 0.4);
-            z-index: 6;
-        }
-         .material-switcher:hover .material-tab:not(.active):hover svg {
-             fill: currentColor; /* Ensure icon uses the dark color on hover */
-             transform: scale(1.1); /* Scale icon slightly on hover */
-         }
+.study-options-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 44px;
+    padding: 0;
+    margin-left: -1px;
+    /* *** MATCH GRADIENT *** */
+    background: linear-gradient(135deg, #63d0ff 0%, #4aa7c3 60%, #5bc0de 100%);
+    border: none;
+    /* border-left: 1px solid rgba(var(--text-on-button), 0.1); */ /* Remove border */
+    border-radius: 0 26px 26px 0;
+    color: var(--text-on-button);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    /* *** REMOVE shadow, use wrapper's filter *** */
+    box-shadow: none;
+     /* Add inner shadow matching button */
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2),
+                inset 0 -1px 1px rgba(0, 0, 0, 0.15),
+                inset -1px 0 1px rgba(0,0,0,0.1); /* Left inset shadow */
+    z-index: 0;
+}
+/* Hover state directly on trigger */
+.study-options-trigger:hover {
+    background: linear-gradient(135deg, #8ce0ff 0%, #5cbde0 60%, #7bd0e8 100%);
+}
 
-        /* --- Optional: Slightly different hover for the ACTIVE icon itself --- */
-        .material-switcher:hover .material-tab.active:hover {
-        transform: translateY(-2px) scale(1.05); /* Slight lift/scale */
-        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.45), /* Stronger shadow */
-                0 0 8px 0px var(--accent-blue); /* Subtle glow add */
-        background-color: rgba(70, 90, 125, 0.98); /* Slightly lighter active bg */
-        }
+.study-options-trigger svg { 
+    width: 22px; 
+    height: 22px; 
+    fill: currentColor; 
+    transition: transform 0.3s ease; /* Smoother animation */
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2)); /* Matching text shadow effect */
+}
+
+.study-button-wrapper.popup-open .study-options-trigger svg { 
+    transform: rotate(180deg); 
+}
+
+
+/* --- 3. Study Stats (Round with Colored BG & Icons) --- */
+.study-stats.simplified {
+    order: 3; display: flex; align-items: center; gap: 6px; padding: 0; margin: 0; flex-shrink: 0; padding-left: 0px; padding-right: 8px;
+}
+
+.stat-box {
+    position: relative; display: flex; justify-content: center; align-items: center; width: 34px; height: 34px; padding: 0; border-radius: 50%;
+    border: 1px solid; /* *** Thinner border: 1px *** */
+    /* *** Background Color set via var below *** */
+    background-color: rgba(var(--rgb-color), 0.25); /* Use var, MORE opaque */
+    box-shadow: inset 0 0 4px rgba(0,0,0,0.25); /* Slightly stronger inset */
+    overflow: hidden;
+}
+
+.stat-box .stat-value {
+    font-size: 0.9em; font-weight: 600; line-height: 1;
+    color: var(--text-primary); /* *** WHITE NUMBER *** */
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5); /* Stronger shadow */
+    position: relative; z-index: 1;
+}
+
+.stat-box svg.stat-icon { /* Keep V8 icon style */
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 150%; height: 150%; fill: currentColor; opacity: 0.20; z-index: 0; pointer-events: none;
+}
+
+/* Specific colors */
+.stat-box.new-cards-stat {
+    border-color: var(--new-color-border); /* Purple border */
+    color: var(--new-color); /* Purple icon color */
+    --rgb-color: 105, 48, 180; /* Purple in RGB format (from #6930b4) */
+}
+.stat-box.due-cards-stat {
+    border-color: var(--due-color-border); /* Green border */
+    color: var(--due-color); /* Green icon color - FIXED: was incorrectly using new-color */
+    --rgb-color: 28, 173, 28; /* Green in RGB format (from #1cad1c) */
+}
+/* Keep value white */
+.stat-box .stat-value { color: var(--text-primary); }
+
+.study-options-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: auto; /* Matches button height */
+    padding: 0;
+    margin-left: -1px;
+    background-color: var(--accent-blue);
+    border: none;
+    border-left: 1px solid rgba(var(--text-on-button), 0.15); /* Subtle separator */
+    border-radius: 0 20px 20px 0;
+    color: var(--text-on-button);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    box-shadow: inset -1px 0px 1px rgba(0,0,0,0.1); /* Inset shadow for depth */
+    z-index: 0;
+}
+.study-options-trigger:hover {
+    background-color: #7bd0e8;
+}
+.study-options-trigger svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+    transition: transform 0.2s ease;
+}
+.study-button-wrapper.popup-open .study-options-trigger svg {
+    transform: rotate(180deg);
+}
+
+/* --- Study Options Popup --- */
+.study-options-popup {
+    position: absolute;
+    bottom: calc(100% + 6px); /* Closer gap */
+    right: 0;
+    width: 145px; /* Fixed width maybe? */
+    background-color: #232e44dc; /* Match context menu */
+    border-radius: 18px; /* Match context menu */
+    border: 1px solid #4a5a7e; /* Match context menu */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* Match context menu */
+    padding: 8px; /* Tighter padding */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 960;
+    opacity: 0;
+    transform: translateY(8px);
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+.study-options-popup.visible {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+/* Focused Study Button inside Popup */
+.study-options-popup .action-button.focused-study-button {
+    /* Style similarly to V4.5 action button */
+    padding: 8px 12px;
+    font-size: 0.9em;
+    border-radius: 14px;
+    background-color: var(--success-green);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Simple shadow */
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.1);
+    font-weight: 500; /* Normal weight */
+    transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap;
+    width: 100%;
+    text-align: center;
+}
+.study-options-popup .action-button.focused-study-button:hover {
+    background-color: #4cae4c;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 7px rgba(0,0,0,0.3);
+}
+.study-options-popup .action-button.focused-study-button.is-selecting-chapters {
+     background-color: var(--warning-orange);
+     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+.study-options-popup .action-button.focused-study-button.is-selecting-chapters:hover {
+     background-color: #ec971f;
+     box-shadow: 0 3px 7px rgba(0,0,0,0.3);
+}
+
+/* Batch Size inside Popup */
+.study-options-popup .batch-size-control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-direction: row;
+    border-top: 0px solid rgba(74, 90, 126, 0.3); /* Lighter separator */
+    padding-top: 6px;
+    margin-top: 4px;
+}
+.study-options-popup .batch-size-label {
+    font-size: 0.85em;
+    margin: 0;
+    color: var(--text-secondary);
+}
+.study-options-popup .batch-size-input {
+    background-color: var(--tertiary-bg);
+    border: 1px solid rgba(74, 90, 126, 0.5); /* Subtle border */
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 4px 6px; /* Tighter padding */
+    font-size: 0.9em;
+    width: 45px; /* Slightly narrower */
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.study-options-popup .batch-size-input { -moz-appearance: textfield; }
+.study-options-popup .batch-size-input::-webkit-outer-spin-button,
+.study-options-popup .batch-size-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.study-options-popup .batch-size-input:focus {
+     border-color: var(--accent-blue);
+     box-shadow: 0 0 4px rgba(91, 192, 222, 0.3);
+}
+
+
+/* --- Material Context Menu (Use V4.5 Base Styles) --- */
+#materialContextMenu {
+    position: fixed;
+    background-color: var(--secondary-bg); /* Match popup bg */
+    border: 1px solid #4a5a7e;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    padding: 6px 0; /* Adjust padding */
+    min-width: 180px;
+    display: none;
+    color: var(--text-primary);
+}
+#materialContextMenu ul { list-style: none; padding: 0; margin: 0; }
+#materialContextMenu li {
+    padding: 10px 15px;
+    font-size: 0.95em;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+#materialContextMenu li:hover { background-color: #3a4a6e; color: #ffffff; }
+#materialContextMenu .menu-icon {
+    margin-right: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+}
+#materialContextMenu .menu-icon svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+/* Optional: Specific icon colors if needed */
+/* #materialContextMenu li[data-action="set-default"] .menu-icon svg { fill: var(--warning-orange); } */
         /* --- Overview Section --- */
         .overview-section {
             display: grid; grid-template-columns: 1fr 1fr; gap: 30px;
             margin-bottom: 40px; align-items: start;
         }
-        .heatmaps-column { display: flex; flex-direction: column; gap: 25px; }
-        .section-container {}
+        .heatmaps-column { display: flex; flex-direction: column; gap: 20px; }
+        .section-container { margin-bottom: 0; }
         .section-title {
             font-size: 1.1em; color: #a0a0c0; margin-bottom: 0px;
             text-transform: uppercase; letter-spacing: 0.5px;
@@ -171,7 +434,7 @@
         }
 
         .section-title-review-activity, .section-title-review-schedule {
-            font-size: 1.1em; color: #a0a0c0; margin-bottom: 8px;
+            font-size: 1.1em; color: #a0a0c0; margin-bottom: 5px; /* Reduced from 8px */
             text-transform: uppercase; letter-spacing: 0.5px;
             padding-bottom: 0px;
             text-align: center;}
@@ -187,7 +450,7 @@
 
             /* --- ADD THESE LINES --- */
             padding-top: 10px;    /* Space above cells for expansion */
-            padding-bottom: 15px; /* Space below (extra for scrollbar + expansion) */
+            padding-bottom: 10px; /* Space below (extra for scrollbar + expansion) */
             /* ----------------------- */
 
             /* --- ADD HORIZONTAL PADDING --- */
@@ -223,7 +486,7 @@
             background-color: #1a1a2e;
             color: #e0e0e0;
             padding: 6px 12px; /* Slightly larger padding */
-            border-radius: 4px;
+            border-radius: 8px;
             font-size: 0.9em;  /* Slightly larger font */
             white-space: nowrap;
             z-index: 1000;     /* High z-index to be on top */
@@ -249,7 +512,7 @@
             /* width: 40px; Use flex-basis for better control */
             flex: 0 0 40px; /* Don't grow, don't shrink, base width 40px */
             height: 40px; /* Explicit height to match flex-basis for square */
-            border-radius: 4px;
+            border-radius: 8px;
             background-color: #3a4a6e;
             opacity: 0.8;
             transition: transform 0.2s ease, opacity 0.2s ease;
@@ -274,7 +537,7 @@
             /* aspect-ratio: 1 / 1; */ /* Removed */
             height: 20px; /* Explicit small height for short cells */
             width: 100%; /* Fill column width */
-            border-radius: 2px;
+            border-radius: 5px;
             background-color: #2c3a56;
             opacity: 0.7;
             position: relative;
@@ -286,7 +549,7 @@
         .review-heatmap-cell::after { /* Tooltip styles (unchanged) */
             content: attr(data-tooltip); position: absolute; bottom: 110%; left: 50%;
             transform: translateX(-50%); background-color: #1a1a2e; color: #e0e0e0;
-            padding: 4px 8px; border-radius: 3px; font-size: 0.8em; white-space: nowrap;
+            padding: 4px 8px; border-radius: 8px; font-size: 0.8em; white-space: nowrap;
             opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s ease;
             pointer-events: none; z-index: 20;
         }
@@ -295,110 +558,203 @@
 
         /* --- Review Schedule Graph --- */
          .review-schedule-graph {
-            background-color: #2c3a56; border: 1px solid #4a5a7e; border-radius: 8px;
+            background-color: #2c3a56; border: 1px solid #4a5a7e; border-radius: 14px;
             min-height: 150px; /* Adjust min-height as needed for visual balance */
             display: flex; align-items: center; justify-content: center;
             color: #a0a0c0; font-style: italic; text-align: center;
             padding: 20px; box-sizing: border-box; height: 100%;
          }
 
-/* --- Action Button Area --- */
-.main-action-area {
-            text-align: center;
-            margin-top: 10px;
-            margin-bottom: 40px;
-            /* Use Flexbox for layout */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 15px; /* Space between buttons */
-        }
-            .action-button {
-        /* Default state - Blue with Glow */
-        background-color: #2290bb; 
-        box-shadow: 0 0 15px 2px rgba(34, 144, 187, 0.7); 
-        color: #ffffff; 
-        border: none; 
-        padding: 15px 30px;
-        border-radius: 8px; 
-        cursor: pointer; 
-        font-size: 1.1em; 
-        font-weight: bold;
-        transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
-    }
 
-    .action-button:hover { 
-        /* Default Hover state - Darker Blue, Intense Glow, Lift */
-        background-color: #1e7fa8; 
-        transform: translateY(-2px); 
-        box-shadow: 0 0 20px 4px rgba(34, 144, 187, 0.85); 
-    }
-
-    /* --- MODIFIED SELECT MODE state --- */
-    .action-button.select-mode { 
-        /* Reverted to initial Green style */
-        background-color: #5cb85c; 
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); 
-        /* Reset transform if needed, though usually not applied in base state */
-        transform: translateY(0); 
-    }
-
-    /* --- MODIFIED SELECT MODE HOVER state --- */
-    .action-button.select-mode:hover { 
-        /* Reverted to initial Green Hover style */
-        background-color: #449d44; 
-        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35); 
-        transform: translateY(-2px); /* Apply lift effect on hover */
-    }
-                /* --- ADD Styles for the NEW Icon Button --- */
-                .icon-button.select-chapters-button {
-            background-color: #4a5a7e; /* Neutral background */
-            color: #e0e0e0;
-            border: 1px solid #6a7aac;
-            padding: 10px; /* Adjust padding for icon size */
-            width: 48px;   /* Fixed width */
-            height: 48px;  /* Fixed height */
-            border-radius: 50%; /* Make it round */
-            cursor: pointer;
-            display: flex; /* Center icon inside */
-            justify-content: center;
-            align-items: center;
-            font-size: 1.2em; /* Adjust icon size */
-            transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-        .icon-button.select-chapters-button:hover {
-            background-color: #6a7aac;
-            border-color: #8a9ac0;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-        /* Style for when selection mode is active */
-        .icon-button.select-chapters-button.active {
-            background-color: #5bc0de; /* Use highlight color */
-            border-color: #7bd0e8;
-            color: #1a1a2e; /* Dark icon color on light background */
-            box-shadow: 0 0 10px rgba(91, 192, 222, 0.5);
-        }
         /* ----------------------------------------- */
         /* --- Chapter Cards Grid (Unchanged) --- */
-        .chapter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .chapter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap:15px; }
         .chapter-card {
-            background-color: #2c3a56; border: 1px solid #4a5a7e; border-radius: 8px; padding: 20px;
+            background-color: var(--secondary-bg); border: 1px solid #3d4964; border-radius: 16px; 
             display: flex; flex-direction: column; transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-            cursor: pointer; position: relative;
+            cursor: pointer; position: relative;     overflow: hidden; /* Clip potential overflows */
+    /* Remove old padding, apply to inner wrapper */
+    padding: 0;
         }
         .chapter-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3); border-color: #6a7aac; }
-        .chapter-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
-        .chapter-name { font-size: 1.25em; font-weight: bold; color: #ffffff; margin-right: 10px; flex-grow: 1; }
-        .mastery-indicator { font-size: 1em; font-weight: bold; padding: 4px 8px; border-radius: 4px; flex-shrink: 0; }
-        .mastery-indicator.low { background-color: #d9534f; color: #fff;}
-        .mastery-indicator.medium { background-color: #f0ad4e; color: #1a1a2e;}
-        .mastery-indicator.high { background-color: #5cb85c; color: #fff;}
-        .chapter-stats { font-size: 0.9em; color: #a0a0c0; display: flex; justify-content: space-between; margin-top: auto; padding-top: 15px; border-top: 1px solid #3a4a6e; }
+        .card-content-wrapper {
+    padding: 18px 20px; /* Apply padding here */
+    flex-grow: 1; /* Allow content to take space */
+    display: flex;
+    flex-direction: column;
+}
 
-        /* --- Bulk Selection (Unchanged) --- */
-         .chapter-card .selection-checkbox { position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; cursor: pointer; accent-color: #5cb85c; display: none; z-index: 5; }
-         .management-container.selection-mode .chapter-card .selection-checkbox { display: block; }
+
+/* --- Old Header/Stats Removal --- */
+.chapter-card-header, /* Hide old header */
+.chapter-stats { /* Hide old stats */
+    display: none;
+}
+
+
+/* --- New Header Area --- */
+.card-header-new {
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* Vertically align title and circle */
+    gap: 15px;
+    margin-bottom: 18px;
+}
+
+.chapter-title-area {
+    flex-grow: 1; /* Allow title to take available space */
+    min-width: 0; /* Prevent flex item overflow */
+}
+
+.chapter-name {
+    font-size: 1.3em;
+    font-weight: 600; /* Slightly less bold */
+    color: var(--text-primary);
+    margin: 0;
+    display: block; /* Ensure it takes block space */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Rename Input Styling (Keep Consistent) */
+.rename-input {
+     /* Inherit styles from previous version (V7 JS references this) */
+     display: none; /* Hidden by default */
+     width: 100%;
+     padding: 6px 8px;
+     font-size: 1.3em; /* Match chapter-name */
+     font-weight: 600; /* Match chapter-name */
+     border: 1px solid var(--accent-blue);
+     border-radius: 4px;
+     background-color: var(--tertiary-bg);
+     color: var(--text-primary);
+     outline: none;
+     box-sizing: border-box;
+     margin: 0;
+}
+.chapter-card.is-renaming .chapter-name { display: none; }
+.chapter-card.is-renaming .rename-input { display: block; }
+/* Hide progress circle during rename */
+.chapter-card.is-renaming .mastery-progress-circle { display: none; }
+
+
+/* --- Mastery Progress Circle --- */
+.mastery-progress-circle {
+    position: relative;
+    width: 48px; /* Size of the circle */
+    height: 48px;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+.progress-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg); /* Start circle at the top */
+}
+
+.progress-ring-bg,
+.progress-ring-circle {
+    fill: none;
+    stroke-width: 3.5; /* Thickness of the ring */
+}
+
+.progress-ring-bg {
+    stroke: rgba(74, 90, 126, 0.3); /* Track color (dimmed border color) */
+}
+
+.progress-ring-circle {
+    stroke: var(--accent-blue); /* Default/High mastery color */
+    stroke-linecap: round; /* Rounded ends */
+    transition: stroke-dashoffset 0.5s ease-out, stroke 0.3s ease;
+    /* stroke-dasharray is set by JS, stroke-dashoffset calculated by JS */
+}
+
+/* Color coding based on mastery level (add class via JS) */
+.mastery-progress-circle.low .progress-ring-circle { stroke: var(--danger-red); }
+.mastery-progress-circle.medium .progress-ring-circle { stroke: var(--warning-orange); }
+.mastery-progress-circle.high .progress-ring-circle { stroke: var(--success-green); } /* Use green for high */
+
+.mastery-percentage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.8em;
+    font-weight: 600;
+    color: var(--text-secondary); /* Default color */
+    transition: color 0.3s ease;
+}
+/* Color code percentage text */
+.mastery-progress-circle.low .mastery-percentage { color: var(--danger-red); }
+.mastery-progress-circle.medium .mastery-percentage { color: var(--warning-orange); }
+.mastery-progress-circle.high .mastery-percentage { color: var(--success-green); }
+
+
+/* --- New Stats Area --- */
+.card-stats-new {
+    display: flex;
+    justify-content: space-around; /* Distribute stats evenly */
+    align-items: center;
+    margin-top: auto; /* Push to bottom */
+    padding-top: 15px;
+    border-top: 1px solid rgba(74, 90, 126, 0.4); /* Separator */
+    gap: 15px; /* Space between items */
+}
+
+.stat-item-new {
+    display: flex;
+    flex-direction: column; /* Stack icon and value */
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+    color: var(--text-secondary); /* Default color for icons */
+}
+
+.stat-icon {
+    width: 20px;
+    height: 20px;
+    fill: currentColor; /* Use parent .stat-item-new color */
+    opacity: 0.7;
+}
+
+.stat-value {
+    font-size: 1.1em;
+    font-weight: 500;
+    color: var(--text-primary); /* Main value color */
+    line-height: 1.2;
+}
+
+/* Specific icon/value colors (optional, can rely on icons) */
+.stat-item-new.due-cards { color: var(--due-color); }
+.stat-item-new.new-cards { color: var(--new-color); }
+
+/* Optional: Change value color too */
+.stat-item-new.due-cards .stat-value { color: var(--due-color); }
+.stat-item-new.new-cards .stat-value { color: var(--new-color); }
+
+
+/* --- Checkbox Positioning --- */
+.selection-checkbox {
+    position: absolute;
+    top: 12px; /* Adjust position */
+    right: 12px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--success-green);
+    display: none;
+    z-index: 5;
+}
+.management-container.selection-mode .chapter-card .selection-checkbox { display: block; }
+
+
+/* --- Hover/Selection States (Adapt existing) --- */
+.chapter-card:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    border-color: #6a7aac;
+}
 
          .management-container.selection-mode .chapter-card:hover {
     transform: none; /* Disable base hover lift */
@@ -456,7 +812,7 @@
         position: fixed;
         background-color: #2c3a56;
         border: 1px solid #4a5a7e;
-        border-radius: 6px;
+        border-radius: 12px;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         z-index: 1000;
         padding: 10px 0; /* Slightly more vertical padding */
@@ -529,7 +885,7 @@
         .modal-content {
             background-color: #1f2a40; /* Match container background */
             padding: 25px 30px;
-            border-radius: 10px;
+            border-radius: 16px;
             border: 1px solid #4a5a7e;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             color: #e0e0e0;
@@ -588,7 +944,7 @@
         /* Basic button style - adapt if you have global button styles */
         .modal-button {
             padding: 10px 25px;
-            border-radius: 6px;
+            border-radius: 12px;
             border: none;
             cursor: pointer;
             font-size: 0.95em;
@@ -611,6 +967,24 @@
             border: 1px solid #6a7aac;
         }
         .modal-button.secondary:hover { background-color: #6a7aac; color: #ffffff; }
+
+        /* Specific styling for info modal */
+.modal-content.info-modal {
+    /* Any specific width/height adjustments if needed */
+    border-left: 4px solid var(--success-green); /* Example: Green accent border */
+}
+
+.modal-icon.info svg {
+     fill: var(--success-green); /* Green icon for success/info */
+     /* Or use --accent-blue for general info */
+     /* fill: var(--accent-blue); */
+}
+
+/* Ensure icon sizing is consistent */
+#infoModalIcon svg { /* Target specific ID if needed */
+    width: 28px;
+    height: 28px;
+}
 
         /* --- NEW: Delete Confirmation Target Animation --- */
         @keyframes pulse-danger {
@@ -653,7 +1027,7 @@
              font-size: 1.25em; /* Match chapter-name */
              font-weight: bold; /* Match chapter-name */
              border: 1px solid #5bc0de; /* Highlight border */
-             border-radius: 4px;
+             border-radius: 8px;
              background-color: #1a1a2e; /* Dark background */
              color: #e0e0e0;
              outline: none;
@@ -670,6 +1044,112 @@
               display: none;
           }
 
+        /* --- Material Settings Modal Styles --- */
+
+.modal-content.settings-modal {
+    max-width: 650px; /* Wider modal for settings */
+    text-align: left; /* Align text left for forms */
+}
+
+#materialSettingsForm {
+    margin-top: 15px;
+    max-height: 60vh; /* Limit height and make scrollable */
+    overflow-y: auto;
+    padding-right: 10px; /* Space for scrollbar */
+    margin-right: -10px; /* Offset padding */
+}
+
+/* Custom scrollbar for form */
+#materialSettingsForm::-webkit-scrollbar { width: 6px; }
+#materialSettingsForm::-webkit-scrollbar-track { background: var(--secondary-bg); border-radius: 3px; }
+#materialSettingsForm::-webkit-scrollbar-thumb { background-color: #4a5a7e; border-radius: 3px; }
+#materialSettingsForm::-webkit-scrollbar-thumb:hover { background-color: #6a7aac; }
+
+        .settings-section {
+            border: 1px solid rgba(74, 90, 126, 0.5);
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            background-color: rgba(44, 58, 86, 0.3); /* Subtle section background */
+        }
+
+        .settings-section legend {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--accent-blue);
+            padding: 0 10px;
+            margin-left: -10px; /* Align with content */
+        }
+
+        .settings-description {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            margin-top: -5px;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+
+        .form-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column; /* Stack label and input */
+        }
+
+        .form-group.inline {
+            flex-direction: row; /* Place label and input side-by-side */
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        }
+
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .form-group.inline label {
+            margin-bottom: 0;
+            flex-shrink: 0; /* Prevent label from shrinking */
+            min-width: 120px; /* Align inputs */
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group input[type="password"] /* Add other types if needed */ {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid #4a5a7e;
+            background-color: var(--tertiary-bg);
+            color: var(--text-primary);
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            box-sizing: border-box;
+        }
+        .form-group.inline input[type="number"] {
+            width: 80px; /* Fixed width for number inputs */
+        }
+        .form-group.inline input[type="text"] { /* For comma separated lists */
+            flex-grow: 1;
+        }
+
+
+        .form-group input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(91, 192, 222, 0.2);
+        }
+
+        #settingsModalActions {
+            margin-top: 25px; /* Space above buttons */
+            padding-top: 15px;
+            border-top: 1px solid rgba(74, 90, 126, 0.5);
+        }
+
         /* Responsiveness */
         @media (max-width: 900px) {
              .overview-section { grid-template-columns: 1fr; gap: 30px; }
@@ -679,11 +1159,36 @@
              .management-container { padding: 20px; }
              .heatmap-grid { grid-template-columns: repeat(auto-fill, minmax(35px, 1fr)); gap: 4px; }
              /* Review heatmap cells are already small */
+             .floating-study-pill.extended {
+        max-width: 98vw; /* Even more width on smaller screens */
+        padding: 6px 10px; /* Slightly more padding for touch */
+    }
+    
+    /* Make components more compact when space is limited */
+    .floating-study-pill.extended .extended-controls {
+        gap: 8px; /* Reduce gap between elements */
+    }
+    
+    /* Ensure batch size control remains visible */
+    .batch-size-control {
+        min-width: 85px; /* Ensure minimum width for the control */
+    }
         }
          @media (max-width: 480px) {
              .chapter-grid { grid-template-columns: 1fr; }
              .action-button { width: 90%; font-size: 1em; padding: 12px 20px; }
              .heatmap-grid { grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); } /* Smaller cells on mobile */
+             .floating-study-pill {
+        bottom: 15px; /* Position closer to bottom on mobile */
+    }
+    
+    .study-stats {
+        gap: 8px; /* Tighter spacing in stats */
+    }
+    
+    .material-switcher-pill {
+        min-width: calc(var(--container-min-width-compressed) * 0.9); /* Slightly more compact */
+    }
 
          }
 
@@ -693,10 +1198,6 @@
 
     <div class="management-container" id="managementContainer">
 
-        <div class="material-switcher" id="materialSwitcherContainer">
-            <button class="material-tab active" data-material="Mathematics"></button>
-            <button class="material-tab" data-material="Physics"></button>
-        </div>
 
          <div class="overview-section">
             <div class="heatmaps-column">
@@ -738,21 +1239,89 @@
            </div>
         </div>
 
-        <div class="main-action-area">
-            <!-- Change initial text -->
-            <button class="action-button" id="sessionButton">Start Studying</button>
+<div class="chapter-grid" id="chapterGrid">
+<!-- New Structure for Chapter Card -->
+<div class="chapter-card" data-chapter-name="{chapter.name}"> <!-- JS populates name -->
+    <input type="checkbox" class="selection-checkbox" aria-label="Select Chapter: {chapter.name}">
 
-            <!-- Add the new icon button -->
-            <button class="icon-button select-chapters-button" id="selectChaptersButton" aria-label="Select Chapters for Focused Study" title="Select Chapters for Focused Study">
-                <img src="icons/chap-selection.png" alt="" width="32" height="32" aria-hidden="true">
-            </button>
+    <div class="card-content-wrapper"> <!-- Inner wrapper for padding/layout -->
+
+        <div class="card-header-new">
+            <!-- Title Area -->
+            <div class="chapter-title-area">
+                <span class="chapter-name">{chapter.name}</span>
+                <input type="text" class="rename-input" value="{chapter.name}" style="display: none;" data-original-name="{chapter.name}">
+            </div>
+            <!-- Mastery Progress Circle -->
+            <div class="mastery-progress-circle" data-mastery-percent="{chapter.mastery}" title="Mastery: {chapter.mastery}%">
+                <svg viewBox="0 0 36 36" class="progress-ring">
+                    <!-- Background Track -->
+                    <circle class="progress-ring-bg" cx="18" cy="18" r="15.915" />
+                    <!-- Progress Arc -->
+                    <circle class="progress-ring-circle"
+                            cx="18" cy="18" r="15.915"
+                            stroke-dasharray="100, 100"  /> <!-- JS sets dasharray/dashoffset -->
+                </svg>
+                <span class="mastery-percentage">{chapter.mastery}%</span>
+            </div>
         </div>
 
-        <div class="chapter-grid" id="chapterGrid">
-             <div class="chapter-card" data-chapter-id="math-alg"> <input type="checkbox" class="selection-checkbox" aria-label="Select Chapter: Algebra Basics"> <div class="chapter-card-header"> <span class="chapter-name">Algebra Basics</span> <span class="mastery-indicator high">95%</span> </div> <div class="chapter-stats"> <span class="stat-item">Cards: 50</span> <span class="stat-item">Buried: 5</span> <span class="stat-item">Mastered: 45</span> </div> </div>
-             <div class="chapter-card" data-chapter-id="math-calc1"> <input type="checkbox" class="selection-checkbox" aria-label="Select Chapter: Calculus I"> <div class="chapter-card-header"> <span class="chapter-name">Calculus I</span> <span class="mastery-indicator medium">75%</span> </div> <div class="chapter-stats"> <span class="stat-item">Cards: 80</span> <span class="stat-item">Buried: 10</span> <span class="stat-item">Mastered: 55</span> </div> </div>
-             <div class="chapter-card" data-chapter-id="math-linalg"> <input type="checkbox" class="selection-checkbox" aria-label="Select Chapter: Linear Algebra"> <div class="chapter-card-header"> <span class="chapter-name">Linear Algebra</span> <span class="mastery-indicator low">40%</span> </div> <div class="chapter-stats"> <span class="stat-item">Cards: 60</span> <span class="stat-item">Buried: 2</span> <span class="stat-item">Mastered: 20</span> </div> </div>
-         </div>
+        <div class="card-stats-new">
+            <!-- Total Cards Stat -->
+            <div class="stat-item-new total-cards" title="Total Cards">
+                <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                    <title>Icon representing a deck of taller flashcards, showing one</title>
+                  
+                    <!-- Back Card (rotated slightly more, taller) -->
+                    <!-- Increased height to 24, adjusted y to 4 to maintain vertical center -->
+                    <rect 
+                      x="6" y="4" 
+                      width="20" height="24" 
+                      rx="3" ry="3" 
+                      fill="none" 
+                      stroke="white" 
+                      stroke-width="1.5" 
+                      transform="rotate(-6 16 16)" /> 
+                      <!-- Rotation center (16, 16) is still the geometric center: x=6 + width/2=16, y=4 + height/2=16 -->
+                  
+                    <!-- Front Card Group (rotated slightly less) -->
+                    <!-- Rotation center (13, 13) needs to be correct for the group -->
+                    <g transform="rotate(4 13 13)"> 
+                       <!-- Rotation center for the group (13, 13) is still the geometric center of the front card's original position: x=4 + width/2=13, y=2 + height/2=13 -->
+                  
+                      <!-- Front Card Outline (taller) -->
+                      <!-- Increased height to 22, adjusted y to 2 to maintain vertical center -->
+                      <rect 
+                        x="4" y="2" 
+                        width="18" height="22" 
+                        rx="3" ry="3" 
+                        fill="none" 
+                        stroke="white" 
+                        stroke-width="1.5" />
+                  
+                      <!-- Number '1' -->
+                      <!-- Adjusted y position to 13 to be vertically centered in the taller card (y=2 + height/2=13) -->
+                  
+                    </g>
+                  </svg>
+                <span class="stat-value" data-stat="total">{chapter.totalCards}</span>
+            </div>
+
+            <!-- New Cards Stat -->
+            <div class="stat-item-new new-cards" title="New Cards Remaining">
+                <svg class="stat-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 7H11v4H7v2h4v4h2v-4h4v-2h-4V7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg> <!-- Plus icon -->
+                <span class="stat-value" data-stat="new">{chapter.remainingNewCards}</span>
+            </div>
+
+            <!-- Due Cards Stat -->
+            <div class="stat-item-new due-cards" title="Cards Due">
+                <svg class="stat-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg> <!-- Clock icon -->
+                <span class="stat-value" data-stat="due">{chapter.dueCards}</span>
+            </div>
+        </div>
+</div>
+    </div> <!-- end card-content-wrapper -->
+</div>
          <div id="heatmap-tooltip" class="global-tooltip" role="tooltip"></div>
     </div>
 
@@ -847,6 +1416,216 @@
             </div>
         </div>
     </div>
+
+    <!-- NEW: Info/Success Modal Structure -->
+<div id="infoModal" class="modal-overlay"> <!-- Unique ID -->
+    <div class="modal-content info-modal"> <!-- Specific class -->
+        <div class="modal-header">
+            <span id="infoModalIcon" class="modal-icon info"> <!-- Icon class -->
+                <!-- Info or Checkmark SVG -->
+                 <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path></svg> <!-- Example: Checkmark -->
+                 <!-- Info Icon Alt: <svg viewBox="0 0 24 24"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path></svg> -->
+            </span>
+            <h3 id="infoModalTitle" class="modal-title">Information</h3> <!-- Title ID -->
+        </div>
+        <p id="infoModalMessage" class="modal-message">Information message.</p> <!-- Message ID -->
+        <div id="infoModalActions" class="modal-actions"> <!-- Actions ID -->
+            <button class="modal-button secondary" data-action="close">OK</button> <!-- Single OK button -->
+        </div>
+    </div>
+</div>
+
+<!-- REVISED FLOATING STUDY PILL COMPONENT -->
+<div class="floating-study-pill" id="floatingStudyPill"> <!-- No more compressed/extended classes -->
+
+    <!-- 1. Material Switcher Area (Structure unchanged) -->
+    <div class="material-switcher-pill" id="pillMaterialSwitcher">
+        <!-- Material buttons added by JS -->
+        <button class="material-tab is-loading" aria-label="Loading materials...">
+             <svg viewBox="0 0 24 24" style="animation: spin 1.5s linear infinite;"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"></path></svg>
+        </button>
+    </div>
+
+<!-- 2. Study Stats (Simplified with Icons) -->
+<div class="study-stats simplified">
+    <div class="stat-box new-cards-stat" title="New cards available today">
+        <!-- New Card Icon SVG -->
+        <svg class="stat-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 7H11v4H7v2h4v4h2v-4h4v-2h-4V7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+        </svg>
+        <span class="stat-value" id="pillNewCardsCount">-</span>
+    </div>
+    <div class="stat-box due-cards-stat" title="Cards due for review">
+        <!-- Due/Clock Icon SVG -->
+        <svg class="stat-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+             <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+        </svg>
+        <span class="stat-value" id="pillDueCardsCount">-</span>
+    </div>
+</div>
+
+    <!-- 3. Study Button Wrapper (Button + Dropdown Trigger) -->
+    <div class="study-button-wrapper">
+        <button class="action-button study-due-button" id="pillStudyDueButton">
+            Study Due
+        </button>
+        <button class="study-options-trigger" id="pillOptionsTrigger" aria-label="Show study options" aria-haspopup="true" aria-expanded="false">
+            <!-- Dropdown Arrow SVG -->
+            <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"></path></svg>
+        </button>
+
+        <!-- Study Options Popup (Hidden by default) -->
+        <div class="study-options-popup" id="studyOptionsPopup" role="menu" style="display: none;">
+             <!-- Focused Study Button (State managed by JS) -->
+            <button class="action-button focused-study-button" id="pillStartFocusedButton" role="menuitem">
+                Select Chapters... <!-- Initial Text -->
+            </button>
+             <!-- Batch Size Input -->
+            <div class="batch-size-control" role="presentation">
+                <label for="pillReviewBatchSize" class="batch-size-label">Batch Size:</label>
+                <input type="number" id="pillReviewBatchSize" name="review-batch-size" class="batch-size-input" min="1" step="5" value="20" title="Max cards per focused session">
+            </div>
+        </div>
+    </div>
+
+</div>
+<!-- END OF FLOATING STUDY PILL COMPONENT -->
+
+
+<!-- NEW: Material Context Menu Structure -->
+<div id="materialContextMenu" class="context-menu" style="display: none;">
+    <ul>
+        <li data-action="settings">
+            <span class="menu-icon" title="Settings">
+                <!-- Gear Icon SVG -->
+                <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"></path></svg>
+            </span> Material Settings
+        </li>
+        <li data-action="set-default">
+            <span class="menu-icon" title="Set Default">
+                <!-- Star or Pin Icon SVG -->
+                 <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path></svg>
+            </span> Set as Default
+        </li>
+    </ul>
+</div>
+
+<!-- NEW: Material Settings Modal Structure -->
+<div id="materialSettingsModal" class="modal-overlay">
+    <div class="modal-content settings-modal"> <!-- Add specific class -->
+        <div class="modal-header">
+            <span class="modal-icon">
+                <!-- Re-use Gear Icon -->
+                 <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"></path></svg>
+            </span>
+            <h3 id="settingsModalTitle" class="modal-title">Material Settings</h3>
+        </div>
+
+        <!-- Form Content -->
+        <form id="materialSettingsForm" onsubmit="return false;"> <!-- Prevent default form submission -->
+            <input type="hidden" id="settingsEditMaterialName" value=""> <!-- Store name being edited -->
+
+            <!-- Section 1: General -->
+            <fieldset class="settings-section">
+                <legend>General</legend>
+                <div class="form-group">
+                    <label for="settingsMaterialName">Material Name:</label>
+                    <input type="text" id="settingsMaterialName" name="materialName" required>
+                </div>
+            </fieldset>
+
+            <!-- Section 2: Study Options -->
+            <fieldset class="settings-section">
+                <legend>Study Options</legend>
+                <div class="form-group inline"> <!-- Inline group -->
+                    <label for="settingsDailyLimit">Daily New Limit:</label>
+                    <input type="number" id="settingsDailyLimit" name="dailyLimit" min="0" step="1" required>
+                </div>
+                 <div class="form-group inline">
+                    <label for="settingsDefaultBatchSize">Default Batch Size:</label>
+                    <input type="number" id="settingsDefaultBatchSize" name="defaultBatchSize" min="1" step="5" required>
+                </div>
+            </fieldset>
+
+<!-- Section 3: SRS Algorithm Parameters -->
+<fieldset class="settings-section">
+    <legend>SRS Algorithm</legend>
+    <p class="settings-description">Fine-tune scheduling intervals (Advanced).</p>
+     <div class="form-group">
+         <label for="settingsAlgoLearningSteps">Learning Steps (days, comma-separated):</label>
+         <input type="text" id="settingsAlgoLearningSteps" name="algoLearningSteps" pattern="^(\d+(\.\d+)?)(,\s*\d+(\.\d+)?)*$">
+     </div>
+     <div class="form-group inline">
+         <label for="settingsAlgoGraduationInterval">Graduation Interval (days):</label>
+         <input type="number" id="settingsAlgoGraduationInterval" name="algoGraduationInterval" min="1" step="1" required>
+     </div>
+    <div class="form-group inline">
+         <label for="settingsAlgoLapseInterval">Lapse Interval (days):</label>
+         <input type="number" id="settingsAlgoLapseInterval" name="algoLapseInterval" min="0" step="0.1" required> <!-- Allow fractions for lapse -->
+     </div>
+     <div class="form-group inline">
+         <label for="settingsAlgoEasyBonus">Easy Bonus Factor:</label>
+         <input type="number" id="settingsAlgoEasyBonus" name="algoEasyBonus" min="1.0" step="0.05" required> <!-- Factor, not % -->
+     </div>
+    <div class="form-group inline">
+         <label for="settingsAlgoMinEase">Min Ease Factor:</label>
+         <input type="number" id="settingsAlgoMinEase" name="algoMinEase" min="1.0" step="0.05" required>
+     </div>
+     <div class="form-group inline">
+         <label for="settingsAlgoDefaultEase">Default Ease Factor:</label>
+         <input type="number" id="settingsAlgoDefaultEase" name="algoDefaultEase" min="1.0" step="0.05" required>
+     </div>
+     <div class="form-group inline">
+         <label for="settingsAlgoHardMultiplier">Hard Interval Multiplier:</label>
+         <input type="number" id="settingsAlgoHardMultiplier" name="algoHardMultiplier" min="1.0" step="0.05" required>
+     </div>
+     <div class="form-group inline">
+         <label for="settingsAlgoMaxInterval">Max Interval (days):</label>
+         <input type="number" id="settingsAlgoMaxInterval" name="algoMaxInterval" min="1" step="1" required>
+     </div>
+    <div class="form-group inline">
+         <label for="settingsAlgoEaseAdjLapse">Ease Adj. Lapse:</label>
+         <input type="number" id="settingsAlgoEaseAdjLapse" name="algoEaseAdjLapse" step="0.01" required> <!-- Can be negative -->
+     </div>
+    <div class="form-group inline">
+         <label for="settingsAlgoEaseAdjHard">Ease Adj. Hard:</label>
+         <input type="number" id="settingsAlgoEaseAdjHard" name="algoEaseAdjHard" step="0.01" required> <!-- Can be negative -->
+     </div>
+    <div class="form-group inline">
+         <label for="settingsAlgoEaseAdjEasy">Ease Adj. Easy:</label>
+         <input type="number" id="settingsAlgoEaseAdjEasy" name="algoEaseAdjEasy" step="0.01" required> <!-- Can be negative -->
+     </div>
+</fieldset>
+
+ <!-- Section 4: SRS Thresholds (Correct Input Types/Labels) -->
+<fieldset class="settings-section">
+    <legend>SRS Thresholds</legend>
+     <p class="settings-description">Define card state transitions.</p>
+     <div class="form-group inline">
+         <label for="settingsThresholdLearningReps">Learning Reps:</label>
+         <input type="number" id="settingsThresholdLearningReps" name="thresholdLearningReps" min="1" step="1" required>
+     </div>
+    <div class="form-group inline">
+         <label for="settingsThresholdMasteredReps">Mastered Reps:</label>
+         <input type="number" id="settingsThresholdMasteredReps" name="thresholdMasteredReps" min="1" step="1" required>
+     </div>
+      <div class="form-group inline">
+         <label for="settingsThresholdMasteredEase">Mastered Ease Factor:</label> <!-- Factor -->
+         <input type="number" id="settingsThresholdMasteredEase" name="thresholdMasteredEase" min="1.0" step="0.05" required>
+     </div>
+     <div class="form-group inline">
+         <label for="settingsThresholdCriticalEase">Critical Ease Factor:</label> <!-- Factor -->
+         <input type="number" id="settingsThresholdCriticalEase" name="thresholdCriticalEase" min="1.0" step="0.05" required>
+     </div>
+</fieldset>
+</form>
+
+        <div id="settingsModalActions" class="modal-actions">
+             <button id="settingsCancelButton" class="modal-button secondary" type="button">Cancel</button>
+             <button id="settingsSaveButton" class="modal-button primary" type="button">Save Changes</button>
+        </div>
+    </div>
+</div>
     <!-- At the end of the body tag -->
     <script type="module" src="./js/views/chapterFoldersView.js"></script>
 </body>

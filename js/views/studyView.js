@@ -142,6 +142,13 @@ class StudyView {
                this.compStatTimeEl = document.getElementById('compStatTime');
                this.compStatAccuracyCirclePath = document.querySelector('.accuracy-circle .accuracy-value-path'); // Path for circle animation
 
+                       // *** NEW Completion Screen Elements for Remaining Due ***
+        this.completionRemainingDueContainer = document.getElementById('completionRemainingDue'); // Container DIV
+        this.compStatRemainingDueEl = document.getElementById('compStatRemainingDue'); // Span for the count
+        this.studyRemainingDueBtn = document.getElementById('studyRemainingDueBtn'); // New Button
+        this.studyRemainingBatchSizeInput = document.getElementById('studyRemainingBatchSizeInput'); // New Input
+        this.returnBtn = document.getElementById('returnBtn'); // Existing button
+
         // --- State ---
         this.isTiltActive = false; // Track if tilt effect is currently modifying style
         this.originalRightColumnButtons = [];
@@ -168,6 +175,15 @@ class StudyView {
         this.keyboardShortcuts = null;
         // Add a flag to easily check if in preview mode
         this.isPreviewMode = false;
+        this.sessionLimit = null; // Store the batch size limit from URL
+        this.initialBatchCardIds = new Set(); // IDs of cards loaded at session start
+        this.reviewedInThisBatchIds = new Set(); // IDs reviewed *during this specific run*
+        this.isFocusedAllSession = false; // Flag for the specific "Study All Cards in Chapter(s)" mode
+
+        // *** Update check frequency ***
+        this.reviewsSinceLastCheck = 0;
+        this.checkFrequency = 3; // Check every 3 reviews now
+        this.isCheckingForCards = false;
 
         // Bind methods
         this._handleMouseMove = this._handleMouseMove.bind(this);
@@ -186,6 +202,8 @@ class StudyView {
         this._handleEditSave = this._handleEditSave.bind(this); // NEW bind
         this._handleEditCancel = this._handleEditCancel.bind(this); // NEW bind
         this._updateEditPreview = this._updateEditPreview.bind(this); // NEW bind
+        this._fetchAndDisplayRemainingDue = this._fetchAndDisplayRemainingDue.bind(this);
+        this._handleStudyRemainingClick = this._handleStudyRemainingClick.bind(this); // Handler for the new button
     }
 
     _bindActionHandlers() {
@@ -223,17 +241,36 @@ class StudyView {
             if(this.editBtn) this.editBtn.style.display = 'none'; // Hide button if panel missing
         }
 
+        if (!this.completionRemainingDueContainer || !this.compStatRemainingDueEl || !this.studyRemainingDueBtn || !this.studyRemainingBatchSizeInput) {
+            console.warn("Completion screen 'remaining due' elements not found. This feature may not work.");
+            // Don't necessarily fail init, just warn.
+         }
+
         // Get URL Params (same as before)
         const urlParams = new URLSearchParams(window.location.search);
         this.isPreviewMode = urlParams.get('preview') === 'true'; // Check URL parameter
 
         if (this.isPreviewMode) {
             console.warn("--- RUNNING IN PREVIEW MODE --- API calls will be skipped.");
+             // Skip batch size logic in preview for simplicity
+        } else {
+             // *** Read limit parameter ***
+             const limitParam = urlParams.get('limit');
+             this.sessionLimit = (limitParam && !isNaN(parseInt(limitParam, 10)) && parseInt(limitParam, 10) > 0)
+                 ? parseInt(limitParam, 10)
+                 : null; // Store null if no limit or invalid
+             console.log(`Session initialized with limit: ${this.sessionLimit ?? 'None'}`);
         }
 
         this.initialParams.material = urlParams.get('material');
         this.initialParams.chapters = urlParams.get('chapters');
         this.initialParams.mode = urlParams.get('mode');
+        // *** Set flag for "Focused All" session type ***
+        this.isFocusedAllSession = !!(this.initialParams.material && this.initialParams.chapters && this.initialParams.mode === 'all');
+        if (this.isFocusedAllSession) {
+            console.log("INFO: Initializing as 'Focused All' session type. Background/Final checks will be skipped.");
+        }
+        
 
         if (this.rightActionsColumnEl) {
             this.originalRightColumnButtons = Array.from(this.rightActionsColumnEl.querySelectorAll('.icon-btn[data-original-column="right"]'));
@@ -243,10 +280,11 @@ class StudyView {
         }
 
         this.isLoading = true;
-        // *** Initialize refresh counter ***
-        this.reviewsSinceLastCheck = 0;
-        this.isCheckingForCards = false; // Reset flag on init
         this._updateLoadingState();
+        this.initialBatchCardIds = new Set(); // Reset sets
+        this.reviewedInThisBatchIds = new Set();
+        this.reviewsSinceLastCheck = 0;
+        this.isCheckingForCards = false;
         this._updateFlipStateVisuals(); // Ensure initial state is front
 
         // Instantiate components (pass updated elements)
@@ -291,39 +329,55 @@ class StudyView {
                     this._loadNextCard(); // Load the first sample card
                 }
                 // --- End Sample Data Loading ---
+                this.initialBatchCardIds = new Set(sampleCardsData.map(c => c.id));
             } else {
-                // --- Load Data from API (Existing Logic) ---
+                // --- Load Data from API (Applying Limit) ---
                 let cardSourcePromise;
                 let sessionTypeLog = "";
-                const isFocusedDueSession = this.initialParams.material && this.initialParams.chapters && this.initialParams.mode !== 'all';
-                const isFocusedAllSession = this.initialParams.material && this.initialParams.chapters && this.initialParams.mode === 'all';
-                const isGlobalMaterialDueSession = this.initialParams.material && !this.initialParams.chapters;
-                const isGlobalAllDueSession = !this.initialParams.material;
+                const isFocusedDueSession = this.initialParams.material && this.initialParams.chapters && !this.isFocusedAllSession; // Exclude "Focused All"
+                const isGlobalMaterialDueSession = this.initialParams.material && !this.initialParams.chapters; // Assumes due if no chapters/mode=all
+                const isGlobalAllDueSession = !this.initialParams.material; // Assumes due
 
-                // Determine API call based on parameters (existing logic)
-                if (isFocusedDueSession) { /* ... set promise ... */ sessionTypeLog = `INITIAL FETCH: Focused Due...`; cardSourcePromise = apiClient.getStudySessionCards(this.initialParams.material, this.initialParams.chapters); }
-                else if (isFocusedAllSession) { /* ... set promise ... */ sessionTypeLog = `INITIAL FETCH: Focused All...`; cardSourcePromise = apiClient.getCards({ material: this.initialParams.material, chapter: this.initialParams.chapters, buried: false }); }
-                else if (isGlobalMaterialDueSession) { /* ... set promise ... */ sessionTypeLog = `INITIAL FETCH: Global Material Due...`; cardSourcePromise = apiClient.getCards({ material: this.initialParams.material, due: true, buried: false }); }
-                else { /* ... set promise ... */ sessionTypeLog = `INITIAL FETCH: Global All Due...`; cardSourcePromise = apiClient.getCards({ due: true, buried: false }); }
+                // Determine API call based on parameters
+                if (this.isFocusedAllSession) {
+                    sessionTypeLog = `INITIAL FETCH: Focused All... (Material: ${this.initialParams.material}, Chapters: ${this.initialParams.chapters})`;
+                    // Fetch ALL cards for the chapter(s), NO LIMIT applied
+                    cardSourcePromise = apiClient.getCards({ material: this.initialParams.material, chapter: this.initialParams.chapters, buried: false });
+                } else if (isFocusedDueSession) {
+                    sessionTypeLog = `INITIAL FETCH: Focused Due... (Material: ${this.initialParams.material}, Chapters: ${this.initialParams.chapters}, Limit: ${this.sessionLimit ?? 'None'})`;
+                    // Use specific study-session endpoint, PASSING THE LIMIT
+                    cardSourcePromise = apiClient.getStudySessionCards(this.initialParams.material, this.initialParams.chapters, this.sessionLimit);
+                } else if (isGlobalMaterialDueSession) {
+                    sessionTypeLog = `INITIAL FETCH: Global Material Due... (Material: ${this.initialParams.material}, Limit: ${this.sessionLimit ?? 'None'})`;
+                    // Fetch due cards for material, PASSING THE LIMIT in filters
+                    cardSourcePromise = apiClient.getCards({ material: this.initialParams.material, due: true, buried: false, limit: this.sessionLimit });
+                } else { // isGlobalAllDueSession
+                    sessionTypeLog = `INITIAL FETCH: Global All Due... (Limit: ${this.sessionLimit ?? 'None'})`;
+                    // Fetch global due cards, PASSING THE LIMIT in filters
+                    cardSourcePromise = apiClient.getCards({ due: true, buried: false, limit: this.sessionLimit });
+                }
 
                 console.log(`Initializing study session: ${sessionTypeLog}`);
                 this.sessionCards = await cardSourcePromise;
                 console.log(`Fetched ${this.sessionCards.length} cards from API.`);
 
+                // *** Store initial IDs ***
+                this.initialBatchCardIds = new Set(this.sessionCards.map(c => c.id));
+                console.log(`Stored ${this.initialBatchCardIds.size} initial card IDs.`);
+
                 if (this.sessionCards.length === 0) {
-                    // Show appropriate completion/empty message (existing logic)
-                    const message = (isFocusedDueSession || isFocusedAllSession) ? `No cards found for this selection!` : "No cards due for review right now!";
-                    this._showCompletionMessage(message);
+                    // Show appropriate completion/empty message
+                     const message = this.isFocusedAllSession ? `No cards found for this chapter selection!` : "No cards due for review right now!";
+                     this._showCompletionMessage(message, false); // Explicitly false for showRemainingDue
                 } else {
-                    // Initialize stats and start session (existing logic)
-                    this.sessionStats.total = this.sessionCards.length;
+                    // Initialize stats and start session
+                    this.sessionStats.total = this.sessionCards.length; // Total in this batch
                     this.sessionStats.remaining = this.sessionCards.length;
                     this._updateRemainingCount();
                     this.progressTracker.update(this.sessionStats);
-                    this._startTimer(); // Start timer only for real sessions
+                    this._startTimer();
                     this._loadNextCard();
                 }
-                 // --- End API Data Loading ---
             }
         } catch (error) {
             // Catch errors from either sample loading (unlikely) or API loading
@@ -443,8 +497,9 @@ class StudyView {
             this.editChapterInput?.addEventListener('input', () => this._updateEditPreview('chapter')); // Add chapter preview if needed
             this.editBriefTextarea?.addEventListener('input', () => this.debouncedPreviewUpdate('brief'));
             this.editDetailedTextarea?.addEventListener('input', () => this.debouncedPreviewUpdate('detailed'));
-            // --- End Edit Panel Listeners ---
-    
+                // --- End Edit Panel Listeners ---
+                        // *** Add Listener for the NEW "Study Remaining" Button ***
+            this.studyRemainingDueBtn?.addEventListener('click', this._handleStudyRemainingClick);
             // Keyboard listener
             document.addEventListener('keydown', this._handleKeyDown);
         }    
@@ -485,6 +540,10 @@ class StudyView {
 
         
         // Remove AI button listener if added
+        // *** Remove NEW listener ***
+        this.studyRemainingDueBtn?.removeEventListener('click', this._handleStudyRemainingClick);
+        this.initialBatchCardIds.clear();
+        this.reviewedInThisBatchIds.clear();
         this._stopTimer();
         this.isCheckingForCards = false; 
         console.log("StudyView destroyed and listeners removed.");
@@ -767,6 +826,7 @@ class StudyView {
         this.currentCardIndex++;
         console.log(`DEBUG: _loadNextCard AFTER Inc. New Index: ${this.currentCardIndex}`); // Log right after incremen
         this._updateRemainingCount(); // Update remaining count based on new index and potentially new length
+        
                 // *** Update the progress tracker display HERE ***
     
         this.progressTracker.update(this.sessionStats);
@@ -819,174 +879,192 @@ class StudyView {
 // --- studyView.js ---
 
     /**
-     * Performs a final check for any newly due cards before ending the session.
-     * Fetches cards based on the original session scope and adds any new ones to the queue.
-     * If new cards are found, continues the session; otherwise, shows the completion screen.
+     * Performs a final check using /cards/check-due on the initial batch IDs.
+     * If any are still due, re-adds them to the queue and continues the session.
+     * Otherwise, proceeds to the completion screen.
      * @private
      */
-    async _finalDueCardCheck() {
-        if (this.isPreviewMode) { // Skip final check in preview
-            console.log("DEBUG: Final Check - Preview Mode. Ending session.");
-            this.isLoading = false; this._updateLoadingState();
-            this._showCompletionMessage("Preview Session Complete!");
-            return;
-       }
-        // 1. --- Initial Guards & State Setup ---
-        // Skip check entirely if it's a "Study All Chapter" session - session is truly over.
-        if (this.initialParams.mode === 'all' && this.initialParams.chapters) {
-            console.log("DEBUG: Final Check - 'Study All Chapter' mode detected. Session is complete.");
-            this.isLoading = false; // Ensure loading is off before showing completion
-            this._updateLoadingState();
-            this._showCompletionMessage("Study session complete!");
+    async _finalDueCardCheck() { // New Logic
+        // --- Guards ---
+        if (this.isFocusedAllSession) {
+            console.log("DEBUG: Final Check - Skipping ('Focused All' session). Proceeding to completion.");
+            this.isLoading = false; this._updateLoadingState(); // Ensure loading off
+            this._showCompletionMessage("Study session complete!", false); // 'Focused All' never shows remaining due
             return;
         }
-
-        // Prevent concurrent checks or running offline
-        if (this.isCheckingForCards || !navigator.onLine) {
-            if (!navigator.onLine) console.log("DEBUG: Final Check - Offline. Assuming session complete.");
-            else console.log("DEBUG: Final Check - Already checking. Skipping.");
-            this.isLoading = false; // Ensure loading is off
-            this.isCheckingForCards = false; // Reset flag if needed
-            this._updateLoadingState();
-            this._showCompletionMessage(navigator.onLine ? "Study session complete!" : "Session complete (offline).");
-            return;
+        if (this.isPreviewMode) {
+             console.log("DEBUG: Final Check - Preview Mode. Ending session.");
+             this.isLoading = false; this._updateLoadingState();
+             this._showCompletionMessage("Preview Session Complete!", false); // No remaining due in preview
+             return;
         }
+         if (this.isCheckingForCards || !navigator.onLine) { // Prevent overlap/offline
+             console.log("DEBUG: Final Check - Skipping (already checking or offline). Proceeding to completion.");
+             this.isLoading = false; this.isCheckingForCards = false; this._updateLoadingState();
+             this._showCompletionMessage("Study session complete!", true); // Potentially show remaining due
+             return;
+         }
+        if (!this.initialBatchCardIds || this.initialBatchCardIds.size === 0) {
+             console.log("DEBUG: Final Check - Skipping (no initial batch IDs). Proceeding to completion.");
+             this.isLoading = false; this._updateLoadingState();
+             this._showCompletionMessage("Study session complete!", true); // Potentially show remaining due
+             return;
+        }
+        // --- End Guards ---
 
-        console.log("DEBUG: Final Check - Starting final fetch for due cards...");
-        this.isCheckingForCards = true; // Set flag: check is now in progress
-        this.isLoading = true; // Set loading state for the check duration
-        this._updateLoadingState(); // Update UI visuals
+        console.log("DEBUG: Final Check - Starting final due check using /cards/check-due...");
+        this.isCheckingForCards = true; // Set flag
+        this.isLoading = true; // Show loading
+        this._updateLoadingState();
 
-        // 2. --- Determine Fetch Operation ---
-        // Declare variable *outside* try block
-        let cardCheckPromise = null;
         try {
-             // Get the appropriate promise based on session type
-             cardCheckPromise = this._getDynamicDueCardsPromise();
+            const checkPayload = { cardIds: Array.from(this.initialBatchCardIds) };
+            const result = await apiClient.checkDueStatus(checkPayload); // Assuming apiClient has this method
+            const stillDueIds = new Set(result?.dueCardIds || []);
 
-             // If no dynamic check is applicable for this session type (e.g., edge case)
-             if (!cardCheckPromise) {
-                 console.log("DEBUG: Final Check - No dynamic check required for this session type. Ending session.");
-                 this.isLoading = false;
-                 this.isCheckingForCards = false;
-                 this._updateLoadingState();
-                 this._showCompletionMessage("Study session complete!");
-                 return; // Exit function early
-             }
+            // Find cards from the original batch that are *still* due
+            const cardsToReAddIds = Array.from(this.initialBatchCardIds).filter(id => stillDueIds.has(id));
 
-            // 3. --- Execute Fetch and Process Results ---
-            const dueCards = await cardCheckPromise;
-            console.log(`DEBUG: Final Check - API returned ${dueCards?.length ?? 0} potentially due cards.`);
-
-            let newCardsAdded = false; // Flag to track if session should continue
-
-            if (dueCards && dueCards.length > 0) {
-                // Create a Set of IDs for ALL cards processed so far in this session
-                // This includes cards already reviewed AND those remaining in the queue initially
-                const processedCardIds = new Set(this.sessionCards.map(card => card.id));
-                console.log(`DEBUG: Final Check - Comparing against ${processedCardIds.size} processed card IDs.`);
-
-                // Filter the fetched due cards to find ones not already processed
-                const newUniqueCards = dueCards.filter(card => {
-                    const isNew = typeof card.id !== 'undefined' && !processedCardIds.has(card.id);
-                    // if (isNew) console.log(`DEBUG: Final Check - Found new card: ${card.id} (${card.name})`); // Optional detailed log
-                    return isNew;
-                });
-
-                // If new unique cards were found
-                if (newUniqueCards.length > 0) {
-                    console.log(`DEBUG: Final Check - Found ${newUniqueCards.length} new card(s) to add.`);
-                    // Add the new cards to the end of the main session queue
-                    this.sessionCards.push(...newUniqueCards);
-                    console.log(`DEBUG: Final Check - Queue length is now ${this.sessionCards.length}.`);
-                    newCardsAdded = true; // Set flag to continue session
-                } else {
-                    console.log("DEBUG: Final Check - No *new* unique due cards found among API results.");
+            if (cardsToReAddIds.length > 0) {
+                // --- Re-add Cards and Continue ---
+                console.log(`DEBUG: Final Check - Found ${cardsToReAddIds.length} card(s) from initial batch still due. Re-adding and continuing.`);
+                let cardsAdded = 0;
+                for (const cardId of cardsToReAddIds) {
+                    const cardData = this.sessionCards.find(c => c.id === cardId) // Try finding in current list first
+                                     || sampleCardsData.find(c => c.id === cardId); // Fallback for edge cases/preview? Unlikely needed. Find in ORIGINAL batch data is better. Need to store initial data? No, should be in sessionCards.
+                    if (cardData) {
+                         // *** Ensure we don't add duplicates if somehow still in queue (unlikely here) ***
+                         if (!this.sessionCards.slice(this.currentCardIndex + 1).some(c => c.id === cardId)) {
+                             const cardToInsert = { ...cardData }; // Use a shallow copy
+                             this.sessionCards.push(cardToInsert); // Add to the END
+                             cardsAdded++;
+                         }
+                    } else {
+                         console.warn(`DEBUG: Final Check - Card data for ID ${cardId} not found in sessionCards.`);
+                    }
                 }
-            } else {
-                 console.log("DEBUG: Final Check - API returned no due cards.");
-            }
 
-            // 4. --- Decide Next Action based on newCardsAdded flag ---
-            if (newCardsAdded) {
-                 // Continue the session
-                 console.log("DEBUG: Final Check - Continuing session with newly added cards.");
-                 this.isCheckingForCards = false; // Reset check flag
-                 this.isLoading = false; // Reset loading flag (let _loadNextCard handle its loading)
-                 // Note: No need to call _updateLoadingState here immediately
-                 this._loadNextCard(); // Call load next, it will handle index and loading state
+                if (cardsAdded > 0) {
+                    this.isCheckingForCards = false; // Reset flag
+                    this.isLoading = false; // Reset loading flag (let _loadNextCard handle its loading)
+                    this._updateRemainingCount(); // Update count reflecting added cards
+                    this.progressTracker.update(this.sessionStats);
+                    console.log(`DEBUG: Final Check - Added ${cardsAdded} cards. Reloading next card.`);
+                    this._loadNextCard(); // Continue session
+                } else {
+                     // No cards were actually added (e.g., data missing), proceed to completion
+                     console.log("DEBUG: Final Check - No valid cards could be re-added. Proceeding to completion.");
+                     this.isCheckingForCards = false; // Reset check flag
+                     this.isLoading = false; // Reset loading flag before showing completion
+                     this._updateLoadingState();
+                     this._showCompletionMessage("Study session complete!", true); // Show completion, potentially with remaining due
+                }
+
             } else {
-                 // End the session
-                 console.log("DEBUG: Final Check - Confirmed no more cards due. Ending session.");
-                 this.isCheckingForCards = false; // Reset check flag
-                 this.isLoading = false; // Reset loading flag before showing completion
-                 this._updateLoadingState(); // Update UI to remove loading state
-                 this._showCompletionMessage("Study session complete!");
+                // --- End the Session ---
+                console.log("DEBUG: Final Check - Confirmed no cards from the initial batch are still due. Ending session.");
+                this.isCheckingForCards = false; // Reset check flag
+                this.isLoading = false; // Reset loading flag before showing completion
+                this._updateLoadingState(); // Update UI to remove loading state
+                this._showCompletionMessage("Study session complete!", true); // Show completion, potentially with remaining due
             }
 
         } catch (error) {
-            // 5. --- Handle Errors during Fetch/Processing ---
             console.error("Error during final due card check:", error);
             this.isCheckingForCards = false; // Reset flag on error
             this.isLoading = false; // Reset loading flag on error
             this._updateLoadingState(); // Update UI
             // Proceed to completion screen on error to avoid getting stuck
-            this._showCompletionMessage("Session complete (error during final check).");
+            this._showCompletionMessage("Session complete (error during final check).", true); // Potentially show remaining due even on error?
         }
-        // No 'finally' block is needed as all success/error paths handle resetting flags.
-    } // --- End of _finalDueCardCheck ---
+    }
 
         // *** NEW Method to Check for Due Cards ***
-        async _checkForNewDueCards() { // Background check
-            if (this.isPreviewMode) return; // Don't check in preview
-            // Skip check if it's a "Study All Chapter" session
-            if (this.initialParams.mode === 'all' && this.initialParams.chapters) {
-                console.log("DEBUG: Background Check - 'Study All Chapter' mode, skipping dynamic due check.");
-                return; // No dynamic checks needed
-            }
-    
-            if (this.isCheckingForCards || !navigator.onLine) return; // Basic guards
-    
-            console.log(`DEBUG: Background Check - Checking for new due cards...`);
-            this.reviewsSinceLastCheck = 0;
-            this.isCheckingForCards = true;
-    
-            const cardCheckPromise = this._getDynamicDueCardsPromise(); // Get the correct fetch promise
-    
-            if (!cardCheckPromise) { // Handle case where no check is needed
-                 console.log("DEBUG: Background Check - No dynamic check required for this session type.");
-                 this.isCheckingForCards = false;
-                 return;
-            }
-    
-            try {
-                const dueCards = await cardCheckPromise;
-                console.log(`DEBUG: Background Check - Found ${dueCards?.length ?? 0} potentially new due cards.`);
-    
-                if (dueCards && dueCards.length > 0) {
-                    // Filter against remaining + current (existing logic)
-                     const remainingCardIds = new Set(this.sessionCards.slice(this.currentCardIndex + 1).map(card => card.id));
-                     if (this.currentCard) remainingCardIds.add(this.currentCard.id);
-                     const newUniqueCards = dueCards.filterr(card =>
-                        typeof card.id !== 'undefined' && !remainingCardIds.has(card.id)
-                    ); // Same filtering
-    
-                     if (newUniqueCards.length > 0) {
-                         console.log(`DEBUG: Background Check - Adding ${newUniqueCards.length} new unique cards.`);
-                         const insertionIndex = this.currentCardIndex + 1;
-                         this.sessionCards.splice(insertionIndex, 0, ...newUniqueCards);
-                         console.log(`DEBUG: Background Check - Queue length is now ${this.sessionCards.length}`);
-                         this._updateRemainingCount();
-                         this.progressTracker.update(this.sessionStats);
-                     } else {console.log("DEBUG: No *new* unique due cards found to add."); }
-                }
-            } catch (error) {
-                console.error("Error during background due card check:", error);
-            } finally {
-                this.isCheckingForCards = false;
-                console.log("DEBUG: Background Check - Finished.");
-            }
+    /**
+     * Performs a background check using /cards/check-due on the initial batch IDs.
+     * Re-adds cards to the queue if they were reviewed but are still marked as due.
+     * @private
+     */
+    async _checkForNewDueCards() { // New Logic
+        // --- Guards ---
+        if (this.isFocusedAllSession) {
+            console.log("DEBUG: Background Check - Skipping ('Focused All' session).");
+            return;
         }
+        if (this.isPreviewMode) return;
+        if (this.isCheckingForCards || !navigator.onLine) {
+             console.log("DEBUG: Background Check - Skipping (already checking or offline).");
+             return;
+        }
+         if (!this.initialBatchCardIds || this.initialBatchCardIds.size === 0) {
+             console.log("DEBUG: Background Check - Skipping (no initial batch IDs).");
+             return;
+         }
+        // --- End Guards ---
+
+        console.log(`DEBUG: Background Check - Checking ${this.initialBatchCardIds.size} initial batch cards...`);
+        this.isCheckingForCards = true;
+        this.reviewsSinceLastCheck = 0; // Reset counter
+
+        try {
+            const checkPayload = { cardIds: Array.from(this.initialBatchCardIds) };
+            const result = await apiClient.checkDueStatus(checkPayload); // Assuming apiClient has this method
+            const stillDueIds = new Set(result?.dueCardIds || []);
+
+            if (stillDueIds.size > 0) {
+                console.log(`DEBUG: Background Check - API reported ${stillDueIds.size} cards still due from initial batch.`);
+
+                // Find cards that are STILL DUE *and* have ALREADY been reviewed in this batch
+                const cardsToReAddIds = Array.from(stillDueIds).filter(id => this.reviewedInThisBatchIds.has(id));
+
+                if (cardsToReAddIds.length > 0) {
+                    console.log(`DEBUG: Background Check - Found ${cardsToReAddIds.length} reviewed card(s) to potentially re-add:`, cardsToReAddIds);
+
+                    const insertionIndex = this.currentCardIndex + 1;
+                    const upcomingCardIds = new Set(this.sessionCards.slice(insertionIndex).map(c => c.id));
+                    let cardsActuallyAddedCount = 0;
+
+                    for (const cardId of cardsToReAddIds) {
+                        // Avoid adding if it's already in the upcoming queue
+                        if (!upcomingCardIds.has(cardId)) {
+                             // Find the original card data from the full sessionCards list (more reliable than initialBatch)
+                            const cardData = this.sessionCards.find(c => c.id === cardId); // Find by ID in current full list
+                            if (cardData) {
+                                // *** Create a fresh copy to avoid potential state issues? Or just reuse? Reuse for now. ***
+                                const cardToInsert = { ...cardData }; // Use a shallow copy
+                                console.log(`DEBUG: Background Check - Re-inserting card ${cardId} at index ${insertionIndex}.`);
+                                this.sessionCards.splice(insertionIndex, 0, cardToInsert);
+                                cardsActuallyAddedCount++;
+                                // We technically don't need to add to upcomingCardIds as we iterate insertionIndex forward implicitly with splice
+                            } else {
+                                console.warn(`DEBUG: Background Check - Card data for ID ${cardId} not found in sessionCards.`);
+                            }
+                        } else {
+                            console.log(`DEBUG: Background Check - Card ${cardId} is already in the upcoming queue, skipping re-add.`);
+                        }
+                    }
+
+                    if (cardsActuallyAddedCount > 0) {
+                        console.log(`DEBUG: Background Check - Added ${cardsActuallyAddedCount} cards back to queue. New length: ${this.sessionCards.length}`);
+                        this._updateRemainingCount(); // Update stats
+                        this.progressTracker.update(this.sessionStats);
+                    }
+
+                } else {
+                    console.log("DEBUG: Background Check - None of the still-due cards have been reviewed yet in this batch.");
+                }
+            } else {
+                console.log("DEBUG: Background Check - API reported no cards from initial batch are currently due.");
+            }
+
+        } catch (error) {
+            console.error("Error during background due card check:", error);
+            // Don't halt the session, just log the error.
+        } finally {
+            this.isCheckingForCards = false;
+            console.log("DEBUG: Background Check - Finished.");
+        }
+    }
 
         // *** NEW Helper to update remaining count ***
         _updateRemainingCount() {
@@ -1108,6 +1186,7 @@ class StudyView {
                if (this.isPreviewMode) {
                 console.log(`PREVIEW: Simulating review quality ${quality} for card ${this.currentCard.id}`);
                 this.isLoading = true; // Simulate loading state
+                if(this.currentCard?.id) this.reviewedInThisBatchIds.add(this.currentCard.id); // Add to reviewed set
                 this._updateLoadingState();
                 // Simulate delay
                 await new Promise(resolve => setTimeout(resolve, 200));
@@ -1123,7 +1202,7 @@ class StudyView {
              this._showError("Error: Cannot identify card for review.", true);
              return;
         }
-
+        const cardId = this.currentCard.id; // Store ID before potential async ops
         console.log(`Handling review for card ${this.currentCard.id} with quality ${quality}`);
 
         this.isLoading = true; // Use main loading flag
@@ -1135,29 +1214,42 @@ class StudyView {
         // Optimistic stat update
         if (quality >= 2) { this.sessionStats.correct++; } else { this.sessionStats.incorrect++; }
 
+        // *** Add card ID to reviewed set BEFORE API call ***
+        this.reviewedInThisBatchIds.add(cardId);
+        console.log(`DEBUG: Added ${cardId} to reviewedInThisBatchIds. Size: ${this.reviewedInThisBatchIds.size}`);
+
         try {
-            await apiClient.submitReview(this.currentCard.id, quality);
-            console.log(`DEBUG: _handleReview complete for index ${this.currentCardIndex}. Current queue length: ${this.sessionCards.length}. Calling _loadNextCard...`);
-            this._loadNextCard(); // Success: load next
-            // *** Increment review counter and trigger check if needed ***
+            await apiClient.submitReview(cardId, quality); // Use stored cardId
+
+            // *** Trigger background check if needed (BEFORE loading next card) ***
             this.reviewsSinceLastCheck++;
-            if (this.reviewsSinceLastCheck >= this.checkFrequency) {
-                // Don't await - let it run in background
-                this._checkForNewDueCards();
-           }
-           // *** End check trigger ***
+             if (!this.isFocusedAllSession && this.reviewsSinceLastCheck >= this.checkFrequency) {
+                 // Don't await - let it run in background
+                 console.log(`DEBUG: Triggering background check after ${this.reviewsSinceLastCheck} reviews.`);
+                 this._checkForNewDueCards(); // New logic using checkDueStatus
+             } else if (this.isFocusedAllSession) {
+                 console.log("DEBUG: Skipping background check ('Focused All' session).");
+             }
+             // *** End check trigger ***
+
+            // Load next card on success
+            console.log(`DEBUG: Review successful for ${cardId}. Loading next card...`);
+            this._loadNextCard();
+
 
         } catch (error) {
-             console.error(`Failed to submit review for card ${this.currentCard.id}:`, error);
-             this._showError("Failed to save review. Please check connection.", true);
-             // Revert optimistic stat update
-             if (quality >= 2) { this.sessionStats.correct--; } else { this.sessionStats.incorrect--; }
-             // Re-enable buttons on error
-             this.qualityButtons.setDisabled(false); // Re-enable quality for retry
-             if(this.skipButton) this.skipButton.disabled = false;
-             this._enableActionButtons(); // Re-enable side actions
-             this.isLoading = false;
-             this._updateLoadingState();
+            console.error(`Failed to submit review for card ${cardId}:`, error);
+            this._showError("Failed to save review. Please check connection.", true);
+            // Revert optimistic stat update (unchanged)
+            if (quality >= 2) { this.sessionStats.correct--; } else { this.sessionStats.incorrect--; }
+            // Revert reviewed ID tracking on error
+            this.reviewedInThisBatchIds.delete(cardId);
+            // Re-enable buttons on error (unchanged)
+            this.qualityButtons.setDisabled(false);
+            if(this.skipButton) this.skipButton.disabled = false;
+            this._enableActionButtons();
+            this.isLoading = false;
+            this._updateLoadingState();
         }
         // No finally needed, isLoading handled in paths
     }
@@ -1501,6 +1593,7 @@ class StudyView {
     }
 
     _showCompletionMessage(message) {
+        if (!this.completionContainer || !this.completionMessageEl) return;
         console.log("Session complete:", message);
         this._stopTimer();
 
@@ -1528,21 +1621,38 @@ class StudyView {
              window.history.back();
         };
 
-         // --- Button 2: Study Global Material ---
-         // Logic remains the same
-         const wasSpecificSession = this.initialParams.chapters || this.initialParams.mode === 'all';
-         if (wasSpecificSession && this.initialParams.material) {
-             // Update button text using child span if needed
-             const btnTextSpan = this.studyGlobalMaterialBtn.querySelector('span');
-             if (btnTextSpan) btnTextSpan.textContent = `Study All Due ${this.initialParams.material}`;
-             else this.studyGlobalMaterialBtn.textContent = `Study All Due ${this.initialParams.material}`; // Fallback
-             this.studyGlobalMaterialBtn.style.display = '';
-             this.studyGlobalMaterialBtn.onclick = () => {
-                 window.location.href = `study-session.html?material=${encodeURIComponent(this.initialParams.material)}`;
-             };
-         } else {
-             this.studyGlobalMaterialBtn.style.display = 'none';
-         }
+        // --- Hide/Reset Remaining Due Section Initially ---
+        if(this.completionRemainingDueContainer) this.completionRemainingDueContainer.style.display = 'none';
+        if(this.studyRemainingDueBtn) this.studyRemainingDueBtn.disabled = true;
+        if(this.compStatRemainingDueEl) this.compStatRemainingDueEl.textContent = '-';
+                // --- Conditional Fetch for Remaining Due ---
+        // Only check if requested AND it wasn't a "Focused All" session
+        const shouldFetchRemaining = checkRemainingDue && !this.isFocusedAllSession && !this.isPreviewMode;
+
+        if (shouldFetchRemaining) {
+            console.log("DEBUG: Attempting to fetch remaining due cards for completion screen...");
+            this._fetchAndDisplayRemainingDue(); // Async call, handles its own UI updates
+       } else {
+            console.log("DEBUG: Skipping fetch for remaining due cards on completion screen.");
+       }
+
+        // --- Button 2: Study Global Material ---
+        const wasSpecificSession = this.initialParams.chapters || this.initialParams.mode === 'all';
+        if (wasSpecificSession && this.initialParams.material) {
+            // Update button text using child span if needed
+            const btnTextSpan = this.studyGlobalMaterialBtn.querySelector('span');
+            if (btnTextSpan) {
+                btnTextSpan.textContent = `Study All Due ${this.initialParams.material}`;
+            } else { // Fallback
+                this.studyGlobalMaterialBtn.textContent = `Study All Due ${this.initialParams.material}`;
+            }
+            this.studyGlobalMaterialBtn.style.display = ''; // Show the button
+            this.studyGlobalMaterialBtn.onclick = () => {
+                window.location.href = `./study-session.html?material=${this.initialParams.material}`;
+            };
+        } else {
+            this.studyGlobalMaterialBtn.style.display = 'none';
+        }
 
          // --- Button 3: Study Other Material ---
          this.studyOtherBtn.onclick = this._handleStudyOtherClick.bind(this);
@@ -1562,6 +1672,108 @@ class StudyView {
          this.destroy(); // Clean up session listeners
     }
 
+        /**
+     * Fetches the count of remaining due cards for the original session scope
+     * and updates the completion screen UI.
+     * @private
+     */
+        async _fetchAndDisplayRemainingDue() {
+            if (!this.completionRemainingDueContainer || !this.compStatRemainingDueEl || !this.studyRemainingDueBtn || !this.studyRemainingBatchSizeInput) {
+                console.warn("Cannot display remaining due: Elements missing.");
+                return;
+            }
+    
+            // Determine scope
+            const material = this.initialParams.material;
+            const chapters = this.initialParams.chapters; // Comma-separated string or null
+    
+            if (!material) { // Cannot determine scope if no material was specified initially
+                console.warn("Cannot fetch remaining due: Initial material unknown.");
+                return;
+            }
+    
+            console.log(`Fetching remaining due count for Material: ${material}, Chapters: ${chapters ?? 'All'}`);
+            // Show loading state specifically for this part? Or just let it populate? Let's just populate.
+             if(this.compStatRemainingDueEl) this.compStatRemainingDueEl.textContent = 'Loading...';
+    
+            try {
+                // Use getCards with due=true and a large limit to get the count
+                // Important: Filter by the *original* chapter selection, if any
+                const filters = {
+                    material: material,
+                    due: true,
+                    buried: false,
+                    limit: 9999 // Use a very large limit to effectively get all
+                };
+                if (chapters) {
+                    filters.chapter = chapters; // Pass chapter filter if it existed
+                }
+    
+                const remainingDueCards = await apiClient.getCards(filters);
+                const remainingCount = remainingDueCards.length;
+    
+                console.log(`Found ${remainingCount} remaining due cards for the scope.`);
+    
+                // Update UI
+                if(this.compStatRemainingDueEl) this.compStatRemainingDueEl.textContent = remainingCount;
+                if(this.studyRemainingBatchSizeInput) this.studyRemainingBatchSizeInput.value = 20; // Default batch size suggestion
+    
+                // Show the container and enable button IF there are cards remaining
+                if (remainingCount > 0) {
+                     if(this.completionRemainingDueContainer) this.completionRemainingDueContainer.style.display = 'flex'; // Or appropriate display value
+                     if(this.studyRemainingDueBtn) this.studyRemainingDueBtn.disabled = false;
+                } else {
+                     // Optionally show a "None left!" message instead of the count/button
+                     if(this.compStatRemainingDueEl) this.compStatRemainingDueEl.textContent = '0';
+                     if(this.completionRemainingDueContainer) this.completionRemainingDueContainer.style.display = 'flex'; // Show container even if 0 left
+                     if(this.studyRemainingDueBtn) this.studyRemainingDueBtn.disabled = true; // Keep button disabled
+                }
+    
+            } catch (error) {
+                console.error("Failed to fetch remaining due card count:", error);
+                if(this.compStatRemainingDueEl) this.compStatRemainingDueEl.textContent = 'Error';
+                 if(this.completionRemainingDueContainer) this.completionRemainingDueContainer.style.display = 'flex'; // Show container even on error
+                 if(this.studyRemainingDueBtn) this.studyRemainingDueBtn.disabled = true; // Keep button disabled
+            }
+        }
+
+            /**
+     * Handles click on the "Study Remaining Due" button on the completion screen.
+     * @private
+     */
+    _handleStudyRemainingClick() {
+        const material = this.initialParams.material;
+        const chapters = this.initialParams.chapters; // Original chapters, if any
+
+        if (!material) {
+            console.error("Cannot start remaining session: Material unknown.");
+            return;
+        }
+
+        let batchSize = 0;
+        if (this.studyRemainingBatchSizeInput) {
+            batchSize = parseInt(this.studyRemainingBatchSizeInput.value, 10);
+            if (isNaN(batchSize) || batchSize <= 0) {
+                batchSize = 0; // Use API default
+            }
+        }
+
+        console.log(`Starting NEW session for remaining due in Material: ${material}, Chapters: ${chapters ?? 'All'}, Batch Size: ${batchSize > 0 ? batchSize : 'API Default'}`);
+
+        const encodedMaterial = encodeURIComponent(material);
+        let url = `study-session.html?material=${encodedMaterial}&status=due`; // Always 'due'
+
+        if (chapters) {
+            url += `&chapters=${encodeURIComponent(chapters)}`; // Add original chapters if they existed
+        }
+        if (batchSize > 0) {
+            url += `&limit=${batchSize}`; // Add new batch size
+        }
+
+        console.log(`Navigating to: ${url}`);
+        window.location.href = url;
+    }
+
         // NEW Method to update completion stats
         _updateCompletionStats() {
             if (!this.completionStatsEl) return;
@@ -1571,8 +1783,18 @@ class StudyView {
     
             if (this.compStatTotalEl) this.compStatTotalEl.textContent = totalStudied;
             if (this.compStatAccuracyEl) this.compStatAccuracyEl.textContent = `${accuracy}%`;
-            if (this.compStatTimeEl) this.compStatTimeEl.textContent = this.sessionStats.time; // Use final time
-    
+                // Handle time correctly
+            if (this.compStatTimeEl) {
+                // Split time into minutes and seconds (format: "MM:SS")
+                const timeComponents = this.sessionStats.time.split(':');
+                if (timeComponents.length === 2) {
+                    const minutesEl = this.compStatTimeEl.querySelector('.time-value.minutes');
+                    const secondsEl = this.compStatTimeEl.querySelector('.time-value.seconds');
+                    
+                    if (minutesEl) minutesEl.textContent = timeComponents[0];
+                    if (secondsEl) secondsEl.textContent = timeComponents[1];
+                }
+            }
             // Update accuracy circle
             if (this.compStatAccuracyCirclePath) {
                 const circumference = 100; // Matches stroke-dasharray
