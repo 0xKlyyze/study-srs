@@ -1,0 +1,75 @@
+/* css/components/context-menu.css */
+
+.context-menu {
+    position: fixed;
+    background-color: var(--color-secondary-bg);
+    border: 1px solid var(--color-border-primary);
+    border-radius: var(--radius-medium);
+    box-shadow: var(--shadow-large);
+    z-index: var(--z-index-dropdown);
+    padding: var(--space-xs) 0;
+    min-width: 200px;
+    display: none; /* Hidden by default */
+    color: var(--color-text-primary);
+    overflow: hidden; /* Clip potential overflows */
+}
+
+.context-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.context-menu li {
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color var(--transition-duration-short) var(--transition-timing-function),
+                color var(--transition-duration-short) var(--transition-timing-function);
+}
+
+.context-menu li:hover {
+    background-color: var(--color-tertiary-bg);
+    color: var(--color-text-primary); /* Ensure hover text is bright */
+}
+
+.context-menu .menu-icon {
+    margin-right: var(--space-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px; /* Icon container size */
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.context-menu .menu-icon svg {
+    width: 16px; /* Actual SVG size */
+    height: 16px;
+    fill: currentColor; /* Inherit color from parent li */
+    opacity: 0.8; /* Slightly mute icons */
+}
+.context-menu li:hover .menu-icon svg {
+    opacity: 1;
+}
+
+/* Specific Icon Colors */
+.context-menu li[data-action="delete"] {
+    color: var(--color-accent-danger);
+}
+.context-menu li[data-action="delete"] .menu-icon svg {
+    fill: var(--color-accent-danger); /* Match text color */
+}
+.context-menu li[data-action="delete"]:hover {
+    background-color: rgba(234, 67, 53, 0.1); /* Faint red background */
+}
+
+/* Add separator styles if needed */
+.context-menu .menu-separator {
+    height: 1px;
+    background-color: var(--color-border-dark);
+    margin: var(--space-xs) 0;
+}

@@ -1,0 +1,305 @@
+/* --- Main Pill Container --- */
+.floating-study-pill { /* Keep V9 styles */
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 950; display: inline-flex; align-items: center; gap: 8px; flex-wrap: nowrap; background-color: rgba(31, 42, 64, 0.93); color: var(--text-primary); padding: 5px 0 5px 22px; border-radius: 36px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(74, 90, 126, 0.35); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); width: auto; max-width: 90vw;
+}
+
+/* --- 1. Material Switcher (ADAPTIVE WIDTH) --- */
+.material-switcher-pill {
+    order: 1; position: relative; display: flex; justify-content: center; align-items: center;
+    /* *** DEFAULT MIN-WIDTH (for 1 or 2 materials) using new calc *** */
+    min-width: var(--container-min-width-2-materials);
+    height: calc(var(--pill-icon-size) + 8px); padding: 0; overflow: hidden; border-radius: 60px;
+    transition: min-width 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0; margin: 0;
+}
+/* JS ADDS 'has-3plus-materials' class for wider state */
+.material-switcher-pill.has-3plus-materials {
+    min-width: var(--container-min-width-3plus-materials);
+}
+
+/* Inner Container & Tab styles remain the same as V9 */
+.material-switcher-pill-inner { display: flex; flex-wrap: nowrap; align-items: center; position: relative; height: 100%; transition: transform 0.25s ease-out; }
+.material-switcher-pill .material-tab { /* Core styles */ width: var(--pill-icon-size); height: var(--pill-icon-size); border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(var(--scale-0)); background-color: #3a4a6e; border: 1px solid #5a6a8e; color: var(--text-primary); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05); transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, box-shadow 0.3s ease, z-index 0s linear 0.35s; }
+.material-switcher-pill .material-tab svg { width: calc(var(--pill-icon-size) * 0.55); height: calc(var(--pill-icon-size) * 0.55); fill: var(--accent-blue); transition: fill 0.2s ease; }
+/* Peeking Styles */
+.material-switcher-pill.has-multiple .material-tab:not(.is-active):not(.is-prev-1):not(.is-next-1):not(.is-prev-2):not(.is-next-2) { opacity: 0; transform: translate(-50%, -50%) scale(0.5); pointer-events: none; z-index: 1; }
+.material-switcher-pill.has-multiple .material-tab.is-active { transform: translate(-50%, -50%) scale(var(--scale-0)); opacity: 1; z-index: 10; pointer-events: auto; border-color: var(--accent-blue); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), 0 0 8px rgba(91, 192, 222, 0.4); }
+.material-switcher-pill.has-multiple .material-tab.is-prev-1 { transform: translate(calc(-50% - var(--peek-center-offset-1)), -50%) scale(var(--scale-1)); opacity: 0.7; z-index: 9; pointer-events: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+.material-switcher-pill.has-multiple .material-tab.is-next-1 { transform: translate(calc(-50% + var(--peek-center-offset-1)), -50%) scale(var(--scale-1)); opacity: 0.7; z-index: 9; pointer-events: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+.material-switcher-pill.has-multiple .material-tab.is-prev-2 { transform: translate(calc(-50% - var(--peek-center-offset-2-abs)), -50%) scale(var(--scale-2)); opacity: 0.5; z-index: 8; pointer-events: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.material-switcher-pill.has-multiple .material-tab.is-next-2 { transform: translate(calc(-50% + var(--peek-center-offset-2-abs)), -50%) scale(var(--scale-2)); opacity: 0.5; z-index: 8; pointer-events: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+/* Hover Styles */
+.material-switcher-pill.has-multiple:hover { min-width: var(--container-min-width-expanded-2); height: calc(var(--pill-icon-size) + 17px); }
+.material-switcher-pill.has-multiple:hover .material-tab { transform: translate(-50%, -50%) scale(var(--scale-0)); opacity: 1; pointer-events: auto; z-index: 5; box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3); border-color: #5a6a8e; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-active { transform: translate(-50%, calc(-50% - 1px)) scale(1.03); z-index: 10; border-color: var(--accent-blue); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 8px rgba(91, 192, 222, 0.5); }
+.material-switcher-pill.has-multiple:hover .material-tab.is-prev-1 { transform: translate(calc(-50% - var(--expand-translate-1)), -50%) scale(var(--scale-0)); z-index: 6; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-next-1 { transform: translate(calc(-50% + var(--expand-translate-1)), -50%) scale(var(--scale-0)); z-index: 6; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-prev-2 { transform: translate(calc(-50% - var(--expand-translate-2)), -50%) scale(var(--scale-0)); z-index: 5; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-next-2 { transform: translate(calc(-50% + var(--expand-translate-2)), -50%) scale(var(--scale-0)); z-index: 5; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-prev-3 { transform: translate(calc(-50% - var(--expand-translate-3)), -50%) scale(var(--scale-0)); z-index: 4; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-next-3 { transform: translate(calc(-50% + var(--expand-translate-3)), -50%) scale(var(--scale-0)); z-index: 4; }
+.material-switcher-pill.has-multiple:hover .material-tab:not(.is-active):hover { transform: translate(var(--tx, -50%), calc(-50% - 3px)) scale(1.03); background-color: var(--accent-blue); border-color: transparent; color: var(--primary-bg); /* No shadow, rely on filter */ filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3)) drop-shadow(0 0 2px rgba(91, 192, 222, 0.7)); z-index: 7; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-prev-1:hover { --tx: calc(-50% - var(--expand-translate-1)); }
+.material-switcher-pill.has-multiple:hover .material-tab.is-next-1:hover { --tx: calc(-50% + var(--expand-translate-1)); }
+/* ... Add more --tx definitions ... */
+.material-switcher-pill.has-multiple:hover .material-tab:not(.is-active):hover svg { fill: currentColor; }
+/* Scroll indicators */
+.material-switcher-pill::before, .material-switcher-pill::after { content: ''; position: absolute; top: 0; bottom: 0; width: 15px; z-index: 15; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
+.material-switcher-pill::before { left: 0; background: linear-gradient(to right, rgba(31, 42, 64, 0.95), rgba(31, 42, 64, 0)); }
+.material-switcher-pill::after { right: 0; background: linear-gradient(to left, rgba(31, 42, 64, 0.95), rgba(31, 42, 64, 0)); }
+.material-switcher-pill.is-scrollable-left::before, .material-switcher-pill.is-scrollable-right::after { opacity: 1; }
+/* Loading Spinner */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.material-switcher-pill .material-tab.is-loading svg { width: calc(var(--pill-icon-size) * 0.6); height: calc(var(--pill-icon-size) * 0.6); fill: var(--text-secondary); animation: spin 1.5s linear infinite;}
+
+
+/* --- 2. Study Button Wrapper (CENTERED, AI GLOW EFFECT) --- */
+.study-button-wrapper {
+    order: 2; position: relative; display: flex; flex-shrink: 0; margin: 0 5px;
+    /* Keep V10 Glow */
+    filter: drop-shadow(0 0 4px rgba(100, 200, 240, 0.6));
+    animation: pulse-glow-filter 2.5s infinite ease-in-out;
+    transition: filter 0.25s ease;
+}
+.study-button-wrapper:hover {
+    filter: drop-shadow(0 0 8px rgba(123, 208, 232, 0.85));
+    animation-play-state: paused;
+}
+
+
+.study-button-wrapper .action-button.study-due-button {
+    padding: 10px 22px 10px 26px;
+    font-size: 1.05em;
+    border-radius: 26px 0 0 26px;
+    /* *** VIBRANT GRADIENT *** */
+    background: linear-gradient(135deg, #63d0ff 0%, #4aa7c3 60%, #5bc0de 100%);
+    color: var(--text-on-button); /* White text */
+    border: none;
+    font-weight: 700;
+    /* *** REMOVE box-shadow, use wrapper's filter *** */
+    box-shadow: none;
+    /* Add inner shadow for depth */
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2),
+                inset 0 -1px 1px rgba(0, 0, 0, 0.15);
+    transition: background 0.2s ease, transform 0.15s ease; /* Remove shadow transition */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 1; /* Ensure button part is clickable */
+    height: 44px;
+    box-sizing: border-box;
+}
+/* Hover state directly on button for transform */
+.study-button-wrapper .action-button.study-due-button:hover {
+    /* Brighter gradient on hover */
+    background: linear-gradient(135deg, #8ce0ff 0%, #5cbde0 60%, #7bd0e8 100%);
+    transform: translateY(-1px); /* Subtle lift */
+}
+
+.study-options-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 44px;
+    padding: 0;
+    margin-left: -1px;
+    /* *** MATCH GRADIENT *** */
+    background: linear-gradient(135deg, #63d0ff 0%, #4aa7c3 60%, #5bc0de 100%);
+    border: none;
+    /* border-left: 1px solid rgba(var(--text-on-button), 0.1); */ /* Remove border */
+    border-radius: 0 26px 26px 0;
+    color: var(--text-on-button);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    /* *** REMOVE shadow, use wrapper's filter *** */
+    box-shadow: none;
+     /* Add inner shadow matching button */
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2),
+                inset 0 -1px 1px rgba(0, 0, 0, 0.15),
+                inset -1px 0 1px rgba(0,0,0,0.1); /* Left inset shadow */
+    z-index: 0;
+}
+/* Hover state directly on trigger */
+.study-options-trigger:hover {
+    background: linear-gradient(135deg, #8ce0ff 0%, #5cbde0 60%, #7bd0e8 100%);
+}
+
+.study-options-trigger svg { 
+    width: 22px; 
+    height: 22px; 
+    fill: currentColor; 
+    transition: transform 0.3s ease; /* Smoother animation */
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2)); /* Matching text shadow effect */
+}
+
+.study-button-wrapper.popup-open .study-options-trigger svg { 
+    transform: rotate(180deg); 
+}
+
+
+/* --- 3. Study Stats (Round with Colored BG & Icons) --- */
+.study-stats.simplified {
+    order: 3; display: flex; align-items: center; gap: 6px; padding: 0; margin: 0; flex-shrink: 0; padding-left: 0px; padding-right: 0px;
+}
+
+.stat-box {
+    position: relative; display: flex; justify-content: center; align-items: center; width: 34px; height: 34px; padding: 0; border-radius: 50%;
+    border: 1px solid; /* *** Thinner border: 1px *** */
+    /* *** Background Color set via var below *** */
+    background-color: rgba(var(--rgb-color), 0.25); /* Use var, MORE opaque */
+    box-shadow: inset 0 0 4px rgba(0,0,0,0.25); /* Slightly stronger inset */
+    overflow: hidden;
+}
+
+.stat-box .stat-value {
+    font-size: 0.9em; font-weight: 600; line-height: 1;
+    color: var(--text-primary); /* *** WHITE NUMBER *** */
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5); /* Stronger shadow */
+    position: relative; z-index: 1;
+}
+
+.stat-box svg.stat-icon { /* Keep V8 icon style */
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 150%; height: 150%; fill: currentColor; opacity: 0.20; z-index: 0; pointer-events: none;
+}
+
+/* Specific colors */
+.stat-box.new-cards-stat {
+    border-color: var(--new-color-border); /* Purple border */
+    color: var(--new-color); /* Purple icon color */
+    --rgb-color: 105, 48, 180; /* Purple in RGB format (from #6930b4) */
+}
+.stat-box.due-cards-stat {
+    border-color: var(--due-color-border); /* Green border */
+    color: var(--due-color); /* Green icon color - FIXED: was incorrectly using new-color */
+    --rgb-color: 28, 173, 28; /* Green in RGB format (from #1cad1c) */
+}
+/* Keep value white */
+.stat-box .stat-value { color: var(--text-primary); }
+
+.study-options-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: auto; /* Matches button height */
+    padding: 0;
+    margin-left: -1px;
+    background-color: var(--accent-blue);
+    border: none;
+    border-left: 1px solid rgba(var(--text-on-button), 0.15); /* Subtle separator */
+    border-radius: 0 20px 20px 0;
+    color: var(--text-on-button);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    box-shadow: inset -1px 0px 1px rgba(0,0,0,0.1); /* Inset shadow for depth */
+    z-index: 0;
+}
+.study-options-trigger:hover {
+    background-color: #7bd0e8;
+}
+.study-options-trigger svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+    transition: transform 0.2s ease;
+}
+.study-button-wrapper.popup-open .study-options-trigger svg {
+    transform: rotate(180deg);
+}
+
+/* --- Study Options Popup --- */
+.study-options-popup {
+    position: absolute;
+    bottom: calc(100% + 6px); /* Closer gap */
+    right: 0;
+    width: 145px; /* Fixed width maybe? */
+    background-color: #232e44dc; /* Match context menu */
+    border-radius: 18px; /* Match context menu */
+    border: 1px solid #4a5a7e; /* Match context menu */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* Match context menu */
+    padding: 8px; /* Tighter padding */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 960;
+    opacity: 0;
+    transform: translateY(8px);
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+.study-options-popup.visible {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+/* Focused Study Button inside Popup */
+.study-options-popup .action-button.focused-study-button {
+    /* Style similarly to V4.5 action button */
+    padding: 8px 12px;
+    font-size: 0.9em;
+    border-radius: 14px;
+    background-color: var(--success-green);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Simple shadow */
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.1);
+    font-weight: 500; /* Normal weight */
+    transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap;
+    width: 100%;
+    text-align: center;
+}
+.study-options-popup .action-button.focused-study-button:hover {
+    background-color: #4cae4c;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 7px rgba(0,0,0,0.3);
+}
+.study-options-popup .action-button.focused-study-button.is-selecting-chapters {
+     background-color: var(--warning-orange);
+     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+.study-options-popup .action-button.focused-study-button.is-selecting-chapters:hover {
+     background-color: #ec971f;
+     box-shadow: 0 3px 7px rgba(0,0,0,0.3);
+}
+
+/* Batch Size inside Popup */
+.study-options-popup .batch-size-control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-direction: row;
+    border-top: 0px solid rgba(74, 90, 126, 0.3); /* Lighter separator */
+    padding-top: 6px;
+    margin-top: 4px;
+}
+.study-options-popup .batch-size-label {
+    font-size: 0.85em;
+    margin: 0;
+    color: var(--text-secondary);
+}
+.study-options-popup .batch-size-input {
+    background-color: var(--tertiary-bg);
+    border: 1px solid rgba(74, 90, 126, 0.5); /* Subtle border */
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 4px 6px; /* Tighter padding */
+    font-size: 0.9em;
+    width: 45px; /* Slightly narrower */
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.study-options-popup .batch-size-input { -moz-appearance: textfield; }
+.study-options-popup .batch-size-input::-webkit-outer-spin-button,
+.study-options-popup .batch-size-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.study-options-popup .batch-size-input:focus {
+     border-color: var(--accent-blue);
+     box-shadow: 0 0 4px rgba(91, 192, 222, 0.3);
+}

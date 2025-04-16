@@ -1,0 +1,107 @@
+/* css/base.css */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: var(--font-family-sans);
+    background: var(--color-primary-bg);
+    color: var(--color-text-primary);
+    min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-md);
+}
+
+p {
+    margin-bottom: var(--space-lg);
+    color: var(--color-text-secondary);
+}
+
+a {
+    color: var(--color-accent-primary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    text-decoration: underline;
+    color: color-mix(in srgb, var(--color-accent-primary) 80%, white 20%);
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: inherit;
+}
+
+input, select, textarea {
+    font-family: inherit;
+    font-size: inherit;
+}
+
+/* Basic Loading/Error/Empty Text Styles */
+.loading-text,
+.error-text,
+.empty-text {
+    color: var(--color-text-secondary);
+    text-align: center;
+    padding: var(--space-xxl) var(--space-lg);
+    font-style: italic;
+    font-size: var(--font-size-lg);
+}
+
+.error-text {
+    color: var(--color-danger);
+    font-weight: var(--font-weight-medium);
+    font-style: normal;
+}
+
+.empty-text {
+    font-style: normal;
+}
+
+.loading-text-small,
+.error-text-small,
+.empty-text-small {
+    color: var(--color-text-secondary);
+    padding: var(--space-md);
+    font-size: var(--font-size-sm);
+    text-align: center;
+}
+
+.error-text-small {
+    color: var(--color-danger);
+}
+.empty-text-small {
+    font-style: normal;
+}
+
+/* Utility to visually hide content but keep accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

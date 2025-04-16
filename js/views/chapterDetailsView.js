@@ -257,7 +257,7 @@ class ChapterDetailsView {
                 if (this.isLoading[key]) this._updateLoadingState(key, false);
             });
         }
-
+        this._checkDependencies(); 
         console.log(`Chapter Details View Initialized for: ${this.currentMaterial} / ${this.currentChapterNameDecoded}`);
     }
 
@@ -296,6 +296,32 @@ class ChapterDetailsView {
         }
         // H1 title is removed from HTML
     }
+
+    // Add this helper at the top of your class, before the constructor
+_checkDependencies() {
+    console.log("DEBUG: Checking critical dependencies");
+    
+    // Check apiClient
+    if (typeof apiClient === 'undefined') {
+        console.error("DEBUG: apiClient is not defined! Import may be missing or failed");
+    } else {
+        console.log("DEBUG: apiClient is available");
+    }
+    
+    // Check processAndRenderLatex
+    if (typeof processAndRenderLatex !== 'function') {
+        console.error("DEBUG: processAndRenderLatex is not a function! Import may be missing or failed");
+    } else {
+        console.log("DEBUG: processAndRenderLatex is available");
+    }
+    
+    // Check debounce
+    if (typeof debounce !== 'function') {
+        console.error("DEBUG: debounce is not a function! Import may be missing or failed");
+    } else {
+        console.log("DEBUG: debounce is available");
+    }
+}
 
     /**
      * Attaches event listeners, including new buttons.
@@ -400,6 +426,7 @@ this.pillChapterSwitcher?.addEventListener('mouseleave', this._handleChapterSwit
         if (this.isHeaderRenaming) { // Prioritize header rename escape
             if (event.key === 'Escape') {
                 this._cancelHeaderRename();
+                
             }
             return; // Don't process modal keys if header rename is active
        }
@@ -410,6 +437,7 @@ this.pillChapterSwitcher?.addEventListener('mouseleave', this._handleChapterSwit
             if (this.isEditViewActive) { this._handleEditCancel(); } // Cancel edits on Escape
             else if (this.isAIViewActive) { this._toggleAIView(false); } // Close AI panel
             else { this._hideModal(); } // Close modal
+            if (this.isCardSelectionMode) {this._toggleCardSelectionMode();}
             return;
          }
 
@@ -647,31 +675,75 @@ _handleChapterSwitcherMouseLeave() {
         // --- NEW: Chapter Switcher Data Loading ---
 /**
  * Fetches the list of all chapters for the current material to populate the switcher.
- * The API returns detailed chapter objects with the structure:
- * {chapter, mastery, totalCards, buriedCards, criticalCards, dueCards, remainingNewCards}
+ * UPDATED: Handles the new API response format where chapters have name & nested stats.
  * @private
  */
 async _loadAllChaptersForSwitcher() {
-    if (!this.currentMaterial) return;
+    console.log("DEBUG: _loadAllChaptersForSwitcher - START");
+    if (!this.currentMaterial) {
+        console.warn("DEBUG: No current material set, cannot load chapters");
+        return;
+    }
+    
     this._updateLoadingState('allChapters', true);
-    console.log(`Fetching all chapters for material: ${this.currentMaterial}`);
+    console.log(`DEBUG: Fetching chapters for material: ${this.currentMaterial}`);
+    
     try {
-        // getChapterMastery returns detailed chapter objects as shown in the API response
+        console.log("DEBUG: About to call apiClient.getChapterMastery...");
         const chaptersData = await apiClient.getChapterMastery(this.currentMaterial);
-        this.allChaptersInMaterial = chaptersData || [];
+        console.log("DEBUG: API response for chapters:", chaptersData);
         
-        // Sort alphabetically for consistent order in the switcher
-        this.allChaptersInMaterial.sort((a, b) => a.chapter.localeCompare(b.chapter));
+        // Enhanced debugging - inspect new chapter structure
+        console.log("DEBUG: First chapter example:", chaptersData[0]);
         
-        console.log(`Loaded ${this.allChaptersInMaterial.length} chapters for switcher.`);
+        // Map to expected structure - convert from new format to what our code expects
+        const mappedChapters = (chaptersData || []).map(ch => {
+            if (!ch || typeof ch !== 'object') {
+                console.error("DEBUG: Invalid chapter object:", ch);
+                return null;
+            }
+            
+            // Extract from new format - use 'name' instead of 'chapter'
+            return {
+                chapter: ch.name, // Store in 'chapter' property for compatibility
+                mastery: ch.stats?.mastery || 0,
+                totalCards: ch.stats?.cardCount || 0,
+                buriedCards: ch.stats?.buriedCards || 0,
+                criticalCards: ch.stats?.criticalCards || 0,
+                dueCards: ch.stats?.totalDueCards || 0,
+                remainingNewCards: ch.stats?.remainingNewCards || 0,
+                // Add any other properties needed for the chapter switcher
+                id: ch.id,
+                isPinned: ch.isPinned || false
+            };
+        }).filter(Boolean); // Remove any null entries
+        
+        console.log(`DEBUG: Mapped ${mappedChapters.length} valid chapters`);
+        this.allChaptersInMaterial = mappedChapters;
+        
+        // Sort if we have valid chapters
+        if (this.allChaptersInMaterial.length > 0) {
+            this.allChaptersInMaterial.sort((a, b) => {
+                // First sort by pinned status (pinned chapters first)
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                
+                // Then sort alphabetically
+                return a.chapter.localeCompare(b.chapter);
+            });
+        }
+        
+        console.log("DEBUG: About to render chapter switcher");
         this._renderChapterSwitcher(); // Render the switcher UI
     } catch (error) {
-        console.error(`Failed to load chapters for switcher:`, error);
+        console.error("DEBUG: Chapter loading failed with error:", error);
+        console.error("DEBUG: Error stack:", error.stack);
         this.allChaptersInMaterial = [];
         this._renderChapterSwitcher(); // Render empty/error state
         this._showError(`Could not load chapter list for switcher: ${error.message}`);
     } finally {
         this._updateLoadingState('allChapters', false);
+        console.log("DEBUG: _loadAllChaptersForSwitcher - END");
     }
 }
 

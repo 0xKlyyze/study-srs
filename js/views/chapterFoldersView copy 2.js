@@ -2,7 +2,6 @@
 // --- File: js/views/chapterFoldersView.js ---
 
 import { apiClient } from '../api/apiClient.js';
-import { debounce } from '../utils/helpers.js'; // Assuming debounce exists
 // TODO: Import Gridstack library if using npm/modules
 // import { GridStack } from 'gridstack';
 // import 'gridstack/dist/gridstack.min.css';
@@ -37,7 +36,7 @@ class ChapterFoldersView {
     this.pillMaterialSwitcherInner = this.pillMaterialSwitcher?.querySelector('.material-switcher-pill-inner');
     this.pillNewCardsCount = document.getElementById('pillNewCardsCount');
     this.pillDueCardsCount = document.getElementById('pillDueCardsCount');
-    this.pillStudyButtonWrapper = this.floatingStudyPill?.querySelector('.pill-study-actions');
+    this.pillStudyButtonWrapper = this.floatingStudyPill?.querySelector('.study-button-wrapper');
     this.pillStudyDueButton = document.getElementById('pillStudyDueButton');
     this.pillOptionsTrigger = document.getElementById('pillOptionsTrigger');
     this.studyOptionsPopup = document.getElementById('studyOptionsPopup');
@@ -77,8 +76,7 @@ class ChapterFoldersView {
     this.createGroupConfirmButton = document.getElementById('createGroupConfirmButton');
     this.groupSortModalOverlay = document.getElementById('groupSortModal');
     this.groupSortFieldSelect = document.getElementById('groupSortField');
-    this.sortAscButton = document.getElementById('sortAscButton');
-        this.sortDescButton = document.getElementById('sortDescButton');
+    this.groupSortOrderSelect = document.getElementById('groupSortOrder');
     this.groupSortConfirmButton = document.getElementById('groupSortConfirmButton');
     this.groupSortModalGroupId = null;
     // Settings Refs
@@ -102,12 +100,6 @@ class ChapterFoldersView {
     this.settingsCancelButton = document.getElementById('settingsCancelButton');
     this.confirmGroupSelectionButton = document.getElementById('confirmGroupSelectionButton'); // Add to selection toolbar HTML
     this.groupCreationInstruction = document.getElementById('groupCreationInstruction'); // Add banner HTML above grid
-    this.saveBatchSizeDebounced = debounce(this._saveBatchSizeSetting, 1000); // Debounce for batch size save
-
-     // NEW Refs for inline add tag
-     this.addTagInlineWrapper = document.getElementById('addTagInlineWrapper');
-     this.addTagButton = document.getElementById('addTagButton'); // The icon button itself
-     this.addTagInput = document.getElementById('addTagInput'); // The input field
 
     // --- Material Icons ---
     this.materialIcons = {
@@ -158,7 +150,6 @@ class ChapterFoldersView {
     this.tagSelectorConfirmButton = document.getElementById('tagSelectorConfirmButton'); // NEW HTML NEEDED
     this.colorPickerInput = document.getElementById('groupColorPickerInput'); // NEW HTML NEEDED (e.g., <input type="color">)
     this.colorPickerModalOverlay = document.getElementById('groupColorPickerModal'); // NEW HTML NEEDED
-    this.activeInlineAddTag = false; // New state for tag input
 
 
     // Bind methods
@@ -186,22 +177,13 @@ class ChapterFoldersView {
         this._handleBulkSuspendChapters = this._handleBulkSuspendChapters.bind(this);
         this._handleBulkGroupChapters = this._handleBulkGroupChapters.bind(this);
         this._handleBulkDeleteChapters = this._handleBulkDeleteChapters.bind(this);
-        this._debounce = this._debounce.bind(this); // Bind debounce utility
         this._attachModalListeners = this._attachModalListeners.bind(this); // Helper for modal listeners
         this._handleGlobalClick = this._handleGlobalClick.bind(this);
         this._handleGlobalKeydown = this._handleGlobalKeydown.bind(this);
         // this._handleDirectCreateGroupStart = this._handleDirectCreateGroupStart.bind(this);
         this._handleConfirmGroupSelection = this._handleConfirmGroupSelection.bind(this);
         // this._handleOpenCreateGroupModal = this._handleOpenCreateGroupModal.bind(this);
-        this._saveBatchSizeSetting = this._saveBatchSizeSetting.bind(this);
-        this._handleSortOrderButtonClick = this._handleSortOrderButtonClick.bind(this);
-        this._handleAddTagToggle = this._handleAddTagToggle.bind(this); // Already bound? ensure it is.
-        this._handleAddTagInputKeydown = this._handleAddTagInputKeydown.bind(this);
-        this._handleAddTagInputBlur = this._handleAddTagInputBlur.bind(this);
-        this._cancelAddTagInline = this._cancelAddTagInline.bind(this);
     }
-
-    
 
 
     /**
@@ -258,17 +240,6 @@ class ChapterFoldersView {
             this.container?.classList.remove('is-loading-main'); // Ensure loading class is removed
             console.log("INITIALIZATION COMPLETE (or failed)"); // DEBUG
         }
-    }
-
-    // --- Debounce Utility ---
-    _debounce(func, delay) {
-        let timeoutId;
-        return (...args) => {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                func.apply(this, args);
-            }, delay);
-        };
     }
 
         /** Attach listeners specific to modal interactive elements */    /** MODIFIED: Attaches listeners ONLY for elements INSIDE modals */
@@ -357,9 +328,6 @@ class ChapterFoldersView {
         } else if (this.materialContextMenu?.style.display === 'block') {
             console.log("DEBUG: Esc - hiding material context menu"); // DEBUG
             this._hideContextMenu('material');
-        } else if (this.activeInlineAddTag) {
-            console.log("DEBUG: Esc - cancelling inline tag addition"); // DEBUG
-            this._cancelAddTagInline();
         } else {
              // Check visible modals sequentially
              const visibleModal = document.querySelector('.modal-overlay.visible');
@@ -435,7 +403,6 @@ class ChapterFoldersView {
             this._renderOverviewPlaceholders(false, true);
         } finally {
             this._updateLoadingState('overview', false);
-            console.log("DEBUG: Loading overview section data END..."); // DEBUG
         }
     }
 
@@ -478,20 +445,18 @@ class ChapterFoldersView {
          }
 
          this.gridInstance = GridStack.init({
-            column: 4,// Start with a fixed height, adjust as needed based on content
-            margin: 0, // <-- Set Gridstack margin to 0
-            cellHeight: 150, 
+            column: 4,
+            cellHeight: 150, // Start with a fixed height, adjust as needed based on content
+            margin: 15,
             float: false,
             acceptWidgets: '.chapter-item.standalone-chapter', // Allow dropping standalone chapters? Check class name
             itemClass: 'grid-stack-item',
-            // CRITICAL FIX: Specify drag handle selector for groups to ONLY allow dragging by header
-            handle: '.group-widget-header',
             // **MODIFICATION:** Disable default square handles
             resizable: {
                 handles: '' // Empty string or consult docs (might be 'false' or specific classes to exclude)
            }
         }, this.dashboardGridContainer); // Pass the container element
-        this._enhanceDragAndDrop();
+
         // Attach Gridstack event listeners
         // Debounce the handler to avoid spamming API on rapid changes
         const debouncedHandler = this._debounce(this._handleGridItemStackChanged, 1500);
@@ -505,76 +470,6 @@ class ChapterFoldersView {
          console.error("Failed to initialize Gridstack:", error);
           if (this.dashboardGridContainer) this.dashboardGridContainer.innerHTML = `<p class="error-text">Error initializing layout library.</p>`;
          this.gridInstance = null;
-    }
-}
-
-/**
- * Enhances drag and drop functionality after GridStack initialization
- */
-_enhanceDragAndDrop() {
-    // Make chapters in groups draggable with HTML5 drag-and-drop
-    document.querySelectorAll('.group-widget .chapter-item').forEach(chapter => {
-        // Ensure it's draggable
-        chapter.setAttribute('draggable', 'true');
-        
-        // Clear any existing handlers to prevent duplicates
-        const newChapter = chapter.cloneNode(true);
-        chapter.parentNode.replaceChild(newChapter, chapter);
-        
-        // CRITICAL FIX: Add mousedown handler that runs in CAPTURE phase
-        newChapter.addEventListener('mousedown', this._handleChapterMouseDown.bind(this), true);
-        
-        // Add dragstart handler
-        newChapter.addEventListener('dragstart', this._handleChapterDragStart.bind(this));
-    });
-    
-    // CRITICAL FIX: Add class to assist with CSS targeting
-    document.querySelectorAll('.group-widget').forEach(group => {
-        group.classList.add('has-draggable-children');
-    });
-}
-
-/**
- * Handle dragstart on chapter items
- */
-_handleChapterDragStart(e) {
-    const chapter = e.currentTarget;
-    const chapterId = chapter.dataset.chapterId;
-    const groupId = chapter.dataset.groupId || chapter.closest('.group-widget')?.dataset.groupId;
-    
-    if (!chapterId) return;
-    
-    console.log(`Chapter dragstart in group: ${chapterId} from group: ${groupId}`);
-    e.stopPropagation();
-    
-    const chapterData = this._findChapterData(chapterId);
-    if (!chapterData) return;
-    
-    // Set up drag data
-    this.draggedItemData = {
-        type: 'chapter',
-        items: [{ id: chapterId, name: chapterData.name }],
-        fromGroup: groupId
-    };
-    
-    // Mark element as being dragged
-    chapter.classList.add('dragging-from-group');
-    
-    // Add drag image and data
-    e.dataTransfer.setData('application/json', JSON.stringify(this.draggedItemData));
-    e.dataTransfer.effectAllowed = 'move';
-}
-
-/**
- * Handle mousedown on chapter items to prevent group dragging
- * THIS MUST RUN AT CAPTURE PHASE
- */
-_handleChapterMouseDown(e) {
-    // Only if this is directly on the chapter or its direct children
-    if (e.currentTarget.contains(e.target)) {
-        console.log("Chapter mousedown - preventing propagation");
-        // Stop propagation at capture phase to prevent GridStack from activating
-        e.stopPropagation();
     }
 }
 
@@ -608,11 +503,8 @@ _handleChapterMouseDown(e) {
                 // Selection Toolbar
                 this.selectionToolbar?.addEventListener('click', this._handleSelectionToolbarClick);
         this.sortFieldSelect?.addEventListener('change', this._handleSortChange);
-         // NEW: Sort order button listeners
-         this.sortAscButton?.addEventListener('click', this._handleSortOrderButtonClick);
-         this.sortDescButton?.addEventListener('click', this._handleSortOrderButtonClick);
-         // REMOVE: this.sortOrderSelect listener
-        this.tagPillsContainer?.addEventListener('click', this._handleTagPillClick); 
+        this.sortOrderSelect?.addEventListener('change', this._handleSortChange);
+        /* this.tagPillsContainer?.addEventListener('click', this._handleTagPillClick); */  // Delegated
         this.tagPillsContainer?.addEventListener('click', this._handleTagPillOrActionClick); // Handles filters AND actions
         this.selectChaptersButton?.addEventListener('click', this._handleToggleSelectionMode);
         this.createGroupButton?.addEventListener('click', this._handleOpenCreateGroupModal);
@@ -621,7 +513,7 @@ _handleChapterMouseDown(e) {
         this.pillMaterialSwitcher?.addEventListener('click', this._handleMaterialSwitch);
         this.pillMaterialSwitcher?.addEventListener('contextmenu', this._handleMaterialContextMenu);
         this.pillStudyDueButton?.addEventListener('click', this._handleStudyDueClick); // Keep standard due study
-        this.pillOptionsTrigger?.addEventListener('click', this._handletoggleStudyOptionsPopup); // Options (focused study, batch size)
+        this.pillOptionsTrigger?.addEventListener('click', this._handleToggleStudyOptionsPopup); // Options (focused study, batch size)
         this.pillStartFocusedButton?.addEventListener('click', this._handleFocusedStudyClick); // Modified for chapter/group selection
         this.pillReviewBatchSize?.addEventListener('input', this._handleBatchSizeChange); // Keep batch size
 
@@ -645,16 +537,6 @@ _handleChapterMouseDown(e) {
                 this.dashboardGridContainer?.addEventListener('click', this._handleGridItemClick); // Single click handler
                         // Listener for the NEW confirm group selection button
         this.confirmGroupSelectionButton?.addEventListener('click', this._handleConfirmGroupSelection);
-         // NEW: Listener for Add Tag Button (within its wrapper)
-         this.addTagButton?.addEventListener('click', this._handleAddTagToggle);
-         // Listeners for input inside Add Tag Wrapper
-         this.addTagInput?.addEventListener('keydown', this._handleAddTagInputKeydown);
-         this.addTagInput?.addEventListener('blur', this._handleAddTagInputBlur);
- 
- 
-         // NEW: Listeners for external Action Buttons
-         this.selectChaptersButton?.addEventListener('click', this._handleToggleSelectionMode);
- 
     }
 
     async _openMaterialSettingsModal(materialName) {
@@ -923,7 +805,7 @@ _handleChapterMouseDown(e) {
         };
     }
 
-    _handletoggleStudyOptionsPopup() {
+    _toggleStudyOptionsPopup() {
         if (!this.studyOptionsPopup || !this.pillStudyButtonWrapper || !this.pillOptionsTrigger) return;
         this.isStudyOptionsPopupVisible = !this.isStudyOptionsPopupVisible;
         this.studyOptionsPopup.classList.toggle('visible', this.isStudyOptionsPopupVisible);
@@ -959,19 +841,12 @@ _handleChapterMouseDown(e) {
     }
 
     _handleBatchSizeChange(event) {
-        // Allow empty input while typing (don't validate or save)
-        if (event.target.value === '') {
-            return; // Just let the user continue typing
-        }
-        
         const newSize = parseInt(event.target.value, 10);
-        
-        // Only validate and save for non-empty inputs
-        if (isNaN(newSize) || newSize < 0) {
-            // Don't display error or reset value - just don't trigger save
+        if (isNaN(newSize) || newSize < 1) {
+            console.warn("Invalid batch size input:", event.target.value);
+            event.target.value = this.currentMaterialSettings?.defaultBatchSize || 20;
             return;
         }
-        
         console.log("Batch size changed to:", newSize, "- Debouncing save...");
         this.saveBatchSizeDebounced(newSize);
     }
@@ -1304,48 +1179,9 @@ _handleChapterMouseDown(e) {
  */
 _renderTimelineGraph(timelineData, isLoading = false, isError = false, customMessage = null) {
     console.log(`DEBUG TIMELINE: Render called - isLoading=${isLoading}, isError=${isError}, customMsg=${customMessage}, data=${!!timelineData}`); // DEBUG
-    // 1. Ensure DOM elements exist - check and create if missing
-    if (!this.reviewScheduleContainer) {
-        console.error("DEBUG TIMELINE: Missing review schedule container");
-        return;
-    }
-    if (!this.reviewScheduleCanvas) {
-        console.log("DEBUG TIMELINE: Creating missing canvas element");
-        this.reviewScheduleCanvas = document.createElement('canvas');
-        this.reviewScheduleCanvas.id = 'reviewScheduleCanvas';
-        this.reviewScheduleCanvas.width = this.reviewScheduleContainer.offsetWidth || 300;
-        this.reviewScheduleCanvas.height = 200; // Set explicit height
-        this.reviewScheduleContainer.appendChild(this.reviewScheduleCanvas);
-    }
-    // 3. Create status element if it doesn't exist
-    if (!this.reviewStatusElement) {
-        console.log("DEBUG TIMELINE: Creating missing status element");
-        this.reviewStatusElement = document.createElement('div');
-        this.reviewStatusElement.className = 'graph-status';
-        this.reviewScheduleContainer.appendChild(this.reviewStatusElement);
-    }
-
-    // Check if Chart is available globally
-    if (typeof Chart === 'undefined') {
-        console.error("DEBUG TIMELINE: Chart.js library is not available");
-        this.reviewStatusElement.textContent = "Chart library not loaded";
-        this.reviewStatusElement.style.display = 'block';
-        this.reviewScheduleCanvas.style.display = 'none';
-        return;
-    }
-
-    // 3. Create status element if it doesn't exist
-    if (!this.reviewStatusElement) {
-        console.log("DEBUG TIMELINE: Creating missing status element");
-        this.reviewStatusElement = document.createElement('div');
-        this.reviewStatusElement.className = 'graph-status';
-        this.reviewScheduleContainer.appendChild(this.reviewStatusElement);
-    }
-
+    if (!this.reviewScheduleCanvas || !this.reviewScheduleContainer || !this.reviewStatusElement) { return; }
     const ctx = this.reviewScheduleCanvas.getContext('2d');
     if (!ctx) { console.error("DEBUG TIMELINE: Failed to get canvas context."); return; } // DEBUG
-
-    
 
     const showStatus = (message, isErr = false) => {
          console.log(`DEBUG TIMELINE: Showing status - "${message}", isError=${isErr}`); // DEBUG
@@ -1361,15 +1197,9 @@ _renderTimelineGraph(timelineData, isLoading = false, isError = false, customMes
          }
     };
     const hideStatus = () => {
-        console.log("DEBUG TIMELINE: Hiding status, showing canvas."); // DEBUG
-        this.reviewStatusElement.style.display = 'none';
-        this.reviewScheduleCanvas.style.display = 'block';
-        
-        // ADDED: Also remove any static loading message in the container
-        const loadingText = this.reviewScheduleContainer.querySelector('.loading-text');
-        if (loadingText) {
-            loadingText.style.display = 'none';
-        }
+         console.log("DEBUG TIMELINE: Hiding status, showing canvas."); // DEBUG
+         this.reviewStatusElement.style.display = 'none';
+         this.reviewScheduleCanvas.style.display = 'block';
     };
 
     // Handle States FIRST
@@ -1379,6 +1209,14 @@ _renderTimelineGraph(timelineData, isLoading = false, isError = false, customMes
     if (!timelineData || Object.keys(timelineData).length === 0) {
     console.log("DEBUG TIMELINE: Empty timeline data detected, showing 'No upcoming reviews'");
     showStatus('No upcoming reviews'); return;
+    }
+
+        // NEW CHECK: If we have data but all values are 0, treat as "no upcoming reviews"
+    const hasNonZeroValues = Object.values(timelineData).some(value => value > 0);
+    if (!hasNonZeroValues) {
+        console.log("DEBUG TIMELINE: Timeline data contains only zeros, showing 'No upcoming reviews'");
+        showStatus('No upcoming reviews'); 
+        return;
     }
 
     // --- If we have data, attempt to render ---
@@ -1398,119 +1236,50 @@ _renderTimelineGraph(timelineData, isLoading = false, isError = false, customMes
     }
 
     try {
-        const sortedDates = Object.keys(timelineData).sort();
-    const labels = sortedDates.map(date => {
-        // Format date as "Apr 16" style
-        const d = new Date(date);
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    });
-    const dataCounts = sortedDates.map(date => timelineData[date]);
-    
-    // CRITICAL FIX: Set container with proper positioning but keep height
-    this.reviewScheduleContainer.style.position = 'relative';
-    this.reviewScheduleContainer.style.height = '200px';
-    
-    // Position canvas absolutely within container
-    this.reviewScheduleCanvas.style.position = 'absolute';
-    this.reviewScheduleCanvas.style.left = '0';
-    this.reviewScheduleCanvas.style.top = '0';
-    this.reviewScheduleCanvas.style.width = '100%';
-    this.reviewScheduleCanvas.style.height = '100%';
-    
-    // Set explicit dimensions for the canvas element
-    this.reviewScheduleCanvas.width = this.reviewScheduleContainer.clientWidth;
-    this.reviewScheduleCanvas.height = 200;
-    
-    // Create Chart with RESTORED STYLING from chapterDetailsView
-    this.chartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Due Cards', 
-                data: dataCounts,
-                backgroundColor: 'rgba(79, 133, 226, 0.65)',  // Restored original accent blue
-                borderColor: 'rgba(79, 133, 226, 0.9)',      // Restored original border
-                borderWidth: 1, 
-                borderRadius: 5,
-                borderSkipped: false,
-                barPercentage: 0.7,                          // Original bar width
-                categoryPercentage: 0.8,                     // Original spacing
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: {
-                duration: 800,                               // Smooth animation
-                easing: 'easeOutQuart'                       // Professional easing
-            },
-            plugins: {
-                legend: { 
-                    display: false                           // Original didn't show legend
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(26, 31, 45, 0.95)', // Dark tooltip background
-                    titleColor: '#eaedf2',                   // Bright title
-                    bodyColor: '#a9b0c1',                    // Secondary text
-                    titleFont: {
-                        size: 13,
-                        weight: '600'                        // Bold title
-                    },
-                    bodyFont: {
-                        size: 12                             // Slightly smaller body
-                    },
-                    padding: 10,
-                    cornerRadius: 6,
-                    displayColors: false,                    // No color square
-                    callbacks: {
-                        title: (tooltipItems) => tooltipItems[0].label,
-                        label: (tooltipItem) => `${tooltipItem.raw} review${tooltipItem.raw !== 1 ? 's' : ''}`
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    grid: {
-                        display: true,
-                        color: 'rgba(66, 76, 102, 0.1)',     // Very subtle grid
-                        tickColor: 'transparent'            // Hide tick marks
-                    },
-                    ticks: { 
-                        color: 'rgba(169, 176, 193, 0.8)',   // Muted text color
-                        font: {
-                            size: 11                         // Smaller font
+         const sortedDates = Object.keys(timelineData).sort();
+         const labels = sortedDates;
+         const dataCounts = sortedDates.map(date => timelineData[date]);
+         console.log("DEBUG TIMELINE DATA:", JSON.stringify(labels), JSON.stringify(dataCounts)); // DEBUG Verify data
+
+         // --- Create Chart ---
+         this.chartInstance = new Chart(ctx, {
+             type: 'bar',
+             data: {
+                  labels: labels,
+                  datasets: [{
+                       label: 'Due Cards', data: dataCounts,
+                       backgroundColor: 'rgba(91, 192, 222, 0.6)', borderColor: 'rgba(91, 192, 222, 1)',
+                       borderWidth: 1, borderRadius: 4, borderSkipped: false,
+                  }]
+             },
+             options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1a1a2e', titleColor: '#e0e0e0', bodyColor: '#e0e0e0', displayColors: false,
+                        callbacks: {
+                            title: (tooltipItems) => tooltipItems[0].label,
+                            label: (tooltipItem) => `Reviews: ${tooltipItem.raw}`
                         }
                     }
                 },
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        display: true,
-                        color: 'rgba(66, 76, 102, 0.1)',     // Very subtle grid
-                        tickColor: 'transparent'            // Hide tick marks
-                    },
-                    ticks: {
-                        color: 'rgba(169, 176, 193, 0.8)',   // Muted text color
-                        font: {
-                            size: 11                         // Smaller font
-                        },
-                        precision: 0,                        // No decimal places
-                        stepSize: 1,                         // Whole numbers only
-                        callback: function(value) { 
-                            if (Math.floor(value) === value) return value;
-                        }
+                scales: {
+                    x: { grid: { color: 'rgba(160, 160, 192, 0.1)' }, ticks: { color: '#a0a0c0', maxRotation: 45, minRotation: 45 } },
+                    y: {
+                        beginAtZero: true, grid: { color: 'rgba(160, 160, 192, 0.1)' }, ticks: { color: '#a0a0c0', stepSize: 1, callback: function (value) { if (Number.isInteger(value)) return value; } }
                     }
                 }
             }
-        }
-    });
-    
-    console.log("DEBUG TIMELINE: Chart instance CREATED successfully with restored styling");
-} catch (chartError) {
-    console.error("DEBUG TIMELINE: Chart.js rendering error:", chartError); 
-    showStatus('Error displaying graph', true);
-}
+         });
+         console.log("DEBUG TIMELINE: Chart instance CREATED successfully."); // DEBUG
+
+    } catch (chartError) {
+         console.error("DEBUG TIMELINE: Chart.js rendering error:", chartError); // DEBUG Log specific error
+         showStatus('Error displaying graph', true); // Show error message in UI
+         this._showError(`Failed to display review schedule graph: ${chartError.message}`); // Show modal error
+    }
 }
     
     
@@ -1572,6 +1341,7 @@ _renderTimelineGraph(timelineData, isLoading = false, isError = false, customMes
     if (!this.isSelectionModeActive) {
          this._handleToggleSelectionMode();
          // Maybe use a more persistent info message or guide?
+         this._showInfoMessage("Select chapters and/or groups, then click 'Start Focused Study' again.", "Selection Mode");
          return;
     }
 
@@ -1656,81 +1426,98 @@ _renderTimelineGraph(timelineData, isLoading = false, isError = false, customMes
      * @param {Event} event - The click event.
      * @private
      */
-/** MODIFIED: Handles material switching using getDashboardSummary */
     async _handleMaterialSwitch(event) {
-        const clickedTab = event.target.closest('.material-tab:not([disabled])');
-        if (!clickedTab) return;
+        const clickedTab = event.target.closest('.material-tab:not([disabled])'); // Ignore disabled/error tabs
+        if (!clickedTab || !this.pillMaterialSwitcher?.classList.contains('has-multiple')) return;
 
-        const newMaterial = clickedTab.dataset.material;
-        if (!newMaterial || newMaterial === this.currentMaterial) {
-             console.log(`DEBUG: Material switch skipped (same material or invalid): ${newMaterial}`); // DEBUG
-             return;
-        }
+        const material = clickedTab.dataset.material;
+        const isLoadingAnything = Object.values(this.isLoading).some(state => state);
 
-        // Check if any critical loading is already in progress
-        if (this.isLoading.dashboard || this.isLoading.materialSwitch || this.isLoading.action) {
-            console.log("DEBUG: Ignoring material switch click while another operation is loading."); // DEBUG
-            return;
-        }
+        if (material && material !== this.currentMaterial && !isLoadingAnything) {
+            console.log(`Switching material to: ${material}`);
+            this.currentMaterial = material;
+            this._updateActiveMaterialTab(); // Update visual selection immediately
 
-        console.log(`DEBUG: Switching material from ${this.currentMaterial} to: ${newMaterial}`); // DEBUG
-        this._updateLoadingState('materialSwitch', true);
-        this.container?.classList.add('is-loading-main'); // Show global loading
+            // Reset chapter selection state if active
+            if (this.isSelectionMode) {
+                this._toggleSelectionModeUI(false);
+            }
 
-        // --- Reset State for New Material ---
-        this.currentMaterial = newMaterial; // Set new material FIRST
-        this._updateActiveMaterialTab(); // Update pill visuals
-        if (this.isSelectionModeActive) this._handleToggleSelectionMode(false); // Exit selection mode
-        this.currentFilter = { type: 'all', value: null }; // Reset filter
-        this.groupsData = []; // Clear old data
-        this.ungroupedChaptersData = [];
-        this.chaptersByGroup = {};
-        this.allChaptersData = {};
-        this.availableTags = [];
-        this.currentMaterialSettings = {}; // Clear old settings
+            // Set loading state specifically for material switching
+            this._updateLoadingState('switchMaterial', true);
+            // Render placeholders for sections that will be updated
+            this._renderHeatmap(null);
+            this._renderChapterGrid(null);
+            this._renderTimelineGraph(null, true); // Show graph loading
+            // Note: Activity heatmap and pill stats are updated differently
 
-        // Clear UI Elements
-        this.gridInstance?.removeAll(true);
-        if (this.dashboardGridContainer) this.dashboardGridContainer.innerHTML = '<p class="loading-text">Loading dashboard...</p>';
-        if (this.tagPillsContainer) this.tagPillsContainer.innerHTML = '<p class="loading-text-small">Loading filters...</p>';
-        if (this.sortControlsContainer) { /* Optionally disable controls */ }
-        this._renderOverviewPlaceholders(true); // Show loading for overview
+            try {
+                // Fetch settings, chapters, and timeline in parallel
+                const settingsPromise = apiClient.getMaterialSettings(material).catch(err => {
+                    console.error(`Failed to fetch settings for ${material}:`, err);
+                    return { error: err }; // Return error object to avoid Promise.all rejection
+                });
+                const chaptersPromise = apiClient.getChapterMastery(material).catch(err => {
+                    console.error(`Failed to fetch chapters for ${material}:`, err);
+                    return { error: err };
+                });
+                const timelinePromise = apiClient.getDueTimeline(material).catch(err => {
+                    console.error(`Failed to fetch timeline for ${material}:`, err);
+                    return { error: err };
+                });
 
-        try {
-            // --- Fetch ALL Data for the NEW Material ---
-            console.log(`FETCH: Dashboard Summary for Switch to ${newMaterial}`); // DEBUG
-            const summaryData = await apiClient.getDashboardSummary(newMaterial); // Pass the new material
-            console.log("FETCH_SUCCESS: Dashboard Summary for Switch", summaryData); // DEBUG
+                const [settingsResult, chaptersResult, timelineResult] = await Promise.all([
+                    settingsPromise, chaptersPromise, timelinePromise
+                ]);
 
-            // --- Process and Render ---
-            // Phase 1: Settings, Tags, Groups list, Basic UI (Pills, Sort Controls)
-            await this._processSummaryData_Phase1(summaryData);
+                // Process Settings
+                if (settingsResult && !settingsResult.error) {
+                    this.currentMaterialSettings = settingsResult;
+                    const batchSize = this.currentMaterialSettings.defaultBatchSize ?? 20;
+                    if (this.pillReviewBatchSize) this.pillReviewBatchSize.value = batchSize;
+                } else {
+                    this.currentMaterialSettings = null;
+                    if (this.pillReviewBatchSize) this.pillReviewBatchSize.value = 20; // Fallback
+                    this._showError(`Could not load settings for ${material}.`, true);
+                }
 
-            // Phase 2: Fetch Chapters and Render Grid Layout
-            await this._fetchAndRenderInitialDashboardContent();
+                // Process Chapters
+                if (chaptersResult && !chaptersResult.error) {
+                    this.chaptersData = chaptersResult;
+                    this.chaptersData.sort((a, b) => (a.chapter || '').localeCompare(b.chapter || ''));
+                    this._renderHeatmap(this.chaptersData);
+                    this._renderChapterGrid(this.chaptersData);
+                } else {
+                    this.chaptersData = [];
+                    this._renderHeatmap(null, true); // Show error state
+                    this._renderChapterGrid(null, true);
+                }
 
-            // Phase 3: Fetch and Render Overview Section
-            await this._loadOverviewData();
+                // Process Timeline
+                if (timelineResult && !timelineResult.error) {
+                    this._renderTimelineGraph(timelineResult);
+                } else {
+                    this._renderTimelineGraph(null, false, true); // Show error state
+                }
 
-            console.log(`DEBUG: Material switch to ${newMaterial} completed successfully.`); // DEBUG
+                // Update Pill Stats using the globally available `availableMaterials` cache
+                this._updatePillStats(this.currentMaterial);
 
-        } catch (error) {
-            console.error(`FATAL: Error switching material to ${newMaterial}:`, error); // DEBUG
-            this._showError(`Could not load content for ${newMaterial}: ${error.message}`);
-            // Reset UI to error state
-            if (this.dashboardGridContainer) this.dashboardGridContainer.innerHTML = `<p class="error-text">Error loading data for ${newMaterial}.</p>`;
-             if (this.tagPillsContainer) this.tagPillsContainer.innerHTML = ''; // Clear loading
-            this._renderOverviewPlaceholders(false, true);
-            // Reset essential state?
-            // this.currentMaterial = null; // Or keep the failed material name?
-             this._renderMaterialTabs(this.availableMaterials); // Re-render tabs based on available list
-             this._updatePillStats(this.currentMaterial);
-             this._renderTagPills();
-             this._renderSortControls();
+            } catch (error) { // Catch unexpected errors from Promise.all itself (unlikely with caught promises)
+                console.error(`Unexpected error during material switch:`, error);
+                this._showError(`Failed to switch material: ${error.message}`);
+                // Reset UI to error states
+                this._renderHeatmap(null, true);
+                this._renderChapterGrid(null, true);
+                this._renderTimelineGraph(null, false, true);
+            } finally {
+                this._updateLoadingState('switchMaterial', false);
+            }
 
-        } finally {
-            this._updateLoadingState('materialSwitch', false);
-            this.container?.classList.remove('is-loading-main'); // Remove global loading class
+        } else if (material === this.currentMaterial) {
+            console.log("Clicked active material, no change.");
+        } else if (isLoadingAnything) {
+            console.log("Ignoring material switch click while loading.");
         }
     }
 
@@ -1927,18 +1714,12 @@ _renderTimelineGraph(timelineData, isLoading = false, isError = false, customMes
         }
     
         /** Phase 1: Process non-chapter data from summary */
-    /** MODIFIED: Add more DEBUG logs and handle potential errors */
-    async _processSummaryData_Phase1(summaryData) {
-        console.log("DEBUG: Processing Summary Phase 1 START");
-        if (!summaryData) throw new Error("No summary data received in Phase 1.");
-
-        try {
-            // Ensure availableMaterials is updated (even if switching materials)
-            if(summaryData.materials) this.availableMaterials = summaryData.materials;
-
-            // Set current material if provided (might be null on initial load error)
+        async _processSummaryData_Phase1(summaryData) {
+            console.log("DEBUG: Processing Summary Phase 1"); // DEBUG
+            if (!summaryData) throw new Error("No summary data received.");
+    
+            this.availableMaterials = summaryData.materials || [];
             this.currentMaterial = summaryData.selectedMaterialName;
-
             this.currentMaterialSettings = summaryData.settings || {};
             this.availableTags = this.currentMaterialSettings.uniqueTags || [];
             const defaultSort = this.currentMaterialSettings.defaultChapterSort;
@@ -1946,43 +1727,27 @@ _renderTimelineGraph(timelineData, isLoading = false, isError = false, customMes
                 ? { field: defaultSort.field, order: defaultSort.order || 'asc' }
                 : { field: 'name', order: 'asc' };
             this.groupsData = summaryData.groups || [];
-
-            console.log("DEBUG: Phase 1 - Current Material:", this.currentMaterial);
-            console.log("DEBUG: Phase 1 - Current Sort:", this.currentSort);
-            console.log("DEBUG: Phase 1 - Groups Found:", this.groupsData.length);
-            console.log("DEBUG: Phase 1 - Tags Found:", this.availableTags.length);
-
-            // Update UI Elements that depend ONLY on this Phase 1 data
-            this._renderMaterialTabs(this.availableMaterials); // Use potentially updated list
+    
+            console.log("DEBUG: Phase 1 - Current Material:", this.currentMaterial); // DEBUG
+            console.log("DEBUG: Phase 1 - Current Sort:", this.currentSort); // DEBUG
+            console.log("DEBUG: Phase 1 - Groups Found:", this.groupsData.length); // DEBUG
+            console.log("DEBUG: Phase 1 - Tags Found:", this.availableTags.length); // DEBUG
+    
+    
+            this._renderMaterialTabs(this.availableMaterials);
             this._updatePillStats(this.currentMaterial);
             this._renderTagPills();
             this._renderSortControls();
-
-            // Update Batch Size Input from new settings
-            const batchSize = this.currentMaterialSettings.defaultBatchSize ?? 20;
-            if (this.pillReviewBatchSize) this.pillReviewBatchSize.value = batchSize;
-             console.log(`DEBUG: Phase 1 - Batch size set to: ${batchSize}`); // DEBUG
-
-
-             if (summaryData.groups?.error) {
-                console.error("Error fetching groups included in summary:", summaryData.groups.message); // DEBUG
-                this._showError("Could not load chapter groups list.");
-           }
-           if (summaryData.settings?.error) {
-               console.error("Error fetching settings included in summary:", summaryData.settings.message); // DEBUG
-               this._showError("Could not load material settings.");
-           }
-        // Render controls AFTER processing settings
-        this._renderSortControls(); // Updates sort UI based on this.currentSort
-        this._renderTagPills(); // Renders only the pills inside the container
-
-        } catch (error) {
-             console.error("DEBUG: Error during _processSummaryData_Phase1:", error); // DEBUG
-             // Re-throw to be caught by the caller (initialize or _handleMaterialSwitch)
-             throw error;
+    
+            if (summaryData.groups?.error) {
+                 console.error("Error fetching groups included in summary:", summaryData.groups.message); // DEBUG
+                 this._showError("Could not load chapter groups list.");
+            }
+            if (summaryData.settings?.error) {
+                console.error("Error fetching settings included in summary:", summaryData.settings.message); // DEBUG
+                this._showError("Could not load material settings.");
+            }
         }
-         console.log("DEBUG: Processing Summary Phase 1 END"); // DEBUG
-    }
     
         /** Phase 2: Fetch chapter data (ungrouped & for groups) and render grid */
         async _fetchAndRenderInitialDashboardContent() {
@@ -2046,8 +1811,9 @@ _renderTimelineGraph(timelineData, isLoading = false, isError = false, customMes
             // Wait for ALL chapter data fetches
             await Promise.allSettled(fetchPromises);
             console.log("DEBUG: All chapter fetches complete. Rendering layout.");
-        this._renderDashboardLayout();
-         console.log("DEBUG: _fetchAndRenderInitialDashboardContent END"); // DEBUG
+
+            // NOW render the full layout
+            this._renderDashboardLayout();
         }
 
     /**
@@ -2272,16 +2038,6 @@ _renderTimelineGraph(timelineData, isLoading = false, isError = false, customMes
              }
          }
 
-         const chapterArea = groupWidget.querySelector('.group-chapter-area');
-        // CRITICAL: Add event listener to chapter area to prevent dragging the group
-        // when interacting with the chapter area
-        chapterArea.addEventListener('mousedown', (e) => {
-        // Only prevent if clicking on a chapter item or chapter area directly
-        if (e.target === chapterArea || e.target.closest('.chapter-item')) {
-        e.stopPropagation();
-        }
-        }, true); // Use capture phase
-
 
         // Attach listeners
         const renameInput = groupWidget.querySelector('.group-rename-input');
@@ -2308,70 +2064,36 @@ _renderTimelineGraph(timelineData, isLoading = false, isError = false, customMes
     }
 
        /** Handles confirming the color selection */
-       /** Handles confirming the color selection */
-/** Handles confirming the color selection */
-/** Handles confirming the color selection */
-/** Handles confirming the color selection */
-async _handleConfirmGroupColor() {
-    if (!this.activeColorPickerTarget || this.activeColorPickerTarget.type !== 'group' || !this.colorPickerInput) return;
+       async _handleConfirmGroupColor() {
+        if (!this.activeColorPickerTarget || this.activeColorPickerTarget.type !== 'group' || !this.colorPickerInput) return;
 
-    const groupId = this.activeColorPickerTarget.id;
-    const groupElement = this.activeColorPickerTarget.element;
-    const newColor = this.colorPickerInput.value;
-    const groupData = this._findGroupData(groupId);
+        const groupId = this.activeColorPickerTarget.id;
+        const groupElement = this.activeColorPickerTarget.element;
+        const newColor = this.colorPickerInput.value;
+        const groupData = this._findGroupData(groupId);
 
-    console.log(`DEBUG: Confirming color ${newColor} for group ${groupId}`);
-    this._hideModal('groupColorPickerModal');
-    if (!groupData || groupData.color === newColor) return;
-
-    this._updateLoadingState('action', true);
-    try {
-        // Make the API call to update color
-        await apiClient.updateGroup(groupId, { color: newColor });
-        
-        // Update local data
-        groupData.color = newColor;
-        
-        // Apply color with enhanced approach
-        if (groupElement) {
-            // 1. Apply to the group widget element (parent)
-            groupElement.style.setProperty('--group-bg-color', newColor);
-            
-            // 2. Apply to direct content element (main container)
-            const contentElement = groupElement.querySelector('.grid-stack-item-content');
-            if (contentElement) {
-                contentElement.style.setProperty('--group-bg-color', newColor);
-            }
-            
-            // 3. Apply to all chapter items within the group
-            const chapterItems = groupElement.querySelectorAll('.chapter-item');
-            chapterItems.forEach(item => {
-                item.style.setProperty('--group-bg-color', newColor);
-            });
-            
-            // 4. Apply to the chapter area container
-            const chapterArea = groupElement.querySelector('.group-chapter-area');
-            if (chapterArea) {
-                chapterArea.style.setProperty('--group-bg-color', newColor);
-            }
-            
-            // 5. Force a repaint
-            groupElement.style.display = 'none';
-            void groupElement.offsetHeight;
-            groupElement.style.display = '';
-            
-            console.log(`Applied color ${newColor} to group and all its chapter items`, groupElement);
+        console.log(`DEBUG: Confirming color ${newColor} for group ${groupId}`);
+        this._hideModal('groupColorPickerModal');
+        if (!groupData || groupData.color === newColor) {
+             console.log("DEBUG: Color unchanged or group data missing.");
+             this.activeColorPickerTarget = null;
+             return; // No change needed
         }
-        
-        console.log(`Group ${groupId} color saved successfully.`);
-    } catch (error) {
-        console.error(`Failed to save color for group ${groupId}:`, error);
-        this._showError(`Could not save group color: ${error.message}`);
-    } finally {
-        this._updateLoadingState('action', false);
-        this.activeColorPickerTarget = null;
-    }
-}
+
+        this._updateLoadingState('action', true);
+        try {
+             await apiClient.updateGroup(groupId, { color: newColor });
+             groupData.color = newColor; // Update local data
+             if (groupElement) groupElement.style.setProperty('--group-bg-color', newColor); // Update live element
+             this._showInfoMessage("Group color updated.");
+        } catch (error) {
+             console.error(`Failed to update color for group ${groupId}:`, error);
+             this._showError(`Could not update color: ${error.message}`);
+        } finally {
+             this._updateLoadingState('action', false);
+             this.activeColorPickerTarget = null; // Clear target
+        }
+   }
 
     /**
      * Renders a single group widget container and its internal chapters.
@@ -2381,14 +2103,11 @@ async _handleConfirmGroupColor() {
      * @private
      */
     _renderGroupWidget(group) {
-        console.log(`DEBUG: Rendering group widget START: ${group.name} (${group.id}), color: ${group.color}`);
+        console.log(`Rendering group widget: ${group.name} (${group.id}) - Layout: ${group.layoutMode}`);
         const groupWidget = document.createElement('div');
-        groupWidget.classList.add('grid-stack-item', 'group-widget');
+        groupWidget.classList.add('grid-stack-item', 'group-widget'); // Base classes
         groupWidget.dataset.groupId = group.id;
         groupWidget.dataset.layoutMode = group.layoutMode || 'card';
-        
-        // Apply color to both the element and its inline style
-        // This makes the color visible immediately and persistent
         if (group.color) {
             groupWidget.style.setProperty('--group-bg-color', group.color);
         }
@@ -2451,18 +2170,8 @@ async _handleConfirmGroupColor() {
         // Attach context menu listener TO THE WIDGET ITSELF
         groupWidget.addEventListener('contextmenu', this._handleContextMenu);
 
-        // After rendering all chapter items within the group, apply color to those too
-    if (group.color) {
-        const chapterItems = groupWidget.querySelectorAll('.chapter-item');
-        chapterItems.forEach(item => {
-            item.style.setProperty('--group-bg-color', group.color);
-        });
-        
-        const chapterArea = groupWidget.querySelector('.group-chapter-area');
-        if (chapterArea) {
-            chapterArea.style.setProperty('--group-bg-color', group.color);
-        }
-    }
+        // Attach listeners to chapter items *within* the group AFTER adding to DOM?
+        // Or rely on delegation from the main dashboard container. Delegation is better.
 
         return groupWidget;
     }
@@ -2475,23 +2184,11 @@ async _handleConfirmGroupColor() {
      * @returns {HTMLElement | null} The chapter item element or null on error.
      * @private
      */
-/**
- * Renders a single chapter item (either standalone or within a group).
- * Returns the complete element (including .grid-stack-item wrapper if standalone).
- * @param {object} chapter - The chapter data object.
- * @param {object} options - Rendering options.
- * @returns {HTMLElement | null} The chapter item element or null on error.
- * @private
- */
-_renderChapterItem(chapter, options = {}) {
-     const { isStandalone = false, layout = 'card', containerSize = { rows: 1, cols: 1 } } = options;
-     if (!chapter || !chapter.id) { 
-         console.warn("DEBUG: Skipping render for chapter with missing data:", chapter); 
-         return null; 
-     }
-     
-     const isInGroup = !!chapter.groupId;
-     const chapterElement = document.createElement('div');
+    _renderChapterItem(chapter, options = {}) {
+    const { isStandalone = false, layout = 'card', containerSize = { rows: 1, cols: 1 } } = options;
+    if (!chapter || !chapter.id) { console.warn("DEBUG: Skipping render for chapter with missing data:", chapter); return null; }
+
+    const chapterElement = document.createElement('div');
     chapterElement.draggable = true; // Make the item draggable
     chapterElement.dataset.chapterId = chapter.id;
     chapterElement.dataset.chapterName = chapter.name; // Useful for study session link
@@ -2499,329 +2196,206 @@ _renderChapterItem(chapter, options = {}) {
         chapterElement.dataset.groupId = chapter.groupId;
     }
 
-    // Set up HTML5 draggable for chapters in groups
-    if (isInGroup) {
-        chapterElement.setAttribute('draggable', 'true');
-        
-        // CRITICAL FIX: Add mousedown handler to prevent GridStack from taking over
-        chapterElement.addEventListener('mousedown', (e) => {
-            // Only stop propagation if this is a direct click on the chapter (not on buttons, etc.)
-            if (e.target === chapterElement || e.target.closest('.chapter-name, .chapter-content')) {
-                console.log("Chapter mousedown - preventing propagation");
-                e.stopPropagation();
-            }
-        });
-        
-        // Add dragstart handler directly to the chapter element
-        chapterElement.addEventListener('dragstart', (e) => {
-            console.log("Chapter dragstart in group");
-            e.stopPropagation();
-            
-            // Get the chapter data
-            const chapterData = this._findChapterData(chapter.id);
-            
-            // Set up drag data
-            this.draggedItemData = {
-                type: 'chapter',
-                items: [{ id: chapter.id, name: chapter.name }],
-                fromGroup: chapter.groupId
-            };
-            
-            // Mark element as being dragged
-            chapterElement.classList.add('dragging-from-group');
-            
-            // Add drag image and data
-            e.dataTransfer.setData('application/json', JSON.stringify(this.draggedItemData));
-            e.dataTransfer.effectAllowed = 'move';
-        });
-    }
- 
-     // --- Base Classes & State ---
-     chapterElement.classList.add('chapter-item');
-     
-     // Apply layout styles
-     if (isStandalone) {
-         // Standalone chapters are grid-stack-items 
-         chapterElement.classList.add('grid-stack-item', 'standalone-chapter', 'chapter-card-style');
-         chapterElement.setAttribute('gs-id', chapter.id);
-     } else {
-         // Grouped item styling
-         chapterElement.classList.add(`layout-${layout}`);
-         if (layout === 'card') {
-             chapterElement.classList.add('chapter-card-style');
-         } else {
-             chapterElement.classList.add('chapter-list-style');
-         }
-     }
- 
-     // --- Determine Content Visibility ---
-     let showMastery = false, showStats = false, sizeClass = '';
-     if (isStandalone || layout === 'card') {
-         sizeClass = 'size-full'; 
-         showMastery = true; 
-         showStats = true;
-     } else { /* list layout logic */
-         const cellWidth = containerSize.cols || 1;
-         if (cellWidth >= 3) { 
-             sizeClass = 'size-wide-list'; 
-             showMastery = true; 
-             showStats = true; 
-         } else if (cellWidth === 2) { 
-             sizeClass = 'size-medium-list'; 
-             showMastery = true; 
-             showStats = false; 
-         } else { 
-             sizeClass = 'size-compact-list'; 
-             showMastery = false; 
-             showStats = false; 
-         }
-     }
-     chapterElement.classList.add(sizeClass);
-     
-     // Add state classes
-     if (chapter.isPinned) chapterElement.classList.add('is-pinned');
-     if (chapter.isSuspended) chapterElement.classList.add('is-suspended');
- 
-     // --- Build HTML Structure ---
-     // Create content wrapper (proper class structure following CSS)
-     const contentWrapper = document.createElement('div');
-     contentWrapper.classList.add('chapter-item__content-wrapper');
-     
-     // Create header with name and mastery
-     const header = document.createElement('div');
-     header.classList.add('chapter-item__header');
-     
-     // Add chapter name
-     const nameElement = document.createElement('span');
-     nameElement.classList.add('chapter-item__name');
-     nameElement.textContent = chapter.name;
-     header.appendChild(nameElement);
-     
-     // Add rename input (hidden by default)
-     const renameInput = document.createElement('input');
-     renameInput.type = 'text';
-     renameInput.classList.add('rename-input', 'chapter-rename-input');
-     renameInput.value = chapter.name;
-     renameInput.dataset.originalName = chapter.name;
-     renameInput.style.display = 'none';
-     header.appendChild(renameInput);
-     
-     // Add mastery indicator based on visibility rules
-     if (showMastery) {
-         const masteryPercent = chapter.stats?.mastery ?? 0;
-         const masteryLevel = this._getMasteryLevelClass(masteryPercent);
-         
-         if (sizeClass === 'size-compact-list') {
-             // Simple dot indicator for compact view
-             const dot = document.createElement('div');
-             dot.classList.add('chapter-item__mastery-indicator', masteryLevel);
-             header.appendChild(dot);
-         } else {
-             // Progress circle for larger views
-             const progressCircle = document.createElement('div');
-             progressCircle.classList.add('chapter-item__progress-circle', masteryLevel);
-             progressCircle.title = `Mastery: ${masteryPercent}%`;
-             
-             // SVG circle
-             const radius = 15.915;
-             const circumference = 2 * Math.PI * radius;
-             const offset = circumference - (masteryPercent / 100) * circumference;
-             
-             progressCircle.innerHTML = `
-                 <svg viewBox="0 0 36 36" class="progress-ring">
-                     <circle class="progress-ring-bg" cx="18" cy="18" r="${radius}" />
-                     <circle class="progress-ring-circle" cx="18" cy="18" r="${radius}" 
-                             stroke-dasharray="${circumference} ${circumference}" 
-                             stroke-dashoffset="${offset}" />
-                 </svg>
-                 <span class="chapter-item__progress-percentage">${masteryPercent}%</span>
-             `;
-             header.appendChild(progressCircle);
-         }
-     }
-     
-     contentWrapper.appendChild(header);
-     
-     // Add stats if needed
-     if (showStats) {
-         const totalCards = chapter.stats?.cardCount ?? 0;
-         const dueCards = chapter.stats?.totalDueCards ?? 0;
-         const newCards = chapter.stats?.remainingNewCards ?? 0;
-         
-         const statsSection = document.createElement('div');
-         statsSection.classList.add('chapter-item__stats');
-         
-         // Total cards stat
-         const totalStat = document.createElement('div');
-         totalStat.classList.add('chapter-item__stat', 'total');
-         totalStat.title = 'Total Cards';
-         totalStat.innerHTML = `
-             <svg width="18" height="18" viewBox="0 0 32 32">
-                 <rect x="8" y="2" width="20" height="24" rx="3" ry="3" fill="none" stroke="currentColor" 
-                       stroke-width="1.5" transform="rotate(-12 18 14)" />
-                 <rect x="6" y="4" width="20" height="24" rx="3" ry="3" fill="none" stroke="currentColor" 
-                       stroke-width="1.5" transform="rotate(-6 16 16)" />
-                 <g transform="rotate(4 13 13)">
-                     <rect x="4" y="2" width="18" height="22" rx="3" ry="3" fill="none" stroke="currentColor" 
-                           stroke-width="1.5" />
-                 </g>
-             </svg>
-             <span class="chapter-item__stat-value">${totalCards}</span>
-         `;
-         statsSection.appendChild(totalStat);
-         
-         // Due cards stat
-         const dueStat = document.createElement('div');
-         dueStat.classList.add('chapter-item__stat', 'due');
-         dueStat.title = 'Cards Due';
-         dueStat.innerHTML = `
-             <svg viewBox="0 0 24 24">
-                 <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
-             </svg>
-             <span class="chapter-item__stat-value">${dueCards}</span>
-         `;
-         statsSection.appendChild(dueStat);
-         
-         // New cards stat
-         const newStat = document.createElement('div');
-         newStat.classList.add('chapter-item__stat', 'new');
-         newStat.title = 'New Cards';
-         newStat.innerHTML = `
-             <svg viewBox="0 0 24 24">
-                 <path d="M13 7H11v4H7v2h4v4h2v-4h4v-2h-4V7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-             </svg>
-             <span class="chapter-item__stat-value">${newCards}</span>
-         `;
-         statsSection.appendChild(newStat);
-         
-         contentWrapper.appendChild(statsSection);
-     }
-     
-     /* // Add tags if available and space allows
-     if (chapter.tags && chapter.tags.length > 0 && (sizeClass === 'size-full')) {
-         const tagsContainer = document.createElement('div');
-         tagsContainer.classList.add('chapter-item__tags');
-         
-         chapter.tags.forEach(tag => {
-             const tagElement = document.createElement('span');
-             tagElement.classList.add('chapter-item__tag');
-             tagElement.textContent = tag;
-             tagsContainer.appendChild(tagElement);
-         });
-         
-         contentWrapper.appendChild(tagsContainer);
-     } */
+    // --- Base Classes & State ---
+    let contentHTML = ''; // Initialize empty content string
+    let wrapperClass = 'chapter-item'; // Base class for grouped items
 
-    // Add this new code for drag handling
-    chapterElement.addEventListener('dragstart', (e) => {
-        // Stop propagation only if this is inside a group
-        if (chapter.groupId || chapterElement.closest('.group-widget')) {
-            // Prevent the event from bubbling up to the group container
-            e.stopPropagation();
+    // --- Base Classes & State ---
+    // Add chapter-item class to ALL chapters (both standalone and grouped) for drag functionality
+    chapterElement.classList.add('chapter-item');
+    
+    let contentWrapperClass = 'chapter-item-content-grouped'; // Assume grouped initially
+
+    if (isStandalone) {
+        // The element ITSELF is the grid-stack-item
+        chapterElement.classList.add('grid-stack-item', 'standalone-chapter', 'chapter-card-style');
+        chapterElement.setAttribute('gs-id', chapter.id);
+        
+        // Gridstack will wrap this element with '.grid-stack-item-content'
+        // So, we render the chapter content directly inside chapterElement
+   } else {
+        // Grouped item: Just the chapter item, content wrapper added inside
+        chapterElement.classList.add('chapter-item');
+        chapterElement.classList.add(`layout-${layout}`);
+        if (layout === 'card') chapterElement.classList.add('chapter-card-style');
+        else chapterElement.classList.add('chapter-list-style');
+        // Add the necessary inner content wrapper for grouped items
+        contentHTML += `<div class="chapter-item-content-grouped">`;
+   }
+
+        // --- Determine Content Visibility ---
+        // --- Determine Content Visibility (logic remains the same) ---
+        let showMastery = false, showStats = false, sizeClass = '';
+        if (isStandalone || layout === 'card') {
+            sizeClass = 'size-full'; showMastery = true; showStats = true;
+        } else { /* list layout logic */
+             const cellWidth = containerSize.cols || 1;
+             if (cellWidth >= 3) { sizeClass = 'size-wide-list'; showMastery = true; showStats = true; }
+             else if (cellWidth === 2) { sizeClass = 'size-medium-list'; showMastery = true; showStats = false; }
+             else { sizeClass = 'size-compact-list'; showMastery = false; showStats = false; }
         }
-    });
-     
-     // Add status indicators
-     if (chapter.isPinned) {
-         const pinIndicator = document.createElement('span');
-         pinIndicator.classList.add('chapter-item__indicator', 'pinned-icon');
-         pinIndicator.title = 'Pinned';
-         pinIndicator.textContent = '📌';
-         contentWrapper.appendChild(pinIndicator);
-     }
-     
-     if (chapter.isSuspended) {
-         const suspendIndicator = document.createElement('span');
-         suspendIndicator.classList.add('chapter-item__indicator', 'suspended-icon');
-         suspendIndicator.title = 'Suspended';
-         suspendIndicator.textContent = '⏸'; // Or appropriate icon
-         contentWrapper.appendChild(suspendIndicator);
-     }
-     
-     // Add the content wrapper to the main element
-     chapterElement.appendChild(contentWrapper);
-     
-     // Attach event listeners
-     renameInput.addEventListener('keydown', this._handleRenameInputKeydown);
-     renameInput.addEventListener('blur', this._handleRenameInputBlur);
-     
-     return chapterElement;
- }
+        chapterElement.classList.add(sizeClass); // Add size class to the main element
+        if (chapter.isPinned) chapterElement.classList.add('is-pinned');
+        // if (chapter.isSuspended) chapterElement.classList.add('is-suspended');
+
+        // --- Build Inner HTML (directly or inside wrapper) ---
+        const masteryPercent = chapter.stats?.mastery ?? 0;
+        const totalCards = chapter.stats?.cardCount ?? 0;
+        const dueCards = chapter.stats?.totalDueCards ?? 0;
+        const newCards = chapter.stats?.remainingNewCards ?? 0;
+        const masteryLevel = this._getMasteryLevelClass(masteryPercent);
+        const radius = 15.915; const circumference = 2 * Math.PI * radius; const offset = circumference - (masteryPercent / 100) * circumference;
+
+        // ISSUE 1 FIX: Ensure the content wrapper exists AND has necessary classes
+        contentHTML += `<div class="chapter-main-info">`;
+        contentHTML += `<span class="chapter-item-name">${chapter.name}</span>`;
+        contentHTML += `<input type="text" class="rename-input chapter-rename-input" value="${chapter.name}" style="display: none;" data-original-name="${chapter.name}">`;
+        if (showMastery) { /* ... mastery circle HTML ... */
+            contentHTML += `<div class="mastery-progress-circle ${masteryLevel}" title="Mastery: ${masteryPercent}%"><svg viewBox="0 0 36 36" class="progress-ring"><circle class="progress-ring-bg" cx="18" cy="18" r="${radius}" /><circle class="progress-ring-circle" cx="18" cy="18" r="${radius}" stroke-dasharray="${circumference} ${circumference}" stroke-dashoffset="${offset}" /></svg><span class="mastery-percentage">${masteryPercent}%</span></div>`;
+         }
+         contentHTML += `</div>`; // End chapter-main-info
+        if (showStats) { /* ... stats HTML ... */
+            contentHTML += `<div class="card-stats-new"><div class="stat-item-new total-cards" title="Total Cards"><svg width="100" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                  
+                    <!-- Card 4 (Deepest in the stack) -->
+                    <!-- Further offset (x=8, y=2), increased negative rotation -->
+                    <rect 
+                      x="8" y="2" 
+                      width="20" height="24" 
+                      rx="3" ry="3" 
+                      fill="none" 
+                      stroke="white" 
+                      stroke-width="1.5" 
+                      transform="rotate(-12 18 14)" /> 
+                      <!-- Rotation center: x=8 + width/2=18, y=2 + height/2=14 -->
+                  
+                    <!-- Card 3 -->
+                    <!-- Original "Back Card", now the third from front -->
+                    <!-- Position (x=6, y=4), standard negative rotation -->
+                     <rect 
+                      x="6" y="4" 
+                      width="20" height="24" 
+                      rx="3" ry="3" 
+                      fill="none" 
+                      stroke="white" 
+                      stroke-width="1.5" 
+                      transform="rotate(-6 16 16)" /> 
+                      <!-- Rotation center: x=6 + width/2=16, y=4 + height/2=16 -->
+                  
+                    <!-- Card 2 & Text '1' Group (Front Card Group) -->
+                    <!-- Rotated slightly positive -->
+                    <g transform="rotate(4 13 13)"> 
+                       <!-- Rotation center: x=4 + width/2=13, y=2 + height/2=13 -->
+                  
+                      <!-- Card 2 Outline (Front Card Outline) -->
+                      <rect 
+                        x="4" y="2" 
+                        width="18" height="22" 
+                        rx="3" ry="3" 
+                        fill="none" 
+                        stroke="white" 
+                        stroke-width="1.5" />
+                  
+                  
+                    </g>
+                  </svg><span class="stat-value">${totalCards}</span></div><div class="stat-item-new due-cards" title="Cards Due"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+               </svg><span class="stat-value">${dueCards}</span></div><div class="stat-item-new new-cards" title="New Cards"><svg>  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M13 7H11v4H7v2h4v4h2v-4h4v-2h-4V7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+ </svg></svg><span class="stat-value">${newCards}</span></div></div>`;
+         }
+        if (chapter.isPinned) contentHTML += `<span class="status-indicator pinned-indicator" title="Pinned">📌</span>`;
+        // if (chapter.isSuspended) ... // Only show if filtering for suspended
+        if (!isStandalone) {
+            contentHTML += `</div>`; // End .chapter-item-content-grouped
+        }
+
+        chapterElement.innerHTML = contentHTML; // Set the final HTML
+
+        // Attach Listeners (Attach to chapterElement itself)
+        const renameInput = chapterElement.querySelector('.chapter-rename-input');
+        renameInput?.addEventListener('keydown', this._handleRenameInputKeydown);
+        renameInput?.addEventListener('blur', this._handleRenameInputBlur);
+        // Context menu handled by delegation on dashboardGridContainer
+
+        return chapterElement;
+    }
 
     /** Renders the top sort controls */
- /** MODIFIED: Renders sort controls, highlighting active order button */
- _renderSortControls() {
-    console.log("DEBUG: Rendering sort controls. Current:", this.currentSort); // DEBUG
-    if (!this.sortFieldSelect || !this.sortAscButton || !this.sortDescButton) {
-        console.warn("Sort control elements not found."); return;
+    _renderSortControls() {
+        console.log("Rendering sort controls");
+        if (!this.sortFieldSelect || !this.sortOrderSelect) return;
+        // Set dropdown values based on this.currentSort
+        this.sortFieldSelect.value = this.currentSort.field;
+        this.sortOrderSelect.value = this.currentSort.order;
+        // Add other setup if needed
     }
-    this.sortFieldSelect.value = this.currentSort.field;
-    this.sortAscButton.classList.toggle('active', this.currentSort.order === 'asc');
-    this.sortDescButton.classList.toggle('active', this.currentSort.order === 'desc');
-}
-
 
     /** Renders the tag filter pills */
-// In ChapterFoldersView class
-_renderTagPills() {
-    console.log("DEBUG: Rendering tag pills");
-    if (!this.tagPillsContainer) return;
-    this._updateLoadingState('tags', true);
+    _renderTagPills() {
+        console.log("Rendering tag pills");
+        if (!this.tagPillsContainer) return;
+        
 
-    this.tagPillsContainer.innerHTML = ''; // Clear existing
-    const fragment = document.createDocumentFragment();
+        this.tagPillsContainer.innerHTML = ''; // Clear existing
+        const fragment = document.createDocumentFragment();
 
-    const createPill = (text, type, value = null, specialClasses = '', action = null) => {
-        const pill = document.createElement('button');
-        pill.classList.add('tag-pill');
-        if (specialClasses) {
-             const classesToAdd = specialClasses.split(' ').filter(cls => cls.length > 0);
-             if (classesToAdd.length > 0) pill.classList.add(...classesToAdd);
+        // 1. "All Chapters" Pill
+        const createPill = (text, type, value = null, specialClass = '', action = null) => {
+            const pill = document.createElement('button');
+            pill.textContent = text;
+            pill.classList.add('tag-pill');
+            if (specialClass) pill.classList.add(specialClass);
+            pill.dataset.filterType = type; // For filter pills
+            if (value !== null && type === 'tag') pill.dataset.filterValue = value; // Tag value
+            if (type === 'tag') pill.dataset.tagName = value; // Keep for delete ID
+            if (action) pill.dataset.action = action; // For action buttons
+            if (type === 'tag') pill.dataset.dropTargetType = 'tag'; // Mark as drop target
+
+            if (this.currentFilter.type === type && this.currentFilter.value === value) {
+                pill.classList.add('active'); // Active filter
+            }
+            return pill;
+        };
+
+        fragment.appendChild(createPill('All Chapters', 'all', null, 'filter-pill'));
+        fragment.appendChild(createPill('Pinned', 'pinned', null, 'filter-pill.special-filter'));
+        fragment.appendChild(createPill('Suspended', 'suspended', null, 'filter-pill.special-filter'));
+        this.availableTags.sort().forEach(tag => { fragment.appendChild(createPill(tag, 'tag', tag)); });
+
+        const selectButton = createPill(this.isSelectionModeActive ? 'Cancel Select' : 'Select Chapters', 'action', null, 'action-button', 'toggle-select');
+        selectButton.id = 'selectChaptersButton';
+        fragment.appendChild(selectButton);
+
+        // ONLY show Create Group button if NOT in selection mode OR if creating group directly
+        // const createGroupBtn = createPill('+ Create Group', 'action', null, 'action-button', 'create-group');
+        // createGroupBtn.id = 'createGroupButton';
+        // Hide if selecting chapters UNLESS specifically in the group creation flow
+        // createGroupBtn.style.display = (this.isSelectionModeActive && !this.isCreatingGroup) ? 'none' : '';
+        // fragment.appendChild(createGroupBtn);
+
+        const addTagButton = document.createElement('button');
+        addTagButton.classList.add('tag-pill', 'action-button', 'add-tag-button');
+        addTagButton.dataset.action = 'add-tag';
+        // Add inner elements
+        addTagButton.innerHTML = `
+             <span class="add-tag-text">+ Add Tag</span>
+             <input type="text" class="add-tag-input" placeholder="New tag..." style="display: none;">
+        `;
+        fragment.appendChild(addTagButton);
+    
+        this.tagPillsContainer.appendChild(fragment);
+    
+        // Add specific listeners for the input inside the add tag button
+        const input = addTagButton.querySelector('.add-tag-input');
+        if (input) {
+             input.addEventListener('keydown', this._handleAddTagInputKeydown);
+             input.addEventListener('blur', this._handleAddTagInputBlur);
         }
-        pill.dataset.filterType = type;
-        if (value !== null && type === 'tag') pill.dataset.filterValue = value;
-        if (type === 'tag') pill.dataset.tagName = value;
-        // REMOVED: action dataset handled externally now
 
-        // Add Text Span
-        const textSpan = document.createElement('span');
-        textSpan.className = 'pill-text'; textSpan.textContent = text;
-        pill.appendChild(textSpan);
-
-        // Add delete button INSIDE actual tag pills
-        if (type === 'tag' && value !== null) {
-             const deleteBtn = document.createElement('button');
-             deleteBtn.className = 'delete-tag-btn';
-             deleteBtn.innerHTML = `<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>`;
-             deleteBtn.title = `Remove tag "${value}"`;
-             deleteBtn.dataset.action = 'delete-tag'; // Action for event delegation
-             deleteBtn.dataset.tagName = value;
-             pill.appendChild(deleteBtn);
-             pill.classList.add('has-delete-btn'); // ** Ensure this class is added **
-             console.log(`DEBUG: Added delete button for tag: ${value}`); // DEBUG
-        }
-
-        if (this.currentFilter.type === type && this.currentFilter.value === value) {
-            pill.classList.add('active');
-        }
-        return pill;
-    };
-
-    // Render Filter & Tag Pills
-    fragment.appendChild(createPill('All Chapters', 'all', null, 'filter-pill'));
-    fragment.appendChild(createPill('Pinned', 'pinned', null, 'filter-pill special-filter'));
-    fragment.appendChild(createPill('Suspended', 'suspended', null, 'filter-pill special-filter'));
-    this.availableTags.sort().forEach(tag => {
-        fragment.appendChild(createPill(tag, 'tag', tag));
-    });
-
-    this.tagPillsContainer.appendChild(fragment);
-
-    // ** REMOVE Action Button Creation Here ** - Moved outside to static HTML / different container
-
-    this._updateLoadingState('tags', false);
-    console.log("DEBUG: Tag pills rendered.");
-}
+        // Ensure DELEGATED listener is attached ONCE in _attachBaseEventListeners
+         console.log("DEBUG: Tag pills rendered."); // DEBUG
+    }
 
     /**
      * Renders the view in filtered mode (flat list of chapters).
@@ -2867,20 +2441,14 @@ _renderTagPills() {
 
                  // Add widgets to Gridstack
                  if (widgetsToAdd.length > 0) {
-                    this.gridInstance.batchUpdate();
-                    widgetsToAdd.forEach(config => {
-                         try { 
-                             this.gridInstance.addWidget(config.el, config); 
-                             this.gridInstance.movable(config.el, false);   // FIXED: Use config.el
-                             this.gridInstance.resizable(config.el, false); // FIXED: Use config.el
-                         }
-                         catch (e) { 
-                             console.error("Gridstack error adding filtered widget:", e); 
-                             config.el?.remove();
-                         }
-                    });
-                    this.gridInstance.commit();
-               }
+                      this.gridInstance.batchUpdate();
+                      widgetsToAdd.forEach(config => {
+                           try { this.gridInstance.addWidget(config.el, config); this.gridInstance.movable(chapterElement, false);
+                            this.gridInstance.resizable(chapterElement, false);}
+                           catch (e) { console.error("Gridstack error adding filtered widget:", e); config.el?.remove();}
+                      });
+                      this.gridInstance.commit();
+                 }
             }
         } catch (error) { /* ... error handling ... */
             console.error("Failed to fetch filtered chapters:", error);
@@ -2900,287 +2468,167 @@ _renderTagPills() {
    /** MODIFIED: Separates filter logic from action button logic */
     // --- Event Handlers ---
 
-    /** MODIFIED: Handles clicks ONLY within tag pills container (filters OR delete) */
     _handleTagPillOrActionClick(event) {
-        const targetButton = event.target.closest('.tag-pill, .delete-tag-btn'); // Target pill OR delete button
+        const targetButton = event.target.closest('.tag-pill');
         if (!targetButton) return;
 
         const action = targetButton.dataset.action;
+        const filterType = targetButton.dataset.filterType;
+        const filterValue = targetButton.dataset.filterValue;
 
-        if (action === 'delete-tag') { // Clicked the delete 'x'
-             const tagName = targetButton.dataset.tagName;
-             console.log(`DEBUG: Delete button clicked for tag: ${tagName}`); // DEBUG
-             event.stopPropagation(); // Prevent filter toggle
-             if (tagName) this._handleDeleteTagClick(tagName);
-        } else if (targetButton.classList.contains('tag-pill')) { // Clicked the main pill area
-             const filterType = targetButton.dataset.filterType;
-             const filterValue = targetButton.dataset.filterValue; // Tag name for type 'tag'
-             if (filterType) { // It's a filter pill
-                  console.log(`DEBUG: Filter pill clicked: type=${filterType}, value=${filterValue}`); // DEBUG
-                  const newFilter = { type: filterType, value: filterValue || null };
-                  if (this.currentFilter.type === newFilter.type && this.currentFilter.value === newFilter.value) return; // No change
-                  this.currentFilter = newFilter;
-                  this._renderTagPills(); // Update active states
-                  if (this.isSelectionModeActive) this._handleToggleSelectionMode(false); // Exit selection
-                  if (this.currentFilter.type === 'all') { this._renderDashboardLayout(); }
-                  else { this._renderFilteredView(this.currentFilter); }
+        console.log(`DEBUG: Pill/Action click: action=${action}, filterType=${filterType}, filterValue=${filterValue}`);
+
+        if (action === 'toggle-select') {
+             this._handleToggleSelectionMode();
+        } else if (action === 'create-group') {
+            console.log("DEBUG: Action 'create-group' clicked."); // DEBUG
+            this._handleOpenCreateGroupModal(); // Open modal for name/color
+            this._handleToggleSelectionMode(true); // Enter selection mode simultaneously
+            // Optionally add class to container: this.container?.classList.add('is-creating-group-selecting');
+            // this._showInfoMessage("Enter group details and select chapters below.", "Create Group"); // Guide user
+        } else if (action === 'add-tag') {
+            // **MODIFIED:** Toggle inline input state
+            this._handleAddTagToggle(targetButton); // Pass the button element
+       } else if (filterType) {
+             // Handle FILTER pills (same as before)
+             // ... (set filter, render pills, render dashboard/filtered view) ...
+             const newFilter = { type: filterType, value: filterValue || null };
+             if (this.currentFilter.type === newFilter.type && this.currentFilter.value === newFilter.value) return;
+             this.currentFilter = newFilter;
+             this._renderTagPills();
+             if (this.isSelectionModeActive) this._handleToggleSelectionMode(); // Exit selection on filter change
+             if (this.currentFilter.type === 'all') {
+                 this.dashboardGridContainer?.classList.remove('filtered-view');
+                 this.gridInstance?.enable();
+                 this._renderDashboardLayout();
+             } else {
+                 this._renderFilteredView(this.currentFilter);
              }
         }
     }
-
-    // In ChapterFoldersView class
-
-    /** Handles clicking the delete 'x' button on a tag pill */
-/** Handles clicking the delete 'x' button on a tag pill */
-async _handleDeleteTagClick(tagName) {
-    if (!tagName || !this.currentMaterial || this.isLoading.action) return;
-
-    console.log(`DEBUG: Requesting delete for tag: ${tagName} in material ${this.currentMaterial}`); // DEBUG
-
-    // Confirmation Modal - Message reflects backend action
-    this._showModal('confirmationModal', 'Delete Tag?',
-         `Are you sure you want to delete the tag "<strong style="color: var(--accent-blue);">${tagName}</strong>"?<br><br>This will remove the tag from the material's list and from all chapters currently using it in "${this.currentMaterial}".`,
-         [
-              { text: 'Cancel', class: 'secondary', action: () => {} },
-              { text: 'Delete Tag', class: 'primary danger', action: async () => {
-                   this._updateLoadingState('action', true);
-                   try {
-                        // ** Call the correct API endpoint **
-                        const result = await apiClient.deleteMaterialTag(this.currentMaterial, tagName);
-                        console.log(`DEBUG: Tag "${tagName}" deleted via API. Response:`, result); // DEBUG
-
-                        // --- Update Local State ---
-                        // 1. Remove from availableTags list
-                        this.availableTags = this.availableTags.filter(t => t !== tagName);
-                        if (this.currentMaterialSettings?.uniqueTags) {
-                            this.currentMaterialSettings.uniqueTags = this.availableTags;
-                        }
-
-                        // 2. Remove tag from locally cached chapter data
-                        //    (Backend handles the actual DB update, this keeps UI consistent)
-                        let updatedChapterCount = 0;
-                        for (const chapterId in this.allChaptersData) {
-                            const chapter = this.allChaptersData[chapterId];
-                            // Only process chapters for the current material
-                            if (chapter.material === this.currentMaterial && chapter.tags?.includes(tagName)) {
-                                 chapter.tags = chapter.tags.filter(t => t !== tagName);
-                                 updatedChapterCount++;
-                            }
-                        }
-                         // Also update ungrouped/grouped caches (though they reference allChaptersData)
-                         this.ungroupedChaptersData.forEach(ch => { if(ch.tags?.includes(tagName)) ch.tags = ch.tags.filter(t=>t!==tagName); });
-                         Object.values(this.chaptersByGroup).forEach(groupChaps => {
-                              groupChaps.forEach(ch => { if(ch.tags?.includes(tagName)) ch.tags = ch.tags.filter(t=>t!==tagName); });
-                         });
-                         console.log(`DEBUG: Removed tag "${tagName}" locally from ${updatedChapterCount} cached chapters.`); // DEBUG
-
-
-                        // --- Update UI ---
-                        // 1. If the deleted tag was the current filter, reset filter & view
-                        if (this.currentFilter.type === 'tag' && this.currentFilter.value === tagName) {
-                             this.currentFilter = { type: 'all', value: null };
-                             this.dashboardGridContainer?.classList.remove('filtered-view');
-                             this.gridInstance?.enable(); // Re-enable grid interactions
-                             this._renderDashboardLayout(); // Show dashboard view again
-                        }
-                        // 2. Re-render the tag pills UI
-                        this._renderTagPills();
-
-                        // 3. Show Success Message (mentioning chapter updates if count available)
-                        const chaptersUpdatedMsg = result?.chaptersUpdatedCount > 0 ? ` Tag removed from ${result.chaptersUpdatedCount} chapter(s).` : "";
-                        this._showInfoMessage(`Tag "${tagName}" deleted.${chaptersUpdatedMsg}`);
-
-                   } catch (error) {
-                        console.error(`Failed to delete tag ${tagName}:`, error); // DEBUG
-                        this._showError(`Could not delete tag: ${error.message}`);
-                   } finally {
-                        this._updateLoadingState('action', false);
-                   }
-              }}
-         ],
-         'warning'
-    );
-}
 
     /** Toggles the inline tag input state */
-/** NEW/MODIFIED: Toggles the inline tag input state using the wrapper */
-_handleAddTagToggle(event) { // Triggered by click on #addTagButton
-         if (!this.addTagInlineWrapper || !this.addTagButton || !this.addTagInput) return;
+_handleAddTagToggle(buttonElement) {
+    const input = buttonElement.querySelector('.add-tag-input');
+    const text = buttonElement.querySelector('.add-tag-text');
+    if (!input || !text) return;
 
-         const wrapper = this.addTagInlineWrapper;
-         const input = this.addTagInput;
-         const isEditing = wrapper.classList.contains('is-editing');
+    const isEditing = buttonElement.classList.contains('is-editing');
 
-         if (!isEditing) {
-             console.log("DEBUG: Enabling inline tag input");
-             if (this.activeRenameTarget) this._cancelRename(); // Cancel rename edits
+    if (!isEditing) {
+        console.log("DEBUG: Enabling inline tag input"); // DEBUG
+        // Cancel any other inline edits? (e.g., rename)
+        if (this.activeRenameTarget) this._cancelRename();
 
-             input.value = '';
-             wrapper.classList.add('is-editing'); // Add class to wrapper
-             input.style.display = 'block'; // Show input via style
-             input.focus();
-             // Button style change handled by CSS based on wrapper class
-         }
-         // Clicking button while editing now does nothing (cancel via Blur/Esc)
+        input.value = ''; // Clear previous value
+        buttonElement.classList.add('is-editing');
+        input.style.display = 'flex'; // Show input
+        text.style.display = 'none'; // Hide text
+        input.focus();
     }
+    // Note: Blurring or pressing Enter will handle exiting the editing state
+}
 
-    /** MODIFIED: Handles keydown on the separate tag input */
-    async _handleAddTagInputKeydown(event) {
-        if (event.key !== 'Enter') return;
-        event.preventDefault();
-        const input = this.addTagInput;
-        const wrapper = this.addTagInlineWrapper;
-        if (!input || !wrapper) return;
-        const newTagName = input.value.trim();
+/** Handles keydown on the inline tag input */
+async _handleAddTagInputKeydown(event) {
+   if (event.key !== 'Enter') return;
 
-        if (!newTagName) { this._cancelAddTagInline(); return; } // Cancel if empty
-        if (this.availableTags.includes(newTagName)) { /* ... show error ... */ return; }
+   event.preventDefault(); // Prevent form submission/other defaults
+   const input = event.target;
+   const buttonElement = input.closest('.add-tag-button');
+   const newTagName = input.value.trim();
 
-        console.log(`DEBUG: Creating tag "${newTagName}" via inline input`);
-        input.disabled = true; this._updateLoadingState('action', true);
+   if (!newTagName) { // If empty, just cancel
+       this._cancelAddTagInline(buttonElement);
+       return;
+   }
 
-        try {
-            const result = await apiClient.createMaterialTag(this.currentMaterial, newTagName);
-            this.availableTags = result.tags || this.availableTags; // Use response
-            this._renderTagPills(); // Re-render pills area
-            // this._cancelAddTagInline(); // Resetting UI is now handled by _renderTagPills removing the old button/input and creating new ones OR by blur listener
-        } catch (error) { /* ... error handling ... */ input.disabled = false; input.focus(); }
-        finally {
-             this._updateLoadingState('action', false);
-             // Ensure UI resets even if something goes wrong after API call
-             this._cancelAddTagInline(); // Call cancel explicitly here
+   if (this.availableTags.includes(newTagName)) {
+       this._showError(`Tag "${newTagName}" already exists.`, true);
+       // Maybe highlight the existing tag instead of error?
+       input.select(); // Keep focus for correction
+       return;
+   }
+
+   console.log(`DEBUG: Creating tag "${newTagName}" via inline input`); // DEBUG
+   input.disabled = true; // Prevent double submit
+   this._updateLoadingState('action', true);
+
+   try {
+       const result = await apiClient.createMaterialTag(this.currentMaterial, newTagName);
+       this.availableTags = result.tags || this.availableTags; // Update local cache
+       this._renderTagPills(); // Re-render pills (which removes the 'is-editing' state implicitly)
+       this._showInfoMessage(`Tag "${newTagName}" created.`);
+   } catch (error) {
+       console.error("Failed to create tag inline:", error); // DEBUG
+       this._showError(`Could not create tag: ${error.message}`);
+       input.disabled = false; // Re-enable on error
+       input.focus(); // Keep focus for correction
+   } finally {
+       this._updateLoadingState('action', false);
+       // Ensure input is re-enabled if something went wrong after API call but before re-render
+        const potentiallyNewInput = buttonElement?.querySelector('.add-tag-input');
+        if (potentiallyNewInput) potentiallyNewInput.disabled = false;
+       // No need to explicitly call _cancelAddTagInline if _renderTagPills runs
+   }
+}
+
+/** Handles blur on the inline tag input */
+_handleAddTagInputBlur(event) {
+    // Use timeout to allow clicking Enter/elsewhere briefly
+    setTimeout(() => {
+        const input = event.target;
+        const buttonElement = input.closest('.add-tag-button');
+        // Check if focus moved outside the button AND it's still editing
+        if (buttonElement?.classList.contains('is-editing') && !buttonElement.contains(document.activeElement)) {
+             console.log("DEBUG: Cancelling inline tag add due to blur"); // DEBUG
+             this._cancelAddTagInline(buttonElement);
         }
-    }
+    }, 150);
+}
 
-    /** MODIFIED: Handles blur on the separate tag input */
-    _handleAddTagInputBlur(event) {
-         // Use timeout to allow Enter keydown to process first
-         setTimeout(() => {
-             const input = this.addTagInput;
-             const wrapper = this.addTagInlineWrapper;
-             // Only cancel if the wrapper still has the editing class and focus left the input
-             if (wrapper?.classList.contains('is-editing') && document.activeElement !== input) {
-                  console.log("DEBUG: Cancelling inline tag add due to blur");
-                  this._cancelAddTagInline();
-             }
-         }, 150);
-    }
+/** Resets the inline tag button UI */
+_cancelAddTagInline(buttonElement) {
+   if (!buttonElement) return;
+   const input = buttonElement.querySelector('.add-tag-input');
+   const text = buttonElement.querySelector('.add-tag-text');
+   if (!input || !text) return;
 
-    /** MODIFIED: Resets the separate add tag UI using direct refs */
-    _cancelAddTagInline() {
-        console.log("DEBUG: _cancelAddTagInline called");
-        if (!this.addTagInlineWrapper || !this.addTagInput) return;
-        this.addTagInlineWrapper.classList.remove('is-editing');
-        this.addTagInput.style.display = 'none';
-        this.addTagInput.disabled = false;
-        this.addTagInput.value = '';
-        // Style change back to icon button handled by removing .is-editing class via CSS
-    }
-
+   buttonElement.classList.remove('is-editing');
+   input.style.display = 'none';
+   text.style.display = 'flex'; // Or 'inline' / 'block' depending on original style
+   input.disabled = false;
+   input.value = ''; // Clear value
+}
 
 
     /** MODIFIED: Fixes grid update on sort */
     /** MODIFIED: Fixes grid update on sort */
- /** MODIFIED: Handles ONLY sort field change */
- async _handleSortChange() {
-    console.log("DEBUG: Sort FIELD changed");
-    const newField = this.sortFieldSelect?.value;
-    // Get current order from state
-    const currentOrder = this.currentSort.order;
+    async _handleSortChange() {
+        console.log("DEBUG: Sort changed");
+        const newField = this.sortFieldSelect?.value;
+        const newOrder = this.sortOrderSelect?.value;
+        if (!newField || !newOrder || (newField === this.currentSort.field && newOrder === this.currentSort.order)) return;
 
-    if (!newField || newField === this.currentSort.field) {
-        console.log("DEBUG: Sort field did not change."); // DEBUG
-        return; // Only proceed if field is different
-    }
+        this.currentSort = { field: newField, order: newOrder };
+        console.log("DEBUG: New global sort:", this.currentSort);
 
-    this.currentSort.field = newField; // Update only the field
-    console.log("DEBUG: New global sort:", this.currentSort);
+        this._updateLoadingState('action', true);
+        try { await apiClient.setDefaultChapterSort(this.currentMaterial, newField, newOrder); }
+        catch (error) { console.error("Failed to save default sort preference:", error); }
 
-    // Save the full preference (new field, existing order)
-    await this._saveAndApplySortPreference();
-}
-
-/** MODIFIED: Handles ONLY sort order button clicks */
-async _handleSortOrderButtonClick(event) {
-    const button = event.currentTarget;
-    const newOrder = button.dataset.order;
-    // Get current field from state
-    const currentField = this.currentSort.field;
-
-    if (!newOrder || newOrder === this.currentSort.order) {
-        console.log("DEBUG: Sort order did not change."); // DEBUG
-        return; // No change
-    }
-
-    console.log("DEBUG: Sort ORDER changed");
-    this.currentSort.order = newOrder; // Update only the order
-    this._renderSortControls(); // Update button active states immediately
-    console.log("DEBUG: New global sort:", this.currentSort);
-
-    // Save the full preference (existing field, new order)
-    await this._saveAndApplySortPreference();
-}
-
-/** NEW Helper: Saves sort preference and refreshes UI */
-async _saveAndApplySortPreference() {
-     console.log("DEBUG: Saving sort preference and applying:", this.currentSort); // DEBUG
-     this._updateLoadingState('action', true);
-     try {
-          // 1. Save preference to backend
-          await apiClient.setDefaultChapterSort(this.currentMaterial, this.currentSort.field, this.currentSort.order);
-          console.log("DEBUG: Default sort preference saved."); // DEBUG
-     } catch (error) {
-          console.error("Failed to save default sort preference:", error);
-          // Non-fatal, continue with UI update
-     }
-
-     // 2. Re-fetch and render based on current view state and the *full* currentSort object
-     try {
-          if (this.currentFilter.type === 'all') {
-               console.log("DEBUG: Re-fetching/reordering ungrouped for dashboard view."); // DEBUG
-               await this._fetchAndReorderUngroupedChapters(true); // Force reorder
-               // TODO: Optionally refresh relevant groups?
-          } else {
-               console.log("DEBUG: Re-rendering filtered view."); // DEBUG
-               await this._renderFilteredView(this.currentFilter); // Fetches with currentSort
-          }
-     } catch(renderError) {
-         console.error("Error refreshing view after sort change:", renderError); // DEBUG
-         this._showError("Failed to update view with new sorting.");
-     } finally {
-          this._updateLoadingState('action', false);
-     }
-}
-
-
-    /** MODIFIED: Handles clicks ONLY within tag pills container (filters) */
-    _handleTagPillOrActionClick(event) {
-        const deleteButton = event.target.closest('.delete-tag-btn');
-        const targetPill = event.target.closest('.tag-pill'); // Find the pill itself
-
-        if (deleteButton) { // Clicked the delete 'x' button
-             const tagName = deleteButton.dataset.tagName;
-             console.log(`DEBUG: Delete button clicked for tag: ${tagName}`); // DEBUG
-             event.stopPropagation(); // *** Prevent event from reaching the pill ***
-             if (tagName) this._handleDeleteTagClick(tagName);
-        } else if (targetPill) { // Clicked the main pill area (not delete)
-             const filterType = targetPill.dataset.filterType;
-             const filterValue = targetPill.dataset.filterValue; // Tag name for type 'tag'
-             if (filterType) { // It's a filter/tag pill
-                  console.log(`DEBUG: Filter pill clicked: type=${filterType}, value=${filterValue}`); // DEBUG
-                  const newFilter = { type: filterType, value: filterValue || null };
-                  if (this.currentFilter.type === newFilter.type && this.currentFilter.value === newFilter.value) return; // No change
-                  this.currentFilter = newFilter;
-                  this._renderTagPills(); // Update active states
-                  if (this.isSelectionModeActive) this._handleToggleSelectionMode(false); // Exit selection
-                  if (this.currentFilter.type === 'all') { this._renderDashboardLayout(); }
-                  else { this._renderFilteredView(this.currentFilter); }
-             }
-             // Note: Clicks on action buttons inside tagPillsContainer are now handled externally or removed
+        // Refresh view based on current filter state
+        if (this.currentFilter.type === 'all') {
+            console.log("DEBUG: Re-fetching/rendering ungrouped for dashboard view due to sort change.");
+            // Call the specific function to handle only ungrouped items update
+            await this._fetchAndReorderUngroupedChapters();
+            // TODO: Refresh groups without sort preference? Deferred.
+        } else {
+            console.log("DEBUG: Re-rendering filtered view due to sort change.");
+            await this._renderFilteredView(this.currentFilter); // This already fetches with new sort
         }
+        this._updateLoadingState('action', false);
     }
-
-    /** NEW: Handler specifically for the Add Tag icon button */
 
         /** MODIFIED: Re-fetches AND REORDERS/REPLACES ungrouped chapters in Gridstack */
         async _fetchAndReorderUngroupedChapters() {
@@ -3328,41 +2776,11 @@ async _saveAndApplySortPreference() {
     _setupChapterContextMenu(chapterId) {
         const chapter = this._findChapterData(chapterId);
         if (!chapter || !this.chapterContextMenu) return;
-        
-        // Find menu items
         const pinOption = this.chapterContextMenu.querySelector('[data-action="pin"]');
         const suspendOption = this.chapterContextMenu.querySelector('[data-action="suspend"]');
-        
-        // Update pin text while preserving the SVG
-        if (pinOption) {
-            // Find or create the text node (after the icon span)
-            let textNode = Array.from(pinOption.childNodes).find(node => 
-                node.nodeType === Node.TEXT_NODE || 
-                (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'SPAN'));
-                
-            // If no text node, append one
-            if (!textNode) {
-                textNode = document.createTextNode('');
-                pinOption.appendChild(textNode);
-            }
-            
-            // Set just the text content
-            textNode.textContent = chapter.isPinned ? ' Unpin Chapter' : ' Pin Chapter';
-        }
-        
-        // Do the same for suspend
-        if (suspendOption) {
-            let textNode = Array.from(suspendOption.childNodes).find(node => 
-                node.nodeType === Node.TEXT_NODE || 
-                (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'SPAN'));
-                
-            if (!textNode) {
-                textNode = document.createTextNode('');
-                suspendOption.appendChild(textNode);
-            }
-            
-            textNode.textContent = chapter.isSuspended ? ' Unsuspend Chapter' : ' Suspend Chapter';
-        }
+        if (pinOption) pinOption.textContent = chapter.isPinned ? 'Unpin Chapter' : 'Pin Chapter';
+        if (suspendOption) suspendOption.textContent = chapter.isSuspended ? 'Unsuspend Chapter' : 'Suspend Chapter';
+        // TODO: Setup "Add Tag" state if implementing dropdown menu here
     }
 
     /** Positions and displays a context menu */
@@ -3952,29 +3370,6 @@ async _saveAndApplySortPreference() {
              el.classList.toggle('selectable', this.isSelectionModeActive);
         });
 
-            // Update buttons in both places
-        if (this.pillStartFocusedButton) {
-        this.pillStartFocusedButton.textContent = this.isSelectionModeActive 
-        ? `Focused Study (0)` 
-        : 'Start Focused Study';
-        this.pillStartFocusedButton.classList.toggle('is-selecting-chapters', this.isSelectionModeActive);
-        }
-
-        // ADDED: Update the popup button as well
-        const popupFocusedButton = document.getElementById('studyOptionsPopupSelectButton');
-        if (popupFocusedButton) {
-        popupFocusedButton.textContent = this.isSelectionModeActive 
-            ? 'Cancel Selection' 
-            : 'Select Chapters';
-        popupFocusedButton.classList.toggle('is-selecting-chapters', this.isSelectionModeActive);
-        }
-
-        // Add this to prevent auto-opening modals
-        const isDirectToggle = forceState === null; // True when called directly from button
-        if (!this.isSelectionModeActive) { // Clear selection when exiting
-            this.selectedItemIds = { chapters: new Set(), groups: new Set() };
-        }
-
         // Manage grid interactions - Disable ALL grid interactions during selection
         if (this.gridInstance) {
              if (this.isSelectionModeActive) {
@@ -3991,8 +3386,6 @@ async _saveAndApplySortPreference() {
                   console.log("DEBUG: Grid interactions re-enabled (groups only).");
              }
         }
-
-
         if (this.selectionToolbar) this.selectionToolbar.style.display = this.isSelectionModeActive ? 'flex' : 'none';
         if(this.isSelectionModeActive) this._updateSelectionToolbar();
     }
@@ -4001,131 +3394,92 @@ async _saveAndApplySortPreference() {
     /** Click handler specifically for selecting items in selection mode */
     // _handleSelectionClick (Implementation okay)
          /** MODIFIED: Handles selection clicks based on current flow (general or group creation) */
-/** MODIFIED: Handles selection clicks based on current flow (general or group creation) */
-_handleSelectionClick(event) {
-    if (!this.isSelectionModeActive) return;
-    const targetItemElement = event.target.closest('.chapter-item, .group-widget');
-    if (!targetItemElement) return;
+         _handleSelectionClick(event) {
+            if (!this.isSelectionModeActive) return;
+            const targetItemElement = event.target.closest('.chapter-item, .group-widget');
+            if (!targetItemElement) return;
+  
+            event.stopPropagation();
+  
+            const chapterId = targetItemElement.dataset.chapterId;
+            const groupId = targetItemElement.dataset.groupId;
+            let idToToggle = null;
+            let type = null; // 'chapters' or 'groups'
+  
+                      // Check if the Create Group modal is currently visible
+          const isCreatingGroupFlow = this.createGroupModalOverlay?.classList.contains('visible');
 
-    event.stopPropagation();
-
-    const chapterId = targetItemElement.dataset.chapterId;
-    const groupId = targetItemElement.dataset.groupId;
-    let idToToggle = null;
-    let type = null;  
-
-    // Check if the Create Group modal is currently visible
-    const isCreatingGroupFlow = this.createGroupModalOverlay?.classList.contains('visible');
-
-    if (isCreatingGroupFlow) {
-        // For group creation, only allow chapter selection
-        if (chapterId) {
-            idToToggle = chapterId;
-            type = 'chapters';
-        }
-    } else {
-        // Normal selection mode
-        if (chapterId) {
-            idToToggle = chapterId;
-            type = 'chapters';
-        } else if (groupId) {
-            idToToggle = groupId;
-            type = 'groups';
-        }
-    }
-
-    if (idToToggle && type) {
-        // Toggle selection in state
-        const isCurrentlySelected = this.selectedItemIds[type].has(idToToggle);
-        
-        if (isCurrentlySelected) {
-            this.selectedItemIds[type].delete(idToToggle);
-        } else {
-            this.selectedItemIds[type].add(idToToggle);
-        }
-        
-        // Toggle visual selection class
-        targetItemElement.classList.toggle('is-selected', !isCurrentlySelected);
-        
-        // Update selection count in toolbar
-        this._updateSelectionToolbar();
-        
-        console.log(`Selection ${isCurrentlySelected ? 'removed' : 'added'} for ${type} item: ${idToToggle}`);
-    }
-}
+          if (isCreatingGroupFlow) {
+               // ** Only allow selecting CHAPTERS when creating a group **
+               if (chapterId) {
+                    idToToggle = chapterId; type = 'chapters';
+               } else {
+                    console.log("DEBUG: Cannot select groups while Create Group modal is open."); // DEBUG
+                    this._showInfoMessage("Please select only chapters for the new group.", "Info", true); // Temporary info
+                    return; // Don't select groups
+               }
+          } else {
+               // General selection mode: select chapter or group
+                if (groupId && targetItemElement.classList.contains('group-widget')) {
+                     idToToggle = groupId; type = 'groups';
+                } else if (chapterId) {
+                     idToToggle = chapterId; type = 'chapters';
+                }
+          }
+  
+  
+            if (idToToggle && type) {
+                 const currentSet = this.selectedItemIds[type];
+                 const visualElement = targetItemElement.classList.contains('grid-stack-item') ? targetItemElement : targetItemElement.closest('.grid-stack-item');
+                 const isSelected = currentSet.has(idToToggle);
+  
+                 if (isSelected) {
+                      currentSet.delete(idToToggle);
+                      visualElement?.classList.remove('is-selected');
+                 } else {
+                      currentSet.add(idToToggle);
+                      visualElement?.classList.add('is-selected');
+                 }
+                 console.log("DEBUG: Selection updated:", this.selectedItemIds);
+                 this._updateSelectionToolbar(); // Update count and button states
+            }
+       }
 
     /** MODIFIED: Opens tag selector in bulk mode */
     _handleBulkTagChapters() {
         const chapterIds = Array.from(this.selectedItemIds.chapters);
-        if (chapterIds.length === 0) {
-            console.warn("No chapters selected for bulk tag action");
-            return;
-        }
-    
-        console.log("DEBUG: Opening tag selector for BULK edit", chapterIds);
-        
-        // Debug log already shows all elements exist but tags are 0
-        console.log("DEBUG: Modal elements check:", {
-            overlay: !!this.tagSelectorModalOverlay,
-            list: !!this.tagSelectorList,
-            button: !!this.tagSelectorConfirmButton,
-            tagsAvailable: this.availableTags.length
-        });
-        
+        if (chapterIds.length === 0) { this._showInfoMessage("No chapters selected to tag."); return; }
+
+        console.log("DEBUG: Opening tag selector for BULK edit", chapterIds); // DEBUG
         if (!this.tagSelectorModalOverlay || !this.tagSelectorList || !this.tagSelectorConfirmButton) {
-            console.error("Missing required DOM elements for tag selector modal");
-            return;
+            this._showError("Tag selector UI elements not found."); return;
         }
-    
+
         // Clear active target, signaling bulk mode to confirm handler
         this.activeTagSelectorTarget = null;
         // Store selected IDs for the confirm handler
         this.bulkActionTargetIds = chapterIds;
-    
+
         // Populate list - DO NOT pre-check based on individual chapter
         this.tagSelectorList.innerHTML = '';
-        
-        // REMOVE THIS EARLY RETURN! This is causing the modal to not show
-        // if (this.availableTags.length === 0) { return; }
-        
-        // Instead, show a message when there are no tags
-        if (this.availableTags.length === 0) {
-            this.tagSelectorList.innerHTML = `
-                <li class="no-tags-message">
-                    <p>No tags available. Create tags first.</p>
-                    <button type="button" class="btn btn-sm btn-primary create-tag-btn">
-                        Create Tags
-                    </button>
-                </li>
-            `;
-            
-            // Add event listener to the create tag button
-            const createButton = this.tagSelectorList.querySelector('.create-tag-btn');
-            if (createButton) {
-                createButton.addEventListener('click', () => {
-                    this._hideModal('tagSelectorModal');
-                    this._handleOpenTagManagementModal();
-                });
-            }
-        } else {
-            // Original code to populate tag checkboxes
-            this.availableTags.sort().forEach(tag => {
-                const li = document.createElement('li');
-                const checkboxId = `tag-select-bulk-${tag.replace(/\s+/g, '-')}`;
-                li.innerHTML = `
-                    <input type="checkbox" id="${checkboxId}" value="${tag}">
-                    <label for="${checkboxId}">${tag}</label>
-                `;
-                this.tagSelectorList.appendChild(li);
-            });
-        }
-    
+        if (this.availableTags.length === 0) { /* ... show no tags message ... */ return; }
+
+        this.availableTags.sort().forEach(tag => {
+             const li = document.createElement('li');
+             const checkboxId = `tag-select-bulk-${tag.replace(/\s+/g, '-')}`;
+             li.innerHTML = `
+                  <input type="checkbox" id="${checkboxId}" value="${tag}">
+                  <label for="${checkboxId}">${tag}</label>
+             `;
+             this.tagSelectorList.appendChild(li);
+        });
+
         // Change modal title for clarity
         const titleEl = this.tagSelectorModalOverlay.querySelector('.modal-title');
         if(titleEl) titleEl.textContent = `Add Tags to ${chapterIds.length} Chapters`;
-    
+
         this._showModal('tagSelectorModal');
-    }
+   }
 
 async _handleBulkPinChapters() {
     const chapterIds = Array.from(this.selectedItemIds.chapters);
@@ -4320,48 +3674,43 @@ async _handleBulkDeleteChapters() {
        }
 
           /** Updates the text content of the selection toolbar */
-/** Updates the text content of the selection toolbar */
-_updateSelectionToolbar() {
-    if (!this.selectionToolbar) return;
-    const chapterCount = this.selectedItemIds.chapters.size;
-    const groupCount = this.selectedItemIds.groups.size;
-    const totalSelected = chapterCount + groupCount;
-    const countSpan = this.selectionToolbar.querySelector('#selectionCount');
-    
-    // Update the selection count text
-    if (countSpan) {
+    _updateSelectionToolbar() {
+        if (!this.selectionToolbar) return;
+        const chapterCount = this.selectedItemIds.chapters.size;
+        const groupCount = this.selectedItemIds.groups.size;
+        const totalSelected = chapterCount + groupCount;
+        const countSpan = this.selectionToolbar.querySelector('#selectionCount');
+
         let text = `${totalSelected} item${totalSelected !== 1 ? 's' : ''} selected`;
         if (chapterCount > 0 && groupCount > 0) {
-            text = `${chapterCount} chapter${chapterCount !== 1 ? 's' : ''}, ${groupCount} group${groupCount !== 1 ? 's' : ''} selected`;
+             text = `${chapterCount} chapter${chapterCount !== 1 ? 's' : ''}, ${groupCount} group${groupCount !== 1 ? 's' : ''} selected`;
         } else if (chapterCount > 0) {
-            text = `${chapterCount} chapter${chapterCount !== 1 ? 's' : ''} selected`;
+             text = `${chapterCount} chapter${chapterCount !== 1 ? 's' : ''} selected`;
         } else if (groupCount > 0) {
-            text = `${groupCount} group${groupCount !== 1 ? 's' : ''} selected`;
+             text = `${groupCount} group${groupCount !== 1 ? 's' : ''} selected`;
         }
-        countSpan.textContent = text;
-    }
 
-    // Enable/disable bulk action buttons based on selection
-    const canTag = chapterCount > 0;
-    const canPinSuspend = chapterCount > 0;
-    const canGroup = chapterCount > 0 && !this.isCreatingGroup;
-    const canDelete = chapterCount > 0;
+         // Enable/disable bulk action buttons
+         const canTag = chapterCount > 0;
+         const canPinSuspend = chapterCount > 0;
+         // Can group if > 0 chapters selected AND NOT currently in group creation selection phase
+         const canGroup = chapterCount > 0 && !this.isCreatingGroup;
+         // Can delete if chapters selected
+         const canDelete = chapterCount > 0;
 
-    this.selectionToolbar.querySelector('#tagSelectedButton')?.toggleAttribute('disabled', !canTag);
-    this.selectionToolbar.querySelector('#pinSelectedButton')?.toggleAttribute('disabled', !canPinSuspend);
-    this.selectionToolbar.querySelector('#suspendSelectedButton')?.toggleAttribute('disabled', !canPinSuspend);
-    this.selectionToolbar.querySelector('#groupSelectedButton')?.toggleAttribute('disabled', this.selectedItemIds.chapters.size === 0);
-    this.selectionToolbar.querySelector('#deleteSelectedButton')?.toggleAttribute('disabled', !canDelete);
+         this.selectionToolbar.querySelector('#tagSelectedButton')?.toggleAttribute('disabled', !canTag);
+         this.selectionToolbar.querySelector('#pinSelectedButton')?.toggleAttribute('disabled', !canPinSuspend);
+         this.selectionToolbar.querySelector('#suspendSelectedButton')?.toggleAttribute('disabled', !canPinSuspend);
+         // this.selectionToolbar.querySelector('#groupSelectedButton')?.toggleAttribute('disabled', !canGroup);
+         this.selectionToolbar.querySelector('#groupSelectedButton')?.toggleAttribute('disabled', this.selectedItemIds.chapters.size === 0); // Enable based on chapter selection
+         this.selectionToolbar.querySelector('#deleteSelectedButton')?.toggleAttribute('disabled', !canDelete);
 
-    // Show/hide the "Confirm Group Selection" button
-    if (this.confirmGroupSelectionButton) {
-        const showConfirmButton = this.isCreatingGroup && chapterCount > 0;
-        this.confirmGroupSelectionButton.style.display = showConfirmButton ? 'block' : 'none';
-    }
-    
-    // Update focused study button state as well
-    this._updateFocusedStudyButtonState();
-}
+         // Show/hide the "Confirm Group Selection" button
+          if (this.confirmGroupSelectionButton) {
+               this.confirmGroupSelectionButton.style.display = this.isCreatingGroup ? 'inline-block' : 'none';
+               this.confirmGroupSelectionButton.toggleAttribute('disabled', chapterCount === 0);
+          }
+     }
 
    /** Handles clicks on buttons within the selection toolbar */
    _handleSelectionToolbarClick(event) {
@@ -4436,7 +3785,7 @@ _updateSelectionToolbar() {
                           }
                           this._renderTagPills(); // Re-render pills
                           this._handleOpenTagManagementModal(); // Refresh modal content
-                         
+                         this._showInfoMessage(`Tag "${tagName}" deleted from list.`);
                     } catch (error) {
                          console.error(`Failed to delete tag ${tagName}:`, error);
                          this._showError(`Could not delete tag: ${error.message}`);
@@ -4549,7 +3898,7 @@ _updateSelectionToolbar() {
      _handleRename(element, type) { // type is 'chapter' or 'group'
          if (!element || this.activeRenameTarget) return; // Prevent multiple renames
 
-         const nameSpan = element.querySelector(type === 'chapter' ? '.chapter-item__name' : '.group-name');
+         const nameSpan = element.querySelector(type === 'chapter' ? '.chapter-item-name' : '.group-name');
          const input = element.querySelector(type === 'chapter' ? '.chapter-rename-input' : '.group-rename-input');
          const id = element.dataset.chapterId || element.dataset.groupId;
 
@@ -4679,28 +4028,15 @@ _updateSelectionToolbar() {
 
     /** MODIFIED: Dragging selection + setDragImage */
     _handleDragStart(event) {
-            const targetItem = event.target.closest('.chapter-item[draggable="true"]');
-    if (!targetItem) return;
-    
-    const chapterId = targetItem.dataset.chapterId;
-    if (!chapterId) return;
-    
-    const chapterData = this._findChapterData(chapterId);
-    if (!chapterData) return;
+        const targetItem = event.target.closest('.chapter-item[draggable="true"]');
+        if (!targetItem) { event.preventDefault(); return; }
+        const chapterId = targetItem.dataset.chapterId;
+        if (!chapterId) { event.preventDefault(); return; }
+        const chapterData = this._findChapterData(chapterId);
+        if (!chapterData) { event.preventDefault(); return; }
 
-    console.log(`DEBUG: Drag Start: Chapter ${chapterId} (Selecting: ${this.isSelectionModeActive})`);
-    let itemsToDrag = [];
-    let dragType = 'chapter';
-    let isSelectionDrag = false;
-
-    // Identify if this is a chapter from within a group
-    const isGroupedChapter = chapterData.groupId || targetItem.closest('.group-widget');
-
-    if (isGroupedChapter) {
-        console.log(`DEBUG: Dragging chapter ${chapterId} from group ${chapterData.groupId}`);
-        // Add visual indicator that we're dragging from a group
-        targetItem.classList.add('dragging-from-group');
-    }
+        console.log(`DEBUG: Drag Start: Chapter ${chapterId} (Selecting: ${this.isSelectionModeActive})`);
+        let itemsToDrag = []; let dragType = 'chapter'; let isSelectionDrag = false;
 
         if (this.isSelectionModeActive && this.selectedItemIds.chapters.has(chapterId)) {
             // --- Dragging Selection ---
@@ -4716,18 +4052,7 @@ _updateSelectionToolbar() {
             console.log(`DEBUG: Dragging single chapter ${chapterId}`);
         }
 
-        this.draggedItemData = { 
-            type: dragType, 
-            items: itemsToDrag,
-            fromGroup: isGroupedChapter ? chapterData.groupId : null
-        };
-
-            // Store origin information for later
-        if (isGroupedChapter) {
-            event.dataTransfer.effectAllowed = 'move'; // Indicate moving out of a group
-        } else {
-            event.dataTransfer.effectAllowed = 'linkMove'; // Original behavior
-        }
+        this.draggedItemData = { type: dragType, items: itemsToDrag };
         event.dataTransfer.effectAllowed = 'linkMove';
         event.dataTransfer.setData('application/json', JSON.stringify(this.draggedItemData));
 
@@ -4889,21 +4214,6 @@ _updateSelectionToolbar() {
         const processedDraggedData = { ...this.draggedItemData };
         this.draggedItemData = null;
 
-        // Enhance the messaging for chapters moved out of groups
-    if (processedDraggedData.fromGroup && isUngroupDropTarget) {
-        firstSuccessMessage = `Chapter removed from group`;
-        
-        // If successful, ensure UI is updated to reflect the chapter was removed from group
-        itemsToProcess.forEach(item => {
-            const chapterElement = this._findChapterElement(item.id);
-            if (chapterElement) {
-                chapterElement.classList.remove('dragging-from-group');
-                // Remove any group-related classes
-                chapterElement.removeAttribute('data-group-id');
-            }
-        });
-    }
-
 
         try {
             let promises = [];
@@ -5005,7 +4315,7 @@ _updateSelectionToolbar() {
     }
 
 
-  /*  async _handleDrop(event) {
+    async _handleDrop(event) {
         event.preventDefault();
         console.log("DEBUG: Drop detected"); // DEBUG
         const targetPill = event.target.closest('.tag-pill[data-tag-name].drag-over-target');
@@ -5096,7 +4406,7 @@ _updateSelectionToolbar() {
                  this._handleToggleSelectionMode(); // Exit selection mode after successful bulk action
             }
         }
-   } */
+   }
 
        /** Helper for Pin/Unpin API call and UI update */
        async _executePinToggle(chapterId, shouldPin) {
@@ -5129,87 +4439,76 @@ _updateSelectionToolbar() {
     // --- Gridstack Event Handlers ---
 
 /** MODIFIED: Handles Gridstack item move/resize stop events */
-/** MODIFIED: Handles Gridstack item move/resize stop events */
 _handleGridItemStackChanged(event, element) {
     console.log(`DEBUG: Gridstack event: ${event.type} on element:`, element);
 
-    // Replace the isWidget check with a more reliable check
-    if (!element || !element.classList.contains('grid-stack-item')) {
-        console.log("Invalid element for grid event, ignoring");
-        return;
-    }
+    if (!element || !this.gridInstance?.isWidget(element)) { /* ... */ return; }
 
     const groupId = element.dataset.groupId;
     const isGroup = element.classList.contains('group-widget');
-    const node = element.gridstackNode;
-    if (!node) {
-        console.log("No node data found for element, ignoring");
-        return;
-    }
+    const node = this.gridInstance.getNodeData(element);
+    if (!node) { /* ... */ return; }
 
     if (isGroup && groupId) {
         const groupData = this._findGroupData(groupId);
         if (!groupData) return;
 
-        // Handle position change (dragstop)
         if (event.type === 'dragstop') {
             const newPosition = { row: node.y + 1, col: node.x + 1 };
             if (groupData.gridPosition?.row !== newPosition.row || groupData.gridPosition?.col !== newPosition.col) {
                 console.log(`DEBUG: Group ${groupId} DRAGGED to:`, newPosition);
                 groupData.gridPosition = newPosition;
-                this._updateGroupPositionAPI(groupId, newPosition); // Call API
+                this._updateGroupPositionAPI(groupId, newPosition); // Call directly
             }
-        } 
-        // Handle size change (resizestop)
-        else if (event.type === 'resizestop') {
+        } else if (event.type === 'resizestop') {
             const newSize = { rows: node.h, cols: node.w };
             if (groupData.gridSize?.rows !== newSize.rows || groupData.gridSize?.cols !== newSize.cols) {
                 console.log(`DEBUG: Group ${groupId} RESIZED to:`, newSize);
                 groupData.gridSize = newSize;
-                this._updateGroupSizeAPI(groupId, newSize); // Call API
-                // Refresh internal layout if needed based on new size
-                this._fetchAndRenderGroupChapters(groupId);
+                this._updateGroupSizeAPI(groupId, newSize); // Call directly
+                // Optionally trigger internal content re-render if needed based on size change
+                 this._fetchAndRenderGroupChapters(groupId); // Refresh chapters to potentially change item display
             }
         }
     }
-    // Standalone chapter saving logic would go here if needed
+    // Standalone chapter saving logic (if implemented) would go here
 }
 
-/** Calls API to update group position */
-async _updateGroupPositionAPI(groupId, newPosition) {
-    console.log(`DEBUG: API Call - Updating position for group ${groupId}`, newPosition);
-    this._updateLoadingState('action', true);
-    try {
-        // Make the actual API call to save position
-        await apiClient.updateGroup(groupId, { 
-            gridPosition: newPosition 
-        });
-        console.log(`Group ${groupId} position saved successfully.`);
-    } catch (error) {
-        console.error(`Failed to save position for group ${groupId}:`, error);
-        this._showError(`Could not save group position: ${error.message}`);
-    } finally {
-        this._updateLoadingState('action', false);
-    }
-}
+        /** Calls API to update group position */
+        async _updateGroupPositionAPI(groupId, newPosition) {
+            console.log(`DEBUG: API Call - Updating position for group ${groupId}`, newPosition); // DEBUG
+            this._updateLoadingState('action', true);
+            try {
+                 await apiClient.updateGroupPosition(groupId, newPosition);
+                 console.log(`DEBUG: Group ${groupId} position saved.`); // DEBUG
+                 // Local data already updated optimistically
+            } catch (error) {
+                 console.error(`Failed to update position for group ${groupId}:`, error); // DEBUG
+                 this._showError(`Could not save group position: ${error.message}`);
+                 // TODO: Revert UI change? Need to fetch old position or store it before update.
+                 // Example basic revert (might cause flicker): this._renderDashboardLayout();
+            } finally {
+                 this._updateLoadingState('action', false);
+            }
+       }
    
-/** Calls API to update group size */
-async _updateGroupSizeAPI(groupId, newSize) {
-    console.log(`DEBUG: API Call - Updating size for group ${groupId}`, newSize);
-    this._updateLoadingState('action', true);
-    try {
-        // Make the actual API call to save size
-        await apiClient.updateGroup(groupId, { 
-            gridSize: newSize 
-        });
-        console.log(`Group ${groupId} size saved successfully.`);
-    } catch (error) {
-        console.error(`Failed to save size for group ${groupId}:`, error);
-        this._showError(`Could not save group size: ${error.message}`);
-    } finally {
-        this._updateLoadingState('action', false);
-    }
-}
+        /** Calls API to update group size */
+        async _updateGroupSizeAPI(groupId, newSize) {
+             console.log(`DEBUG: API Call - Updating size for group ${groupId}`, newSize); // DEBUG
+             this._updateLoadingState('action', true);
+             try {
+                  await apiClient.updateGroupSize(groupId, newSize);
+                  console.log(`DEBUG: Group ${groupId} size saved.`); // DEBUG
+                  // Local data already updated optimistically
+             } catch (error) {
+                  console.error(`Failed to update size for group ${groupId}:`, error); // DEBUG
+                  this._showError(`Could not save group size: ${error.message}`);
+                  // TODO: Revert UI change?
+                  // Example basic revert: this._renderDashboardLayout();
+             } finally {
+                  this._updateLoadingState('action', false);
+             }
+        }
 
     /** Debounced API call to update group layout */
      // --- Debounced API Call for Layout ---
@@ -5457,14 +4756,6 @@ async _updateGroupSizeAPI(groupId, newSize) {
 
         console.log(`DEBUG: _showModal called for ID: ${modalId}`); // DEBUG
 
-        // CRITICAL FIX: Hide all other visible modals first
-        document.querySelectorAll('.modal-overlay.visible').forEach(modal => {
-            if (modal.id !== modalId) {
-                modal.classList.remove('visible');
-                console.log(`DEBUG: Auto-hiding previously visible modal: ${modal.id}`);
-            }
-        });
-
         // --- Identify Modal and Get References ---
         if (modalId === 'confirmationModal') {
             modalOverlay = this.confirmationModalOverlay;
@@ -5501,9 +4792,6 @@ async _updateGroupSizeAPI(groupId, newSize) {
             modalOverlay = this.groupSortModalOverlay;
         } else if (modalId === 'tagSelectorModal') { // <-- Added This
             modalOverlay = this.tagSelectorModalOverlay;
-            modalTitle = modalOverlay.querySelector('.modal-title'); // Optional: Update title
-            modalActions = this.tagSelectorConfirmButton; // Confirm button for tag selector
-            isGenericModal = false; // Specialized modal, no generic content setup
         } else if (modalId === 'groupColorPickerModal') { // <-- Added This
             modalOverlay = this.colorPickerModalOverlay;
         }
@@ -5536,34 +4824,11 @@ async _updateGroupSizeAPI(groupId, newSize) {
                     buttons.forEach(btnConfig => {
                         const button = document.createElement('button');
                         button.textContent = btnConfig.text;
-                        // ** FIX: Handle multiple classes **
-                        button.classList.add('modal-button'); // Add base class
-                        if (btnConfig.class) {
-                            const classesToAdd = btnConfig.class.split(' ').filter(cls => cls.length > 0);
-                            if (classesToAdd.length > 0) {
-                                 button.classList.add(...classesToAdd); // Use spread syntax
-                            }
-                        } else {
-                            button.classList.add('secondary'); // Default class if none provided
-                        }
-                        // ** End Fix **
-
+                        button.classList.add('modal-button', btnConfig.class || 'secondary');
                         button.addEventListener('click', () => {
-                            // Don't hide confirmation modal immediately here, let action decide
-                            // this._hideModal(modalId);
-                            if (typeof btnConfig.action === 'function') {
-                                 // Hide *after* action starts OR let action hide it?
-                                 // Let's let the action hide it by calling _hideModal(modalId) itself if needed.
-                                 // But for simple cancels, we hide immediately.
-                                 if (btnConfig.class?.includes('secondary')) { // Assuming secondary is always cancel/close
-                                     this._hideModal(modalId);
-                                 }
-                                btnConfig.action();
-                            } else {
-                                 // If no action, default to just closing
-                                 this._hideModal(modalId);
-                            }
-                        }, { once: true });
+                            this._hideModal(modalId); // Always hide first
+                            if (typeof btnConfig.action === 'function') btnConfig.action();
+                        }, { once: true }); // Add listener only once per show
                         modalActions.appendChild(button);
                     });
                 } else if (modalId === 'errorModal' || modalId === 'infoModal') {
@@ -5660,25 +4925,15 @@ async _updateGroupSizeAPI(groupId, newSize) {
     window.location.href = url;
 }
 
-/** Updates the state of the focused study button based on current selection */
 _updateFocusedStudyButtonState() {
-    if (!this.isSelectionModeActive) return;
-    
-    // Update both the main pill button and the popup button if it exists
-    const count = this.selectedItemIds.chapters.size;
-    const buttonList = [
-        this.pillStartFocusedButton,
-        document.getElementById('studyOptionsPopupSelectButton')
-    ];
-    
-    buttonList.forEach(button => {
-        if (!button) return;
-        button.textContent = `Focused Study (${count})`;
-        const isDisabled = count === 0;
-        button.disabled = isDisabled;
-        button.style.opacity = isDisabled ? '0.6' : '1';
-        button.style.cursor = isDisabled ? 'not-allowed' : 'pointer';
-    });
+    if (!this.isSelectionMode || !this.pillStartFocusedButton) return;
+
+    const count = this.selectedChapters.size;
+    this.pillStartFocusedButton.textContent = `Focused Study (${count})`;
+    const isDisabled = count === 0;
+    this.pillStartFocusedButton.disabled = isDisabled;
+    this.pillStartFocusedButton.style.opacity = isDisabled ? '0.6' : '1';
+    this.pillStartFocusedButton.style.cursor = isDisabled ? 'not-allowed' : 'pointer';
 }
 
 _updateActiveMaterialTab() {
@@ -5795,63 +5050,50 @@ _updateMaterialScrollState() {
 
 
     /** Update loading state for specific parts */
- /** MODIFIED: Refine Loading State Logic */
- _updateLoadingState(part, isLoading, identifier = null) {
-    let stateKey = part;
-    let changed = false;
-    // Use hasOwnProperty to avoid issues with prototype chain
-    if (identifier !== null && this.isLoading.hasOwnProperty(part) && typeof this.isLoading[part] === 'object') {
-         if (this.isLoading[part][identifier] !== isLoading) {
-              this.isLoading[part][identifier] = isLoading;
-              stateKey = `${part}.${identifier}`;
-              changed = true;
-         }
-    } else if (this.isLoading.hasOwnProperty(part) && typeof this.isLoading[part] === 'boolean') {
-         if (this.isLoading[part] !== isLoading) {
-              this.isLoading[part] = isLoading;
-              changed = true;
-         }
-    } else {
-         // console.warn("Attempted to update unknown loading state:", part, identifier); // Reduce noise
-         return;
+    _updateLoadingState(part, isLoading, identifier = null) {
+        let stateKey = part;
+        let changed = false;
+        if (identifier !== null && typeof this.isLoading[part] === 'object') {
+             if (this.isLoading[part][identifier] !== isLoading) {
+                  this.isLoading[part][identifier] = isLoading;
+                  stateKey = `${part}.${identifier}`;
+                  changed = true;
+             }
+        } else if (typeof this.isLoading[part] === 'boolean') {
+             if (this.isLoading[part] !== isLoading) {
+                  this.isLoading[part] = isLoading;
+                  changed = true;
+             }
+        } else {
+             console.warn("Attempted to update unknown loading state:", part, identifier);
+             return;
+        }
+
+        if (changed) { // Only log if state actually changed
+            console.log(`DEBUG Loading state ${stateKey}: ${isLoading}`); // DEBUG
+        }
+
+        // Recalculate if *any* operation is loading
+        let anyLoading = false;
+        for (const key in this.isLoading) {
+            if (typeof this.isLoading[key] === 'boolean' && this.isLoading[key]) {
+                anyLoading = true; break;
+            } else if (typeof this.isLoading[key] === 'object') {
+                if (Object.values(this.isLoading[key]).some(val => val === true)) { // Check specifically for true
+                    anyLoading = true; break;
+                }
+            }
+        }
+        this.container?.classList.toggle('is-loading-main', anyLoading);
+
+        // TODO: Add more specific UI disabling based on which part is loading
+        // Example: Disable sort/filter controls if dashboard/chapters are loading
+         const controlsDisabled = this.isLoading.dashboard || this.isLoading.chaptersUngrouped || this.isLoading.action; // Example condition
+         this.sortFieldSelect?.toggleAttribute('disabled', controlsDisabled);
+         this.sortOrderSelect?.toggleAttribute('disabled', controlsDisabled);
+         // Disable tag pills during actions?
+          this.tagPillsContainer?.querySelectorAll('.tag-pill').forEach(pill => pill.toggleAttribute('disabled', this.isLoading.action));
     }
-
-    if (changed) {
-        console.log(`DEBUG Loading state ${stateKey}: ${isLoading}`); // DEBUG
-    }
-
-    // Recalculate if *any* operation is loading
-    let anyLoading = false;
-    for (const key in this.isLoading) {
-         if (this.isLoading.hasOwnProperty(key)) { // Check own properties
-              if (typeof this.isLoading[key] === 'boolean' && this.isLoading[key]) {
-                   anyLoading = true; break;
-              } else if (typeof this.isLoading[key] === 'object') {
-                   if (Object.values(this.isLoading[key]).some(val => val === true)) {
-                        anyLoading = true; break;
-                   }
-              }
-         }
-    }
-    // Toggle specific loading class
-    this.container?.classList.toggle('is-loading-main', anyLoading);
-
-    // Disable controls based on specific loading states
-     const disablePillSwitch = this.isLoading.dashboard || this.isLoading.materialSwitch;
-     const disablePillActions = disablePillSwitch || this.isLoading.action;
-     const disableTopControls = disablePillSwitch; // Also disable sort/filter during main loads
-
-     this.pillMaterialSwitcher?.querySelectorAll('button').forEach(button => button.disabled = disablePillSwitch);
-     if (this.pillStudyDueButton) this.pillStudyDueButton.disabled = disablePillActions;
-     if (this.pillOptionsTrigger) this.pillOptionsTrigger.disabled = disablePillActions;
-     if (this.pillReviewBatchSize) this.pillReviewBatchSize.disabled = this.isLoading.action || disablePillSwitch; // Disable during action too?
-
-     this.sortFieldSelect?.toggleAttribute('disabled', disableTopControls);
-     this.sortOrderSelect?.toggleAttribute('disabled', disableTopControls);
-      // Disable tag pills/actions during switch/dashboard load or generic action
-     this.tagPillsContainer?.querySelectorAll('.tag-pill').forEach(pill => pill.toggleAttribute('disabled', disableTopControls || this.isLoading.action));
-
-}
 
 } // End of ChapterFoldersView class
 

@@ -1,0 +1,121 @@
+/* css/components/grid-items.css */
+
+.grid-stack > .grid-stack-item {
+    /* Gridstack adds positioning */
+    /* Add transitions for smooth appearance/movement */
+    transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+
+.grid-stack > .grid-stack-item > .grid-stack-item-content {
+    /* This is the main visual container for BOTH standalone chapters and groups */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden; /* CRITICAL: Ensures content clips correctly */
+    background-color: var(--color-secondary-bg);
+    border: var(--border-width-thin) solid var(--color-border-primary);
+    border-radius: var(--radius-large); /* Larger radius for grid items */
+    box-shadow: var(--shadow-small);
+    color: var(--color-text-primary);
+    transition: border-color var(--transition-duration-short) var(--transition-timing-function),
+                box-shadow var(--transition-duration-short) var(--transition-timing-function),
+                background-color var(--transition-duration-short) var(--transition-timing-function),
+                outline var(--transition-duration-short) var(--transition-timing-function);
+}
+
+/* === Hover State (Default Mode) === */
+.grid-stack > .grid-stack-item:not(.ui-draggable-dragging):not(.ui-resizable-resizing):not(.selection-mode-active .grid-stack-item):hover > .grid-stack-item-content {
+    border-color: var(--color-border-secondary);
+    box-shadow: var(--shadow-medium);
+    /* transform: translateY(-2px); Optional subtle lift handled by item-specific CSS if needed */
+}
+
+/* === Selection Mode Styles === */
+.management-container.selection-mode-active .grid-stack-item.selectable > .grid-stack-item-content {
+    cursor: pointer;
+    /* Optionally slightly dim non-selected */
+    /* opacity: 0.85; */
+    transition: opacity var(--transition-duration-short),
+                outline var(--transition-duration-short),
+                box-shadow var(--transition-duration-short),
+                background-color var(--transition-duration-short);
+}
+
+/* Hover effect in selection mode (less pronounced) */
+.dashboard-container.selection-mode-active .grid-stack-item.selectable:hover:not(.is-selected) > .grid-stack-item-content {
+    border-color: var(--color-border-secondary); /* Still indicate hover */
+    box-shadow: var(--shadow-small); /* Keep shadow minimal */
+    background-color: var(--color-tertiary-bg); /* Slight bg change */
+}
+
+/* Selected Item Style */
+.grid-stack-item.is-selected > .grid-stack-item-content {
+    border-color: var(--color-accent-primary);
+    outline: var(--border-width-medium) solid var(--color-accent-primary);
+    outline-offset: 1px;
+    box-shadow: 0 0 0 3px rgba(79, 133, 226, 0.2), var(--shadow-medium); /* Combine focus ring and shadow */
+    background-color: color-mix(in srgb, var(--color-secondary-bg) 85%, var(--color-accent-primary) 15%);
+    opacity: 1; /* Ensure selected is fully opaque */
+}
+
+/* === Drag & Drop Styling === */
+.grid-stack-item.dragging > .grid-stack-item-content, /* Dragging single item */
+.chapter-item.dragging /* Dragging chapter within a group */ {
+    opacity: 0.6;
+    transform: scale(0.98);
+    box-shadow: var(--shadow-large);
+}
+
+.grid-stack-item.dragging-selection > .grid-stack-item-content { /* Dragging multiple selected items */
+    opacity: 0.7;
+    /* Use the selected outline */
+    border-color: var(--color-accent-primary);
+    outline: var(--border-width-medium) dashed var(--color-accent-primary);
+    outline-offset: 1px;
+    box-shadow: var(--shadow-large);
+}
+
+/* Drag Preview Helper Class (Applied to offscreen clone via JS) */
+.drag-preview-item {
+    background: var(--color-tertiary-bg);
+    border: 1px solid var(--color-border-secondary);
+    border-radius: var(--radius-medium);
+    padding: var(--space-xs) var(--space-md);
+    box-shadow: var(--shadow-large);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    white-space: nowrap;
+    /* Position handled by JS before setDragImage */
+}
+
+/* Drop Target Highlighting */
+/* Added to specific targets (pills, groups) by JS */
+/* Drop Target Highlighting */
+.tag-pill.drag-over-target { background-color: var(--success-green); color: white; border-color: var(--success-green); transform: scale(1.05); }
+.group-widget.drag-over-target > .grid-stack-item-content { box-shadow: 0 0 0 4px var(--success-green); border-color: var(--success-green); }
+/* Ungroup Zone Highlight */
+.management-container.is-over-ungroup-zone #dashboardGrid {
+     background-color: rgba(var(--danger-red), 0.1); /* Reddish background */
+     outline: 2px dashed var(--danger-red);
+}
+
+.group-widget.is-renaming > * > .group-widget-header > .group-rename-input {
+    display: block; /* Show the input */
+    width: 100%; /* Make input take available width in its container */
+}
+
+.group-widget.is-renaming > * > .group-widget-header > .group-name {
+    display: none; /* Hide the original span */
+}
+
+.group-rename-input {
+    font-size: 1.1em; /* Match group name size */
+    font-weight: 600;
+    flex-grow: 1; /* Allow input to grow */
+}
+
+    /* Hide other elements during group rename */
+    .group-widget.is-renaming > * > .group-widget-header > .group-stats {
+        display: none;
+   }

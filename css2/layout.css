@@ -1,0 +1,154 @@
+/* css/layout.css */
+
+body {
+    padding: var(--space-xl);
+}
+
+#managementContainer {
+    max-width: 1800px; /* Adjust as needed */
+    margin: 0 auto;
+    background-color: var(--color-secondary-bg);
+    padding: var(--space-xl) var(--space-xxl);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    border: var(--border-width-sm) solid var(--color-border-light);
+}
+
+/* --- Overview Section Layout --- */
+.overview-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Two equal columns */
+    gap: var(--space-xxl);
+    margin-bottom: var(--space-xxl);
+    align-items: start; /* Align items to the top */
+    /* We removed the mastery heatmap, so only one column needed */
+    grid-template-columns: 1fr 1fr; /* Back to 2 columns */
+}
+
+.overview-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+}
+
+.section-container {
+    /* Base container styling if needed */
+    background-color: rgba(0,0,0,0.1); /* subtle background */
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border-light);
+}
+
+.section-title {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-md); /* Increased space below title */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: var(--font-weight-medium);
+    text-align: center;
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+/* Specific minimum heights for loading states */
+.review-activity-section .review-heatmap-grid,
+.review-schedule-section .review-schedule-graph {
+    position: relative;
+    min-height: 80px; /* Ensure space for text/skeletons */
+}
+.review-schedule-section .review-schedule-graph {
+    min-height: 180px; /* Taller for graph area */
+}
+
+
+/* --- Dashboard Controls Layout --- */
+.dashboard-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-lg) var(--space-xl); /* Row gap, Column gap */
+    margin-bottom: var(--space-xl);
+    padding-bottom: var(--space-xl);
+    border-bottom: var(--border-width-sm) solid var(--color-border-light);
+}
+
+#sortControlsContainer {
+    /* Styles in controls.css */
+}
+
+#tagPillsContainer {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    overflow-x: auto;
+    padding: var(--space-xs) 0; /* Minimal vertical padding */
+    flex-grow: 1; /* Allow taking up space */
+    min-width: 100px; /* Prevent shrinking too much */
+    /* Subtle scrollbar styling */
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-medium) transparent;
+}
+#tagPillsContainer::-webkit-scrollbar { height: 4px; }
+#tagPillsContainer::-webkit-scrollbar-track { background: transparent; }
+#tagPillsContainer::-webkit-scrollbar-thumb { background-color: var(--color-border-medium); border-radius: 2px; }
+
+
+/* --- Selection Toolbar Layout --- */
+/* --- Selection Toolbar Layout --- */
+#selectionToolbar {
+    /* *** FIX: Add Default Hidden State *** */
+    display: none; /* Initially hidden */
+    /* ... (Existing layout styles from Step 1 - width, background, padding, etc.) ... */
+    width: 100%;
+    background-color: color-mix(in srgb, var(--color-secondary-bg) 85%, var(--color-accent-secondary) 15%);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-md);
+    margin: var(--space-sm) 0 var(--space-lg) 0;
+    border: var(--border-width-sm) solid var(--color-accent-secondary);
+    /* display: flex; /* REMOVE flex from default, JS will add it */
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-lg);
+    flex-wrap: wrap;
+    box-shadow: var(--shadow-md);
+}
+/* JS will toggle display: flex; when active */
+
+#selectionCount {
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-medium);
+    flex-shrink: 0;
+}
+
+.selection-actions {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+/* --- Dashboard Grid Layout --- */
+/* --- Dashboard Grid Layout --- */
+#dashboardGrid {
+    min-height: 400px;
+    padding: var(--space-xs);
+    border-radius: var(--radius-lg);
+    /* *** FIX: Add Basic Grid Container Styles (Helps Gridstack Positioning) *** */
+    position: relative; /* Crucial for absolute positioning of items */
+}
+
+/* --- Hidden Elements (Modals, Menus, Tooltip) --- */
+.modal-overlay,
+.context-menu,
+#globalTooltip {
+    display: none; /* Hidden by default, shown via JS */
+}
+
+/* --- Loading State --- */
+/* Add a class to the main container when loading */
+/* Specific skeleton styles will go in component CSS */
+#managementContainer.is-loading-main {
+    /* Optional: subtle indication */
+    /* cursor: wait; */
+}

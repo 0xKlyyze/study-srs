@@ -1,0 +1,419 @@
+/* css/components/dashboard-controls.css */
+
+/* --- Sorting Controls --- */
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs); /* Tighter gap within sort controls */
+    flex-shrink: 0;
+}
+.sort-controls label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+    margin-right: var(--space-xxs);
+}
+.sort-controls select#sortField {
+    /* Reuse existing select styles */
+    padding: 0 var(--space-sm);
+    padding-right: var(--space-lg); /* Space for arrow */
+    background-color: var(--color-secondary-bg); /* Consistent background */
+    border: 1px solid var(--color-border-secondary); /* Consistent border */
+    color: var(--color-text-primary);
+    border-radius: var(--radius-medium);
+    font-size: var(--font-size-sm);
+    outline: none;
+    cursor: pointer;
+    height: var(--control-height);
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0a7b5'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--space-sm) center;
+    background-size: 1em;
+    transition: border-color var(--transition-duration-short) var(--transition-timing-function),
+                box-shadow var(--transition-duration-short) var(--transition-timing-function);
+}
+.sort-controls select#sortField:hover {
+    border-color: var(--color-border-tertiary);
+}
+.sort-controls select#sortField:focus-visible { /* Use global focus style */
+    /* Outline handled by base.css? */
+    border-color: var(--color-border-accent);
+}
+
+/* Sort Order Buttons */
+.sort-order-buttons {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    /* Optional: Group them visually 
+    border: 1px solid var(--color-border-primary); 
+    border-radius: var(--radius-medium); 
+    overflow: hidden;*/ 
+    gap:2px; 
+}
+.sort-order-btn {
+    background-color: var(--color-secondary-bg);
+    border: 1px solid var(--color-border-secondary);
+    color: var(--color-text-secondary);
+    height: var(--control-height);
+    width: calc(0.5*var(--control-height)); /* Make square */
+    padding: 0;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-duration-short) var(--transition-timing-function);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+}
+.sort-order-btn svg { width: 18px; height: 18px; fill: currentColor; }
+.sort-order-btn:hover {
+    background-color: var(--color-tertiary-bg);
+    border-color: var(--color-border-tertiary);
+    color: var(--color-text-primary);
+}
+.sort-order-btn.active {
+    background-color: var(--color-accent-primary);
+    border-color: var(--border-color);
+    color: var(--color-text-on-accent);
+    box-shadow: var(--shadow-sm);
+}
+.sort-order-btn:focus-visible { /* Use global focus style */
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: 1px;
+}
+
+/* --- Tag Section (Add Button + Scrollable Pills) --- */
+.tag-section {
+    display: flex;
+    align-items: center;
+    flex-grow: 1; /* Take up available space */
+    flex-shrink: 1; /* Allow shrinking */
+    min-width: 10px; /* Prevent total collapse */
+    overflow: hidden; /* Hide scrollbar overflow visually if needed */
+    gap: var(--space-xs); /* Gap between add button and pills container */
+}
+
+
+
+/* NEW: Inline Add Tag Button/Input Wrapper (Positioned FIRST) */
+/* Add Tag Inline Wrapper */
+/* Add Tag Inline Wrapper */
+.add-tag-inline-wrapper {
+    display: flex; align-items: center;
+    flex-shrink: 0; /* Prevent shrinking */
+    position: relative;
+    /* Width controlled by children */
+    width: var(--control-height); /* Start with button size */
+    transition: width var(--transition-duration-short) var(--transition-timing-function);
+}
+.add-tag-inline-wrapper.is-editing {
+    width: 160px; /* Expand to fit input (adjust as needed) */
+}
+
+/* Add Tag Icon Button (+) */
+.icon-button.add-tag-button {
+    display: flex; align-items: center; justify-content: center;
+    width: var(--control-height); height: var(--control-height);
+    padding: 0;
+    border-radius: 50%;
+    background-color: transparent;
+    border: 1px dashed var(--color-border-secondary); /* Dashed border */
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-duration-short) var(--transition-timing-function);
+    flex-shrink: 0; /* Prevent button shrinking */
+    z-index: 2; /* Keep button above input initially */
+    opacity: 1; /* Default visible */
+    
+    
+
+}
+.icon-button.add-tag-button svg { width: 18px; height: 18px; fill: currentColor; }
+.icon-button.add-tag-button:hover {
+    border-color: var(--color-border-tertiary);
+    color: var(--color-text-primary);
+    background-color: var(--color-tertiary-bg); /* Slight bg on hover */
+}
+.add-tag-inline-wrapper.is-editing .icon-button.add-tag-button {
+     /* Hide the button when editing by reducing opacity/pointer events */
+     opacity: 0;
+     pointer-events: none;
+     /* Keep border/bg transparent */
+     background-color: transparent;
+     border-color: var(--color-border-secondary);
+}
+
+.icon-button.add-tag-button:focus-visible { /* Use global focus */
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: 1px;
+}
+
+/* Add Tag Input */
+.add-tag-input {
+    position: absolute; /* Position over the button area */
+    top: 0;
+    left: 0; /* Align left within the expanding wrapper */
+    height: var(--control-height);
+    width: 100%; /* Fill the wrapper */
+    padding: 0 var(--space-sm);
+    font-size: var(--font-size-sm);
+    border: 1px dashed var(--color-border-secondary); /* Dashed border */
+    background-color: transparent;
+    color: var(--color-text-primary);
+    outline: none;
+    border-radius: var(--radius-full);
+    box-sizing: border-box;
+    opacity: 0; /* Hidden initially */
+    pointer-events: none; /* Not interactive initially */
+    z-index: 1; /* Below button initially */
+    transition: opacity var(--transition-duration-short) ease;
+}
+/* State when editing */
+.add-tag-inline-wrapper.is-editing .add-tag-button {
+    /* Make cancel button visible by changing its icon display */
+    border-style: solid; /* Change border to solid */
+    border-color: var(--color-border-secondary); /* Match input's inactive border */
+    background-color: var(--color-tertiary-bg); /* Match input bg */
+    color: var(--color-text-secondary);
+    z-index: 3; /* Ensure cancel button is clickable above input */
+}
+
+.add-tag-inline-wrapper.is-editing {
+    margin-right:3px;
+}
+.add-tag-inline-wrapper.is-editing .add-tag-button .add-icon { display: none; }
+.add-tag-inline-wrapper.is-editing .add-tag-button:hover {
+    color: var(--color-danger); /* Cancel hover color */
+    border-color: var(--color-danger);
+}
+.add-tag-inline-wrapper.is-editing .add-tag-input {
+    display: block; /* Show input */
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 2; /* Bring input above normal button state but below cancel */
+}
+
+.tag-pill:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+/* Individual Pills (Styles remain similar, ensure consistency) */
+
+/* Scrollable Container for Pills */
+.tag-pills-container.scrollable {
+    display: flex; align-items: center; gap: var(--space-sm);
+    overflow-x: auto; overflow-y: hidden; padding: 4px 2px;
+    flex-grow: 1; flex-shrink: 1; min-width: 0px; /* Adjust min-width */
+    /* Scrollbar Styling */
+    scrollbar-width: thin; scrollbar-color: var(--color-border-secondary) transparent;
+}
+.tag-pills-container.scrollable::-webkit-scrollbar { height: 4px; }
+.tag-pills-container.scrollable::-webkit-scrollbar-track { background: transparent; }
+.tag-pills-container.scrollable::-webkit-scrollbar-thumb { background-color: var(--color-border-secondary); border-radius: 2px; }
+
+.tag-pill {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: var(--control-height);
+    border-radius: calc(var(--control-height) / 2);
+    background-color: var(--secondary-bg); /* Match controls */
+    border: 1px solid var(--border-color); /* Match controls */
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    white-space: nowrap; flex-shrink: 0;
+    position: relative;
+    padding: 0 var(--space-md); /* Consistent padding */
+    overflow: hidden;
+    transition: all var(--transition-duration-short) var(--transition-timing-function);
+}
+.tag-pill.has-delete-btn:hover .pill-text { /* Existing margin shift logic */
+    margin-right: 18px;
+}
+.tag-pill:hover:not(:disabled) {
+    background-color: var(--color-tertiary-bg);
+    border-color: var(--color-border-tertiary);
+    color: var(--color-text-primary);
+}
+.tag-pill.active {
+    background-color: var(--color-accent-primary); /* Use primary accent */
+    border-color: var(--color-accent-primary);
+    color: var(--color-text-on-accent);
+    font-weight: var(--font-weight-semibold);
+    box-shadow: var(--shadow-sm); /* Add shadow */
+}
+.tag-pill.active:hover:not(:disabled) { background-color: var(--color-accent-primary-hover); }
+.tag-pill:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 1px; }
+.tag-pill:hover:not(:disabled) { background-color: #3a4a6e; border-color: var(--border-color-medium); color: var(--text-primary); }
+.tag-pill.active { background-color: var(--accent-blue); border-color: var(--accent-blue); color: var(--text-on-button); font-weight: 600; box-shadow: 0 1px 4px rgba(91, 192, 222, 0.3); }
+.tag-pill.active:hover:not(:disabled) { background-color: #4aa7c3; }
+/* Special filter pills */
+.tag-pill.filter-pill.special-filter.active { background-color: var(--warning-orange); border-color: var(--warning-orange); color: #fff; }
+.tag-pill.filter-pill.special-filter.active:hover:not(:disabled) { background-color: #ec971f; }
+.tag-pill[data-filter-type="suspended"].active { background-color: var(--suspended-color); border-color: var(--suspended-color); color: #fff; }
+.tag-pill[data-filter-type="suspended"].active:hover:not(:disabled) { background-color: #5a6268; }
+/* Action Buttons in Pills Container */
+.tag-pill.action-button { background-color: transparent; color: var(--accent-blue); border-color: var(--accent-blue); font-weight: 600; }
+.tag-pill.action-button:hover:not(:disabled) { background-color: var(--accent-blue); color: var(--text-on-button); }
+.tag-pill.add-tag-button { border-style: dashed; color: var(--text-secondary); border-color: var(--border-color-light); }
+
+.tag-pill .pill-text {
+    display: inline-block; /* Allow text to flow naturally */
+    transition: margin-right 0.2s ease; /* Add transition for pushing text */
+    overflow: hidden;       /* Prevent text overflow */
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 150px; /* Optional: Limit max width of text */
+}
+
+/* ** NEW: Padding adjustment ON HOVER for pills with delete button ** */
+.tag-pill.has-delete-btn:hover {
+    /* Increase padding slightly or adjust width/text margin */
+    /* Option 1: Increase right padding */
+    /* padding-right: 30px; */
+    /* Option 2: Push text left using margin (might be smoother) */
+}
+.tag-pill.has-delete-btn:hover .pill-text {
+    margin-right: 18px; /* Push text left to make space for button */
+}
+
+
+/* Delete Tag Button Styling & Visibility */
+.delete-tag-btn {
+    position: absolute;
+    top: 50%;
+    right: -5px; /* Position slightly outside initially */
+    transform: translateY(-50%) scale(0); /* Start scaled down */
+    width: 20px; height: 20px; padding: 0; margin: 0; border: none;
+    background-color: var(--color-secondary-bg); /* Match pill bg initially */
+    color: var(--color-text-secondary);
+    border-radius: 50%;
+    font-size: 16px; font-weight: bold; line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden; /* Use visibility */
+    transition: opacity 0.15s ease, transform 0.15s ease, background-color 0.15s ease, color 0.15s ease, visibility 0s linear 0.15s; /* Delay hide */
+    z-index: 2;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--color-border-secondary); /* Add border */
+    box-shadow: var(--shadow-sm);
+}
+.delete-tag-btn svg { width: 10px; height: 10px; fill: currentColor; pointer-events: none; }
+
+/* Show on Hover */
+.tag-pill.has-delete-btn:hover .delete-tag-btn {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) scale(1); /* Scale up */
+    right: 3px; /* Move slightly inwards */
+    transition-delay: 0s; /* Show immediately */
+}
+/* Delete Button Hover State */
+.delete-tag-btn:hover {
+    background-color: var(--color-danger);
+    color: white;
+    border-color: var(--color-danger);
+    transform: translateY(-50%) scale(1.1);
+}
+.delete-tag-btn:hover svg { fill: white; }
+
+/* Hide delete button on non-tag pills */
+.tag-pill.filter-pill .delete-tag-btn,
+.tag-pill.action-button .delete-tag-btn {
+    display: none !important; /* Ensure it never appears */
+}
+/* Active tag pills delete button hover style */
+.tag-pill.active.has-delete-btn:hover .delete-tag-btn {
+    background-color: rgba(0, 0, 0, 0.2);
+    color: var(--text-on-button);
+}
+.tag-pill.active.has-delete-btn .delete-tag-btn:hover {
+    background-color: var(--danger-hover);
+}
+
+
+/* --- Selection Toolbar --- */
+.selection-toolbar {
+    display: none; /* Hidden by default, shown by JS */
+    width: 100%; /* Take full width below controls */
+    background-color: color-mix(in srgb, var(--primary-bg) 85%, var(--accent-blue) 15%);
+    padding: 10px 15px; border-radius: 8px; margin: 10px 0 15px 0; border: 1px solid var(--accent-blue);
+    align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;
+    box-shadow: 0 3px 8px rgba(91, 192, 222, 0.2);
+}
+
+.selection-toolbar button {
+    padding: 6px 12px; font-size: 0.85em; border-radius: 6px; border: 1px solid var(--border-color-light);
+    background-color: var(--secondary-bg); color: var(--text-primary); cursor: pointer; transition: background-color 0.2s ease;
+}
+.selection-toolbar button:hover:not(:disabled) { background-color: var(--border-color-light); }
+.selection-toolbar button:disabled { opacity: 0.5; cursor: not-allowed; }
+.selection-toolbar button.danger { border-color: var(--danger-red); color: var(--danger-red); }
+.selection-toolbar button.danger:hover:not(:disabled) { background-color: var(--danger-red); color: white; }
+.selection-toolbar button.confirm { border-color: var(--success-green); color: var(--success-green); }
+.selection-toolbar button.confirm:hover:not(:disabled) { background-color: var(--success-green); color: white; }
+
+/* --- Instruction Banner --- */
+.instruction-banner {
+    background-color: var(--tertiary-bg);
+    color: var(--accent-blue);
+    border: 1px dashed var(--accent-blue);
+    padding: 10px 15px;
+    margin: -5px 0 15px 0; /* Adjust positioning */
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.9em;
+    display: none; /* Shown by JS */
+}
+
+/* ================================== */
+/*       SELECTION MODE STYLES        */
+/* ================================== */
+.management-container.selection-mode-active .grid-stack-item.selectable > .grid-stack-item-content {
+    cursor: pointer;
+    /* Optional: Slightly dim non-selected items */
+    /* opacity: 0.8; */
+    transition: opacity 0.2s ease, outline 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+.management-container.selection-mode-active .grid-stack-item.selectable:hover > .grid-stack-item-content {
+     /* Remove hover border/shadow increase in selection mode */
+     border-color: var(--border-color-medium);
+     box-shadow: 0 2px 5px var(--border-color-dark);
+     /* background-color: #31415f; Slightly lighter on hover? */
+}
+.grid-stack-item.is-selected > .grid-stack-item-content {
+     outline: 3px solid var(--accent-blue);
+     outline-offset: 1px;
+     box-shadow: 0 0 15px rgba(91, 192, 222, 0.4);
+     background-color: color-mix(in srgb, var(--secondary-bg) 85%, var(--accent-blue) 15%);
+     opacity: 1; /* Ensure selected items are fully opaque */
+}
+
+/* --- Action Buttons (Select Chapters, Create Group - Separate Section) --- */
+.dashboard-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-shrink: 0;
+    /* Removed margin-left: auto; - let flexbox handle spacing */
+}
+.action-button.select-chapters-button {
+    /* Use standard button styles from base.css or define here */
+    padding: 0 var(--space-md);
+    height: var(--control-height);
+    border-radius: var(--radius-medium);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    border: 1px solid var(--border-color-light); /* Make border transparent initially */
+    background-color: var(--color-secondary-bg);
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-medium);
+    transition: all var(--transition-duration-short) var(--transition-timing-function);
+    white-space: nowrap;
+}
+.action-button.select-chapters-button:hover {
+    background-color: var(--color-tertiary-bg);
+    border-color: var(--color-border-tertiary); /* Show border on hover */
+}

@@ -1141,7 +1141,6 @@ border: 1px solid rgba(46, 204, 113, 0.4);
     opacity: 0; /* Animate appearance */
     visibility: hidden;
     transition: opacity 0.4s ease, visibility 0s linear 0.4s;
-    padding-bottom: 10rem; /* Increase padding significantly */
 }
 /* State when shown by JS */
 .session-complete-overlay.is-visible {
@@ -1173,7 +1172,7 @@ border: 1px solid rgba(46, 204, 113, 0.4);
     gap: 2rem;
     width: 100%;
     max-width: 650px;
-    margin: 0;
+    margin: 0 auto;
 }
 
 .stat-item {
@@ -1383,20 +1382,12 @@ border: 1px solid rgba(46, 204, 113, 0.4);
 
 
 /* --- Floating Action Buttons --- */
-/* --- Floating Action Buttons (Adjust positioning) --- */
 .completion-actions-floating {
     display: flex;
     justify-content: center;
     gap: 1.5rem;
     flex-wrap: wrap;
-    /* Position relative to the *bottom* of the overlay content area */
-    position: absolute; /* Change from static/relative */
-    bottom: 2rem;      /* Position from the bottom of the overlay */
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;        /* Take up most of the width */
-    max-width: 600px;  /* Limit max width */
-    z-index: 205;      /* Above general content, below floating pill maybe */
+    margin-top: 1rem; /* Space above buttons */
 }
 
 .completion-btn-floating {
@@ -1455,23 +1446,16 @@ border: 1px solid rgba(46, 204, 113, 0.4);
 }
 
 
-
-
 /* --- Floating Other Materials Popup --- */
 /* Position relative to the overlay */
 /* --- Floating Other Materials Popup --- */
 /* Position relative to the overlay */
 .other-materials-popup-floating {
-    position: absolute;
-    /* Position it relative to the *new* floating pill's bottom */
-    /* Pill bottom is approx 7rem, add some space (e.g., 1rem) */
-    /* OR simpler: position higher up initially */
-    /* bottom: 15%; */
-
+    position: absolute; /* Position within overlay */
+    bottom: 10%; /* Adjust vertical position */
     left: 50%;
     transform: translateX(-50%) translateY(20px); /* Start below */
 
-    /* Keep other styling */
     padding: 1rem;
     background-color:  #101a31ef;
     border-radius: 12px;
@@ -1479,7 +1463,6 @@ border: 1px solid rgba(46, 204, 113, 0.4);
     width: 90%;
     max-width: 380px;
     box-shadow: 0 6px 25px rgba(0,0,0,0.5);
-    z-index: 208; /* Below pill, above action buttons */
 
     max-height: 0;
     overflow: hidden;
@@ -1492,12 +1475,11 @@ border: 1px solid rgba(46, 204, 113, 0.4);
                 bottom 0.4s ease-out; /* Animate position */
 }
 .other-materials-popup-floating.visible {
-    max-height: 35vh; /* Adjust max height */
+    max-height: 40vh; /* Limit height based on viewport */
     opacity: 1;
     visibility: visible;
     transform: translateX(-50%) translateY(0);
-    /* Adjust final position if needed */
-
+    bottom: calc(10% + 1rem); /* Adjust final position relative to buttons */
     transition-delay: 0s;
     overflow-y: auto;
 }
@@ -1685,172 +1667,69 @@ border: 1px solid rgba(46, 204, 113, 0.4);
 
             /* --- Study Session Completion Screen Enhancements --- */
 
-/* === NEW Styles for Compact Remaining Due Container === */
-/* === NEW Styles for Compact Remaining Due Container === */
+/* Container for the remaining due section */
 #completionRemainingDue {
-    /* ... (keep existing flex, positioning, hidden state, transition) ... */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 0rem;
-    margin-bottom: rem;
-    width: max-content;
-    max-width: 90%;
-    visibility: hidden;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: visibility 0s linear 0.5s, opacity 0.4s ease, transform 0.4s ease;
-}
-#completionRemainingDue.visible { /* ... (keep visible styles) ... */
-    visibility: visible;
-    opacity: 1;
-    transform: translateY(0);
-    transition-delay: 0.2s, 0.2s, 0.2s;
+    display: flex; /* Use flexbox for horizontal layout */
+    align-items: center; /* Vertically align items */
+    gap: 12px; /* Space between elements */
+    margin-top: 15px; /* Space above this section */
+    padding: 10px 15px; /* Add some padding */
+    background-color: rgba(255, 255, 255, 0.05); /* Slight background highlight */
+    border-radius: 8px; /* Rounded corners */
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    justify-content: center; /* Center items when wrapped */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
 }
 
-
-/* Styling for the info block */
-.remaining-due-info {
-    display: inline-flex;
-    /* --- Key change: Use align-items: baseline for better text alignment --- */
-    align-items: baseline; /* Align text elements along their baseline */
-    gap: 0.4rem; /* Slightly reduced gap for compactness */
-    background-color: rgba(29, 27, 56, 0.08);
-    /* --- Controlled Padding --- */
-    padding: 0.5rem 0.9rem; /* Reduced vertical, adjusted horizontal padding */
-    border-radius: 25px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    line-height: 1.3; /* Ensure consistent line height for baseline alignment */
+/* Style for the text label */
+#completionRemainingDue span {
+    color: var(--text-secondary); /* Use secondary text color */
+    font-size: 0.9em;
 }
 
-.remaining-due-icon {
-    /* --- Controlled Size --- */
-    width: 1.1rem; /* Explicit width */
-    height: 1.1rem; /* Explicit height */
-    fill: var(--accent-green);
-    position: relative; /* Add this */
-    top: 0.2rem; /* Fine-tune vertical alignment */
-    margin-right: 0.2rem;
-}
-
-.remaining-due-count {
-    font-size: 1.1rem; /* Slightly smaller than before, but still emphasized */
-    font-weight: 700;
-    color: var(--text-primary);
-    line-height: inherit; /* Inherit line height for baseline alignment */
-    min-width: auto; /* Remove min-width if not needed */
-    text-align: right;
-    padding: 0 0.1rem; /* Add tiny horizontal padding if needed */
-}
-
-.remaining-due-label {
-    /* "due" text */
-     line-height: inherit; /* Inherit line height */
-     font-size: 0.85em; /* Slightly smaller label */
-     margin-right: 0.3rem; /* Space before batch info */
-}
-
-.batch-info {
-    /* margin-left: 0.5rem; */ /* Removed, rely on label's margin-right */
-    font-size: 0.8em;
-    opacity: 0.8;
-    display: inline-flex;
-    /* --- Align items within batch info itself --- */
-    align-items: baseline; /* Align "(Batch:" text and input */
-    gap: 0.3rem;
-     line-height: inherit; /* Inherit line height */
-}
-
-/* Compact input field */
-#studyRemainingBatchSizeInput {
-    width: 50px; /* Keep small width */
-    height: 30px; /* Keep small height */
-    padding: 2px 4px; /* Keep small padding */
-    font-size: 1em; /* Match surrounding batch-info text */
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-    background-color: rgba(0, 0, 0, 0.2);
-    color: var(--text-primary);
-    text-align: center;
-    /* --- Align input baseline --- */
-    vertical-align: baseline;
-     line-height: inherit; /* Inherit line height */
-    /* Remove margin if gap handles spacing */
-    /* margin-left: 0.1rem; */
-}
-#studyRemainingBatchSizeInput:focus { /* (keep focus styles) */
-    background-color: var(--secondary-bg);
-    border-color: var(--accent-blue);
-    box-shadow: 0 0 0 2px rgba(91, 192, 222, 0.2);
-    outline: none;
-}
-
-/* Study Remaining Button style (adjust as needed) */
-.study-remaining-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1.2rem; /* Adjust padding */
-    font-size: 0.95rem;
+/* Style for the count number */
+#completionRemainingDue strong#compStatRemainingDue {
+    color: var(--text-primary); /* Use primary text color */
     font-weight: 600;
-    border-radius: 25px; /* Match info block rounding */
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background: linear-gradient(145deg, var(--accent-green), #1f7a35);
-    color: white;
-    box-shadow: 0 3px 8px rgba(46, 204, 113, 0.25), 0 1px 2px rgba(0,0,0,0.15);
+    min-width: 20px; /* Ensure space even for single digits */
+    text-align: center;
+    display: inline-block;
 }
-.study-remaining-btn svg { /* Icon styling */
-    width: 1rem;
-    height: 1.5rem;
-    opacity: 0.9;
+
+/* Style for the batch size input */
+#studyRemainingBatchSizeInput {
+    width: 70px; /* Slightly wider for better usability */
+    padding: 6px 8px;
+    font-size: 0.9em;
+    border-radius: 5px;
+    border: 1px solid var(--border-color, #444); /* Use theme border color */
+    background-color: var(--background-secondary, #333); /* Use theme input background */
+    color: var(--text-primary, #eee); /* Use theme text color */
+    text-align: center;
+    box-sizing: border-box; /* Include padding/border in width */
 }
-.study-remaining-btn:hover:not(:disabled) {
-    background: linear-gradient(145deg, #3fcc5b, var(--accent-green));
-    box-shadow: 0 5px 12px rgba(46, 204, 113, 0.35), 0 2px 3px rgba(0,0,0,0.2);
-    transform: translateY(-1px);
+
+#studyRemainingBatchSizeInput:focus {
+    outline: none;
+    border-color: var(--accent-color, #5bc0de); /* Highlight focus */
+    box-shadow: 0 0 0 2px rgba(91, 192, 222, 0.3); /* Subtle glow */
 }
-.study-remaining-btn:disabled {
-    background: var(--secondary-bg);
-    color: var(--text-secondary);
-    opacity: 0.7;
+
+/* Style for the "Study Remaining" button */
+#studyRemainingDueBtn {
+    /* It should inherit .button and .primary styles */
+    /* Add specific adjustments if needed */
+    padding: 8px 12px;
+    font-size: 0.9em;
+}
+
+/* Ensure disabled state (already handled by .button[disabled]?) */
+#studyRemainingDueBtn:disabled {
     cursor: not-allowed;
-    box-shadow: none;
-    transform: none;
+    opacity: 0.6;
+    /* background-color: #555; */ /* Adjust if needed */
 }
 
-
-/* Adjust floating action buttons and popup if needed */
-.completion-actions-floating {
-    /* Keep positioning relative to bottom */
-    position: absolute;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    max-width: 600px;
-    z-index: 205; /* Ensure it's layered correctly */
-    /* Add margin-top if space needed below remaining-due section */
-    margin-top: 1.5rem;
-}
-
-.other-materials-popup-floating {
-    /* Position relative to the action buttons */
-    bottom: calc(2rem + 4rem + 1rem); /* ActionButtons_Bottom + Est_Button_Height + Spacing */
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    z-index: 208; /* Below remaining section, above action buttons */
-    /* Keep other styles */
-}
-.other-materials-popup-floating.visible {
-    bottom: calc(2rem + 4rem + 1.5rem); /* Adjust final position */
-    transform: translateX(-50%) translateY(0);
-    /* Keep other styles */
-}
 
         /* --- Responsiveness --- */
         @media (max-width: 1024px) { /* Adjust breakpoint */
@@ -2029,42 +1908,6 @@ border: 1px solid rgba(46, 204, 113, 0.4);
     body.panel-active .card-scene { height: 45vh; max-height: 45vh; }
     body.panel-active .ai-panel,
     body.panel-active .edit-panel { height: 45vh; max-height: 45vh; }
-    .session-complete-overlay {
-        padding-bottom: 12rem; /* Increase padding more on mobile */
-    }
-
-    .completion-actions-floating {
-        bottom: 1.5rem; /* Position lower on mobile */
-        gap: 1rem;
-    }
-    .completion-btn-floating {
-        padding: 0.7rem 1.5rem;
-        font-size: 0.9rem;
-    }
-
-    #completionRemainingDue {
-        bottom: 6rem; /* Adjust based on new action button position */
-        width: 90%; /* Allow it to take width */
-        padding: 0.6rem 1rem;
-        gap: 8px;
-        /* Allow wrapping inside if necessary, though nowrap is preferred */
-        /* flex-wrap: wrap; */
-        /* justify-content: center; */
-    }
-    #completionRemainingDue span { font-size: 0.85em; }
-    #studyRemainingBatchSizeInput { width: 55px; }
-    #studyRemainingDueBtn { font-size: 0.8em; }
-
-
-    .other-materials-popup-floating {
-         /* Adjust positioning for mobile */
-         max-width: 90%;
-    }
-    .other-materials-popup-floating.visible {
-         max-height: 30vh;
-    }
-
-
 
     
         }
@@ -2078,26 +1921,4 @@ border: 1px solid rgba(46, 204, 113, 0.4);
             .card-actions-column .icon-btn svg { width: 1.3rem; height: 1.3rem; }
             .card-scene { min-height: 24rem; }
             .card-face { min-height: 22rem; }
-            .completion-stats-grid {
-                grid-template-columns: 1fr; /* Stack stats vertically */
-                gap: 1.5rem;
-                max-width: 280px; /* Narrower width */
-            }
-            .stat-item { min-height: auto; } /* Allow height to adjust */
-       
-            #completionRemainingDue {
-                bottom: 5.5rem;
-                padding: 0.5rem 0.8rem;
-                gap: 6px;
-                /* Force wrapping if needed */
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            #completionRemainingDue span { white-space: normal; text-align: center; width: 100%; margin-bottom: 5px;}
-       
-       
-            .completion-actions-floating {
-                 bottom: 1rem;
-                 gap: 0.8rem;
-            }
         }

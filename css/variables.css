@@ -1,0 +1,217 @@
+/* css/variables.css */
+:root {
+    /* === MODERN DARK THEME === */
+    
+    /* Base Background Layers */
+    --color-primary-bg: #121621;       /* Darkest background (main app) */
+    --color-secondary-bg: #1a1f2d;     /* Card backgrounds, containers */
+    --color-tertiary-bg: #252b3b;      /* Inputs, hover states, subtle sections */
+    --color-quaternary-bg: #323a4f;    /* Active states, dividers */
+    
+    /* Accent System */
+    --color-accent-primary: #4f85e2;    /* Main blue accent - primary actions */
+    --color-accent-secondary: #2ecc71;  /* Success, positive states */
+    --color-accent-warning: #f39c12;    /* Warnings, pins */
+    --color-accent-danger: #e74c3c;     /* Destructive actions, errors */
+    
+    /* Text Colors */
+    --color-text-primary: #eaedf2;      /* Main text */
+    --color-text-secondary: #a9b0c1;    /* Labels, descriptions */
+    --color-text-tertiary: #6e7891;     /* Subdued text, placeholders */
+    --color-text-on-accent: #ffffff;    /* Text on accent buttons */
+    --color-text-link: var(--color-accent-primary);
+    --color-text-link-hover: #73a1ea;
+    
+    /* Borders */
+    --color-border-primary: #323a4f;    /* Standard borders */
+    --color-border-secondary: #424c66;  /* Focus, hover borders */
+    --color-border-prominent: #535e7e;  /* Strong separators */
+    --color-border-accent: var(--color-accent-primary);
+    
+    /* Status Colors (for cards) */
+    --color-status-due: var(--color-accent-secondary);
+    --color-status-new: #9b7cdb;        /* Distinctive purple */
+    --color-status-pinned: var(--color-accent-warning);
+    --color-status-suspended: var(--color-text-tertiary);
+    
+    /* Skeleton Loader */
+    --color-skeleton-bg: var(--color-tertiary-bg);
+    --color-skeleton-highlight: var(--color-quaternary-bg);
+
+    /* Legacy Support - Map old variables to new system */
+    --accent-blue: var(--color-accent-primary);
+    --primary-bg: var(--color-primary-bg);
+    --secondary-bg: var(--color-secondary-bg);
+    --tertiary-bg: var(--color-tertiary-bg);
+    --text-primary: var(--color-text-primary);
+    --text-secondary: var(--color-text-secondary);
+    --text-on-accent: var(--color-text-on-accent);
+    --danger-red: var(--color-accent-danger);
+    --success-green: var(--color-accent-secondary);
+    --warning-orange: var(--color-accent-warning);
+    --due-color: var(--color-status-due);
+    --new-color: var(--color-status-new);
+    --pinned-color: var(--color-status-pinned);
+    --suspended-color: var(--color-status-suspended);
+
+
+    /* === TYPOGRAPHY === */
+    --font-family-base: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    --font-size-root: 16px; /* Base font size */
+
+    /* Scale */
+    --font-size-xs: 0.75rem;  /* 12px */
+    --font-size-sm: 0.875rem; /* 14px */
+    --font-size-md: 1rem;     /* 16px (base) */
+    --font-size-lg: 1.125rem; /* 18px */
+    --font-size-xl: 1.25rem;  /* 20px */
+    --font-size-xxl: 1.5rem;  /* 24px */
+
+    /* Weights */
+    --font-weight-light: 300;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    /* Line Heights */
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+
+
+    /* === SPACING === */
+    /* Using a 4px base grid */
+    --space-xxs: 0.25rem; /* 4px */
+    --space-xs:  0.5rem;  /* 8px */
+    --space-sm:  0.75rem; /* 12px */
+    --space-md:  1rem;    /* 16px */
+    --space-lg:  1.5rem;  /* 24px */
+    --space-xl:  2rem;    /* 32px */
+    --space-xxl: 2.5rem;  /* 40px */
+
+
+    /* === BORDERS & RADIUS === */
+    --border-width-thin: 1px;
+    --border-width-medium: 2px;
+    --border-width-thick: 4px;
+
+    --radius-small: 8px;
+    --radius-medium: 14px;   /* Common radius for cards, inputs */
+    --radius-large: 22px;   /* Larger radius for modals, containers */
+    --radius-full: 9999px;  /* For pills, circles */
+
+
+    /* === SHADOWS === */
+    --shadow-small: 0 1px 2px rgba(0, 0, 0, 0.1), 0 1px 1px rgba(0, 0, 0, 0.06);
+    --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-large: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-focus: 0 0 0 3px rgba(79, 133, 226, 0.3); /* Focus ring shadow */
+
+
+    /* === TRANSITIONS === */
+    --transition-duration-short: 150ms;
+    --transition-duration-medium: 250ms;
+    --transition-timing-function: ease-in-out;
+
+
+    /* === Z-INDEX === */
+    --z-index-dropdown: 1000;
+    --z-index-sticky: 1020;
+    --z-index-modal-backdrop: 1040;
+    --z-index-modal: 1050;
+    --z-index-popover: 1060;
+    --z-index-tooltip: 1070;
+
+
+    /* === LAYOUT === */
+    --control-height: 36px; /* Standard height for buttons, inputs */
+    --grid-gap: var(--space-md); /* Gap for Gridstack layout */
+}
+
+:root {
+    /* Colors & Base Settings from V4.5 */
+    --accent-blue: #5bc0de;
+    --primary-bg: #1f2a40;
+    --secondary-bg: #2c3a56;
+    --tertiary-bg: #1a1a2e;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0c0;
+    --text-on-accent: #ffffff; /* White Text on Accent Blue */
+    --text-on-button: #ffffff; /* Dark Text for Accent Blue Button */
+    --danger-red: #d9534f;
+    --success-green: #5cb85c;
+    --warning-orange: #f0ad4e;
+    --due-color : #1cad1c; /* Color for Due cards */
+    --due-color-border: #2a8e2ae2; /* Border color for Due cards */
+    --new-color: #774ab5; /* Color for New cards */
+    --new-color-border: #533a78de; /* Border color for New cards */
+    --pinned-color: var(--warning-orange); /* Color for pinned items */
+    --suspended-color: #6c757d; /* Color/Style for suspended items */
+    --border-color: #4a5a7e;
+    --border-color-light: #4a5a7e; /* Lighter border */
+    --border-color-medium: #3d4964; /* Medium border */
+    --border-color-dark: rgba(0, 0, 0, 0.2); /* Darker border/shadow */
+
+    /* --- Sizing & Peeking/Expansion (Keep V9 - Refined Peek) --- */
+    --pill-icon-size: 40px;
+    --pill-icon-gap: 10px;
+    --scale-0: 1.0; --scale-1: 0.85; --scale-2: 0.7;
+    --width-0: var(--pill-icon-size);
+    --width-1: calc(var(--pill-icon-size) * var(--scale-1));
+    --width-2: calc(var(--pill-icon-size) * var(--scale-2));
+    /* Refined Peek Offsets (Less aggressive) */
+    --peek-center-offset-1: calc( (var(--width-0) / 2 * var(--scale-0)) + (var(--width-1) * (0.5 - 0.35)) );
+    --peek-center-offset-2-rel: calc( (var(--width-1) / 2 * var(--scale-1)) + (var(--width-2) * (0.5 - 0.35)) );
+    --peek-center-offset-2-abs: calc(var(--peek-center-offset-1) + var(--peek-center-offset-2-rel));
+    --expand-translate-1: calc(var(--width-0) * 0.5 + var(--pill-icon-gap) * 0.5 + var(--width-0) * 0.5);
+    --expand-translate-2: calc(var(--expand-translate-1) + var(--width-0) + var(--pill-icon-gap));
+    --expand-translate-3: calc(var(--expand-translate-2) + var(--width-0) + var(--pill-icon-gap));
+
+    /* --- Container Sizing (ADJUSTED for 2 vs 3+ Materials) --- */
+    /* Width needed for center + ONE side peeking (Level 1) */
+    --peek-outer-edge-dist-1: calc(var(--peek-center-offset-1) + var(--width-1) / 2);
+    /* Calculate width: Center button width + distance from center to edge of ONE L1 peek + buffer */
+    --container-min-width-2-materials: calc(var(--width-0) + var(--peek-outer-edge-dist-1) - (var(--width-0)/2) + 2px);
+    /* Width needed for center + TWO sides peeking (Level 2) */
+    --peek-outer-edge-dist-2: calc(var(--peek-center-offset-2-abs) + var(--width-2) / 2);
+    --container-min-width-3plus-materials: calc(var(--peek-outer-edge-dist-2) * 2 + 4px);
+    /* Hover width calculation */
+    --container-min-width-expanded-2: calc(var(--expand-translate-2) * 1.1 + var(--width-0));
+
+    /* --- SKELETON --- */
+    --skeleton-bg: #33415c;
+    --skeleton-highlight: #4a5a7e;
+
+
+    --control-height: 36px; /* Slightly smaller controls */
+    --border-color-dark: rgba(0, 0, 0, 0.2);
+    --danger-hover: #c9302c;
+    --success-hover: #4cae4c;
+
+    /* === SHADOWS === */
+    --shadow-small: 0 1px 2px rgba(0, 0, 0, 0.1), 0 1px 1px rgba(0, 0, 0, 0.06);
+    --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-large: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-focus: 0 0 0 3px rgba(79, 133, 226, 0.3); /* Focus ring shadow */
+
+
+    /* === TRANSITIONS === */
+    --transition-duration-short: 150ms;
+    --transition-duration-medium: 250ms;
+    --transition-timing-function: ease-in-out;
+
+
+    /* === Z-INDEX === */
+    --z-index-dropdown: 1000;
+    --z-index-sticky: 1020;
+    --z-index-modal-backdrop: 1040;
+    --z-index-modal: 1050;
+    --z-index-popover: 1060;
+    --z-index-tooltip: 1070;
+
+
+    /* === LAYOUT === */
+    --control-height: 36px; /* Standard height for buttons, inputs */
+    --grid-gap: var(--space-md); /* Gap for Gridstack layout */
+}

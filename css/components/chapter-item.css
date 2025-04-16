@@ -1,0 +1,414 @@
+/* css/components/chapter-item.css */
+
+/* Card Style Specifics (Applied to .chapter-item when grouped) */
+.chapter-card-style {
+    border-radius: 0px; /* Apply rounding to the item itself */
+    background-color: var(--tertiary-bg);
+    border: 1px solid var(--color-border-primary);
+    box-shadow: 0 1px 3px var(--border-color-dark); /* Add subtle shadow */
+}
+
+/* Base Chapter Item Styles (Applied inside .grid-stack-item-content for standalone, or directly for grouped) */
+.chapter-item {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%; /* Take full width of its container */
+    position: relative; /* For absolute positioned elements like indicators */
+    cursor: pointer; /* Default interaction */
+    overflow: hidden; /* Clip content */
+}
+
+.chapter-item:hover {
+    border-color: var(--color-border-secondary);
+    background-color: color-mix(in srgb, var(--color-secondary-bg) 90%, var(--color-quaternary-bg) 10%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 5; /* Bring slightly forward on hover */
+    transform: scale(1.01);
+}
+
+/* Styles ONLY for grouped chapters (not standalone grid items) */
+.group-chapter-area .chapter-item {
+    border: 1px solid var(--color-border-primary); /* Border for grouped items */
+    border-radius: var(--radius-medium);
+    background-color: var(--color-tertiary-bg); /* Slightly different bg */
+    box-shadow: var(--shadow-small);
+    transition: all 0.15s ease-in-out;
+}
+.group-chapter-area .chapter-item:hover {
+    border-color: var(--color-border-secondary);
+    background-color: var(--color-quaternary-bg);
+    transform: scale(1.01); /* Subtle scale on hover for grouped */
+}
+
+/* Wrapper for consistent padding (used inside .grid-stack-item-content or .chapter-item for grouped) */
+.chapter-item__content-wrapper {
+    padding: var(--space-sm); /* Base padding */
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Ensure wrapper clips content */
+}
+/* Adjust padding for larger standalone items */
+.grid-stack-item.standalone-chapter > .grid-stack-item-content .chapter-item__content-wrapper {
+    padding: calc(var(--grid-gap) / 2);
+}
+
+/* --- States (Pin/Suspend/Select) --- */
+.chapter-item.is-pinned {
+    background-color: color-mix(in srgb, var(--color-tertiary-bg) 85%, var(--color-status-pinned) 15%);
+}
+/* Apply stronger bg tint for grouped pinned items for better differentiation */
+.group-chapter-area .chapter-item.is-pinned {
+    background-color: color-mix(in srgb, var(--color-tertiary-bg) 80%, var(--color-status-pinned) 20%);
+}
+/* Selection mode adds .is-selected class handled by grid-items.css */
+
+.chapter-item.is-suspended {
+    opacity: 0.6;
+    filter: grayscale(60%);
+    /* Consider hiding suspend indicator by default, show on hover or filter */
+}
+
+/* Pinned/Suspended Indicators (Optional visual flair) */
+.chapter-item__indicator {
+    position: absolute;
+    top: var(--space-xs);
+    right: var(--space-xs);
+    font-size: 1.2em; /* Adjust size */
+    line-height: 1;
+    z-index: 2;
+    opacity: 0.7;
+}
+.chapter-item__indicator.pinned-icon { color: var(--color-status-pinned); }
+.chapter-item__indicator.suspended-icon { color: var(--color-status-suspended); display: none; } /* Hide initially */
+.dashboard-container.filter-mode-suspended .chapter-item.is-suspended .suspended-icon { display: inline; } /* Show when filtering */
+
+
+/* --- Content Elements --- */
+.chapter-item__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Align name and circle top */
+    margin-bottom: var(--space-sm);
+    gap: var(--space-sm);
+    flex-shrink: 0;
+}
+
+.chapter-item__name {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+    line-height: var(--line-height-tight);
+    flex-grow: 1;
+    /* Simple truncation - JS might be needed for multi-line */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* Font size adjusted by size variations */
+}
+
+/* Rename Input */
+.rename-input { /* General input style */
+    display: none; border-radius: 4px; background-color: var(--tertiary-bg); color: var(--text-primary); outline: none; box-sizing: border-box; margin: 0; border: 1px solid var(--accent-blue); padding: 4px 8px; /* Adjust padding to fit */
+    height: auto; /* Allow natural height based on font */
+    line-height: inherit; /* Match surrounding text line height */
+    font-size: inherit; /* Inherit font size from parent context */
+    font-weight: inherit; /* Inherit font weight */
+}
+.chapter-item.is-renaming .chapter-item__name { display: none; }
+.chapter-item.is-renaming .chapter-rename-input { display: block; }
+.chapter-item.is-renaming .chapter-item__mastery-indicator,
+.chapter-item.is-renaming .chapter-item__progress-circle { display: none; } /* Hide visuals during rename */
+
+/* Hide progress circle during rename */
+.chapter-card.is-renaming .mastery-progress-circle { display: none; }
+
+/* Hide other elements during chapter rename */
+.chapter-item.is-renaming > * > .chapter-main-info > .mastery-progress-circle{
+    display: none;
+}
+
+    /* Explicitly target chapter rename input */
+    .chapter-rename-input {
+        font-size: 1em; /* Match expected name size in context */
+        font-weight: 500;
+        flex-grow: 1; /* Allow input to grow */
+   }
+
+   .chapter-item.is-renaming > * > .chapter-main-info > .chapter-rename-input {
+       display: block; /* Show the input */
+       width: 100%; /* Make input take available width in its container */
+   }
+
+
+/* Mastery Indicators */
+.chapter-item__mastery-indicator { /* Dot for small sizes */
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px; /* Align roughly with first line of text */
+    /* Colors applied via class */
+}
+.chapter-item__mastery-indicator.low { background-color: var(--color-accent-danger); }
+.chapter-item__mastery-indicator.medium { background-color: var(--color-accent-warning); }
+.chapter-item__mastery-indicator.high { background-color: var(--color-accent-secondary); }
+
+/* Progress Circle (SVG based) */
+.chapter-item__progress-circle {
+    position: relative;
+    width: 36px; /* Default size */
+    height: 36px;
+    flex-shrink: 0;
+}
+.chapter-item__progress-circle svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg); /* Start at top */
+}
+.chapter-item__progress-circle .progress-ring-bg,
+.chapter-item__progress-circle .progress-ring-circle {
+    fill: none;
+    stroke-width: 3.5; /* Stroke thickness */
+}
+.chapter-item__progress-circle .progress-ring-bg {
+    stroke: var(--color-tertiary-bg); /* Track color */
+}
+.chapter-item__progress-circle .progress-ring-circle {
+    stroke: var(--color-text-secondary); /* Default color */
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease-out, stroke 0.3s ease;
+}
+/* Colors set via JS adding class */
+.chapter-item__progress-circle.low .progress-ring-circle { stroke: var(--color-accent-danger); }
+.chapter-item__progress-circle.medium .progress-ring-circle { stroke: var(--color-accent-warning); }
+.chapter-item__progress-circle.high .progress-ring-circle { stroke: var(--color-accent-secondary); }
+
+.chapter-item__progress-percentage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    transition: color 0.3s ease;
+}
+.chapter-item__progress-circle.low .chapter-item__progress-percentage { color: var(--color-accent-danger); }
+.chapter-item__progress-circle.medium .chapter-item__progress-percentage { color: var(--color-accent-warning); }
+.chapter-item__progress-circle.high .chapter-item__progress-percentage { color: var(--color-accent-secondary); }
+
+/* Stats Section */
+.chapter-item__stats {
+    margin-top: auto; /* Push to bottom */
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--color-border-dark);
+    display: flex; /* Handled by size variations */
+    justify-content: space-around;
+    gap: var(--space-sm);
+    flex-shrink: 0;
+}
+
+.chapter-item__stat {
+    display: flex;
+    flex-direction: column; /* Icon over value */
+    align-items: center;
+    gap: var(--space-xxs);
+    text-align: center;
+    color: var(--color-text-secondary);
+}
+.chapter-item__stat svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    opacity: 0.7;
+}
+.chapter-item__stat-value {
+    font-size: var(--font-size-md); /* Slightly larger stat value */
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+    line-height: 1.2;
+}
+/* Stat coloring */
+.chapter-item__stat.due { color: var(--color-status-due); }
+.chapter-item__stat.new { color: var(--color-status-new); }
+.chapter-item__stat.due .chapter-item__stat-value { color: var(--color-status-due); }
+.chapter-item__stat.new .chapter-item__stat-value { color: var(--color-status-new); }
+
+/* Tags Section */
+.chapter-item__tags {
+    margin-top: var(--space-sm);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    max-height: 4em; /* Limit height */
+    overflow: hidden; /* Hide overflow */
+}
+.chapter-item__tag {
+    background-color: var(--color-tertiary-bg);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    padding: 2px var(--space-xs);
+    border-radius: var(--radius-small);
+    white-space: nowrap;
+}
+
+/* --- Size Variations (Control element visibility) --- */
+
+/* Default: Assume large (e.g., 2x2 or more) - show everything */
+.chapter-item__name { font-size: var(--font-size-lg); }
+.chapter-item__mastery-indicator { display: none; } /* Hide dot */
+.chapter-item__progress-circle { display: block; }
+.chapter-item__stats { display: flex; }
+.chapter-item__tags { display: flex; }
+
+/* Small (e.g., 1x1) */
+.chapter-item.size-small .chapter-item__content-wrapper { padding: var(--space-xs); }
+.chapter-item.size-small .chapter-item__name { font-size: var(--font-size-sm); margin-bottom: 0; }
+.chapter-item.size-small .chapter-item__header { margin-bottom: 0; }
+.chapter-item.size-small .chapter-item__progress-circle,
+.chapter-item.size-small .chapter-item__stats,
+.chapter-item.size-small .chapter-item__tags {
+    display: none;
+}
+.chapter-item.size-small .chapter-item__mastery-indicator {
+    display: block; /* Show dot */
+}
+
+/* Medium (e.g., 2x1, 1x2) */
+.chapter-item.size-medium .chapter-item__name { font-size: var(--font-size-md); }
+.chapter-item.size-medium .chapter-item__mastery-indicator,
+.chapter-item.size-medium .chapter-item__tags {
+    display: none;
+}
+.chapter-item.size-medium .chapter-item__progress-circle {
+    display: block;
+    width: 32px; height: 32px; /* Slightly smaller circle */
+}
+.chapter-item.size-medium .chapter-item__stats {
+    display: flex;
+    padding-top: var(--space-xs);
+    margin-top: var(--space-sm);
+    justify-content: center; /* Center the visible stat */
+}
+/* Show only DUE stat in medium */
+.chapter-item.size-medium .chapter-item__stat.new,
+.chapter-item.size-medium .chapter-item__stat.total {
+    display: none;
+}
+.chapter-item.size-medium .chapter-item__stat svg { width: 16px; height: 16px; }
+.chapter-item.size-medium .chapter-item__stat-value { font-size: var(--font-size-sm); }
+
+
+/* --- List Layout Variations --- */
+.chapter-item.layout-list {
+    /* Base list styles applied in chapter-item.css for grouped items */
+}
+.chapter-item.layout-list .chapter-item__content-wrapper {
+    padding: var(--space-xs) var(--space-sm);
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-sm);
+}
+.chapter-item.layout-list .chapter-item__header {
+    /* Header structure not really used in list, combine elements */
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: 0;
+}
+.chapter-item.layout-list .chapter-item__name { margin-bottom: 0; font-size: var(--font-size-sm); }
+.chapter-item.layout-list .chapter-item__tags { display: none; } /* Hide tags in list */
+.chapter-item.layout-list .chapter-item__stats {
+    margin-top: 0; padding-top: 0; border-top: none;
+    flex-direction: row; /* Horizontal stats */
+    flex-shrink: 0; /* Don't shrink stats area */
+    justify-content: flex-end;
+    gap: var(--space-md);
+}
+.chapter-item.layout-list .chapter-item__stat {
+    flex-direction: row; /* Icon next to value */
+    font-size: var(--font-size-xs);
+    gap: var(--space-xxs);
+}
+.chapter-item.layout-list .chapter-item__stat svg { width: 14px; height: 14px; }
+.chapter-item.layout-list .chapter-item__stat-value { font-size: var(--font-size-sm); }
+
+/* List Size Adjustments */
+.chapter-item.layout-list.size-compact-list .chapter-item__progress-circle,
+.chapter-item.layout-list.size-compact-list .chapter-item__stats {
+    display: none;
+}
+.chapter-item.layout-list.size-compact-list .chapter-item__mastery-indicator { display: block; }
+
+.chapter-item.layout-list.size-medium-list .chapter-item__mastery-indicator { display: none; }
+.chapter-item.layout-list.size-medium-list .chapter-item__progress-circle {
+    display: block; width: 24px; height: 24px; /* Small circle */
+}
+.chapter-item.layout-list.size-medium-list .chapter-item__stats { display: flex; }
+.chapter-item.layout-list.size-medium-list .chapter-item__stat.new,
+.chapter-item.layout-list.size-medium-list .chapter-item__stat.total { display: none; } /* Only Due */
+
+.chapter-item.layout-list.size-wide-list .chapter-item__mastery-indicator { display: none; }
+.chapter-item.layout-list.size-wide-list .chapter-item__progress-circle {
+    display: block; width: 28px; height: 28px; /* Medium circle */
+}
+.chapter-item.layout-list.size-wide-list .chapter-item__stats { display: flex; }
+/* Show Due and New in wide list */
+.chapter-item.layout-list.size-wide-list .chapter-item__stat { display: flex; }
+.chapter-item.layout-list.size-wide-list .chapter-item__stat.total { display: none; }
+
+.management-container.selection-mode .chapter-item:hover {
+    transform: none; /* Disable base hover lift */
+}
+    .management-container.selection-mode .chapter-item {
+    cursor: pointer; /* Indicate clickable */
+    transition: transform 0.1s ease, box-shadow 0.1s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+/* Selection Mode Styles */
+/* Apply animation ONLY when selection mode is active AND card is NOT selected */
+.management-container.selection-mode .chapter-item:not(.selected) {
+    /* Keep the base transition for smooth switching */
+   transition: transform 0.1s ease, box-shadow 0.1s ease, border-color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+   animation: subtle-pulse 1.8s infinite ease-in-out;
+}
+
+/* Stop animation on hover (unless selected) */
+.management-container.selection-mode .chapter-item:not(.selected):hover {
+   animation: none; /* Stop pulsing on hover */
+   /* Re-apply a slight hover effect if desired, different from selected state */
+   transform: scale(1.01);
+   border-color: #6a7aac; /* Standard hover border */
+   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+
+/* --- UPDATED: Styling for the SELECTED chapter card --- */
+.management-container.selection-mode .chapter-item.selected {
+   /* --- Styles copied & adapted from flashcards-view.html --- */
+   border-color: var(--accent-blue); /* Use variable if defined, else #5bc0de */
+   outline: 2px solid var(--accent-blue, #5bc0de);
+   outline-offset: 2px;
+   /* Use color-mix if supported, fallback otherwise */
+   background-color: #3a4a6e; /* Fallback color */
+   background-color: color-mix(in srgb, var(--secondary-bg, #2c3a56) 75%, var(--accent-blue, #5bc0de) 25%);
+   transform: scale(1.02); /* Scale up when selected */
+   box-shadow: 0 6px 15px rgba(91, 192, 222, 0.3); /* Accent shadow */
+   animation: none; /* IMPORTANT: Stop animation when selected */
+}
+
+/* Ensure selected card doesn't change further on hover */
+.management-container.selection-mode .chapter-item.selected:hover {
+    transform: scale(1.02); /* Maintain selected scale */
+    /* Keep other selected styles */
+}
+
+/* --- NEW: Selection Activation Animation --- */
+@keyframes subtle-pulse {
+    0% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    50% { transform: scale(1.015); box-shadow: 0 4px 10px rgba(91, 192, 222, 0.2); } /* Use accent blue glow */
+    100% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+}
+

@@ -1,0 +1,136 @@
+/* css/components/skeleton.css */
+
+@keyframes pulse-bg {
+    0% { background-color: var(--color-skeleton-bg); }
+    50% { background-color: var(--color-skeleton-highlight); }
+    100% { background-color: var(--color-skeleton-bg); }
+}
+
+.skeleton {
+    background-color: var(--color-skeleton-bg);
+    border-radius: var(--radius-small); /* Default */
+    animation: pulse-bg 1.8s infinite ease-in-out;
+    display: none; /* Skeletons are hidden by default */
+}
+
+/* --- Loading State Visibility --- */
+.management-container.is-loading-main .skeleton {
+    display: flex; /* Make skeletons visible */
+    /* Override specific displays if needed below */
+}
+
+/* Hide REAL content when the main container is loading */
+.management-container.is-loading-main *:not(.skeleton) {
+    /* Add specific classes to hide if needed */
+    /* .overview-section > *, */
+    /* .management-controls > * , */
+    /* etc. */
+    /* Note: Might be better to manage visibility via JS adding/removing content */
+}
+
+/* Ensure specific skeletons have correct display */
+.management-container.is-loading-main .review-activity-skeleton,
+.management-container.is-loading-main .chapter-grid-skeleton {
+    display: grid;
+}
+.management-container.is-loading-main .material-switcher-skeleton,
+.management-container.is-loading-main .pill-stats-skeleton {
+    display: flex;
+}
+
+/* --- Specific Skeleton Styles --- */
+
+/* 1. Material Switcher Skeleton */
+.material-switcher-skeleton {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    justify-content: center; align-items: center;
+    padding: var(--space-xxs);
+    box-sizing: border-box;
+    gap: var(--space-xs);
+}
+.skeleton-material-tab {
+    width: var(--space-xl); /* Match icon size */
+    height: var(--space-xl);
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+}
+
+/* 2. Pill Stats Skeleton */
+.pill-stats-skeleton {
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 0 var(--space-xs);
+}
+.skeleton-stat-box {
+    width: var(--space-xxl);
+    height: var(--space-xxl);
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+}
+
+/* 3. Filter Controls Skeleton */
+.filter-controls-skeleton {
+     display: flex; /* Ensure correct layout */
+     gap: var(--space-xs);
+     width: 100%; /* Fill container */
+     height: var(--control-height);
+}
+.skeleton-pill {
+     height: var(--control-height);
+     border-radius: calc(var(--control-height) / 2);
+     flex-shrink: 0;
+     /* Approximate widths */
+     width: 60px; /* Example: All, Pinned */
+}
+.skeleton-pill.action-button {
+     width: 120px; /* Example: Select Chapters */
+}
+
+
+/* 4. Review Activity Heatmap Skeleton */
+.review-activity-skeleton {
+    /* Position and size */
+    position: absolute; /* Relative to parent .review-heatmap-grid */
+    top: 0; left: 0; right: 0; bottom: 0;
+    /* Grid layout */
+    grid-template-columns: repeat(auto-fill, minmax(15px, 1fr)); /* Example responsive cells */
+    grid-auto-rows: 20px; /* Match cell height */
+    gap: 2px;
+    padding: 0;
+    box-sizing: border-box;
+}
+.skeleton-review-cell {
+    height: 20px;
+    width: 100%;
+    border-radius: var(--radius-small);
+}
+
+/* 5. Review Schedule Graph Skeleton */
+.graph-skeleton {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    padding: var(--space-sm);
+    box-sizing: border-box;
+    display: flex; align-items: center; justify-content: center;
+}
+.graph-skeleton::before { /* Create the actual skeleton block */
+    content: '';
+    display: block;
+    width: 100%; height: 100%;
+    border-radius: var(--radius-medium); /* Match container */
+    background-color: var(--color-skeleton-bg);
+    animation: pulse-bg 1.8s infinite ease-in-out;
+}
+
+/* 6. Chapter Grid Skeleton */
+.chapter-grid-skeleton {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: var(--space-md);
+    padding: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+.skeleton-chapter-card {
+    height: 190px; /* Approximate height */
+    border-radius: var(--radius-large);
+}

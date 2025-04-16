@@ -1,0 +1,435 @@
+/* css/components/grid-items.css */
+
+/* --- Gridstack Item Base --- */
+/* --- Gridstack Item Base --- */
+
+#dashboardGrid.grid-stack {
+    min-height: 400px;
+    
+    
+    background-color: rgba(var(--color-border-medium-rgb, 71, 85, 105), 0.1) /* Remove grid background if desired */
+}
+
+.grid-stack {
+    display: block !important; /* Override any conflicting display property */
+    width: 100% !important;
+    min-width: 1px !important; /* Ensure columns can't be zero-width */
+}
+
+.grid-stack > .grid-stack-item {
+    position: absolute !important; /* Critical for gridstack to position items */
+    overflow: visible !important; /* Allow content to overflow for menus, etc */
+    box-sizing: border-box;
+    /* Custom additions: */
+    transition: top 0.2s ease-out, left 0.2s ease-out, width 0.2s ease-out, height 0.2s ease-out;
+    /* Add a subtle background ONLY for debugging if needed */
+    /* background-color: rgba(255, 0, 0, 0.1); */
+    outline: 1px dashed rgba(255, 255, 255, 0.2); /* Prevent browser default outlines */
+}
+
+.grid-stack > .grid-stack-item > .grid-stack-item-content {
+    background-color: var(--color-secondary-bg);
+    border-radius: var(--radius-lg);
+    border: var(--border-width-sm) solid var(--color-border-light);
+    /* *** CRITICAL for Filling: Ensure it behaves like a block/flex container filling space *** */
+    width: 100%;
+    height: 100%;
+    overflow: hidden; /* Contain content */
+    display: flex; /* Use flex for internal layout */
+    flex-direction: column;
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-md);
+    box-sizing: border-box; /* Include border/padding in size */
+    transition: box-shadow var(--transition-base), border-color var(--transition-base), transform var(--transition-base), background-color var(--transition-base);
+}
+
+
+/* Hover effect only when NOT dragging/resizing */
+.grid-stack > .grid-stack-item:not(.ui-gridstack-dragging):not(.ui-gridstack-resizing):hover > .grid-stack-item-content {
+     border-color: var(--color-border-medium);
+     box-shadow: var(--shadow-lg);
+     transform: translateY(-2px); /* Subtle lift */
+}
+
+
+
+.grid-stack > .grid-stack-item.standalone-chapter > .grid-stack-item-content {
+    /* Ensure content fills the gridstack cell */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* Optional: adjust for left border on pinned items to prevent layout shift */
+.standalone-chapter.is-pinned > .grid-stack-item-content {
+    border-left-width: 4px;
+    padding-left: calc(var(--space-md) - 4px); /* Adjust padding to compensate */
+}
+
+/* Dragging/Resizing styles */
+.grid-stack > .grid-stack-item.ui-gridstack-dragging > .grid-stack-item-content,
+.grid-stack > .grid-stack-item.ui-gridstack-resizing > .grid-stack-item-content {
+    opacity: 0.8;
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-border-accent); /* Highlight during action */
+    transform: scale(1.0) translateY(0);
+}
+
+/* Gridstack Placeholder */
+.grid-stack .grid-stack-placeholder > .placeholder-content {
+    background-color: color-mix(in srgb, var(--color-accent-primary) 15%, transparent 85%);
+    border: var(--border-width-md) dashed var(--color-accent-primary);
+    border-radius: var(--radius-lg);
+}
+
+
+/* --- Group Widget Styles --- */
+.group-widget > .grid-stack-item-content {
+    border-top-width: 4px;
+    border-top-color: var(--group-bg-color, var(--color-border-medium));
+    border-right-color: var(--color-border-light);
+    border-bottom-color: var(--color-border-light);
+    border-left-color: var(--color-border-light);
+}
+.group-widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md) var(--space-lg);
+    border-bottom: var(--border-width-sm) solid var(--color-border-light);
+    flex-shrink: 0;
+    cursor: default; /* Header itself isn't draggable */
+    position: relative; /* For context menu button positioning */
+}
+
+.group-name {
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-lg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: var(--space-md);
+    color: var(--color-text-primary);
+}
+
+.group-stats {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+    background-color: var(--color-primary-bg); /* Subtle background */
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+}
+
+.group-chapter-area {
+    flex-grow: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0; /* Padding applied by inner items */
+    /* Custom Scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-medium) transparent;
+}
+.group-chapter-area::-webkit-scrollbar { width: 6px; }
+.group-chapter-area::-webkit-scrollbar-track { background: transparent; }
+.group-chapter-area::-webkit-scrollbar-thumb { background-color: var(--color-border-medium); border-radius: 3px; }
+
+/* Layout Modes within Group Area */
+.group-chapter-area.layout-card {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Adjust min card width */
+    gap: var(--space-md);
+    padding: var(--space-lg);
+}
+.group-chapter-area.layout-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0; /* No gap, use item borders */
+    padding: var(--space-sm) 0; /* Vertical padding only */
+}
+
+/* --- Chapter Item Styles (Base for Standalone & Grouped) --- */
+/* --- Chapter Item Styles --- */
+.chapter-item {
+    position: relative; /* For absolute positioning of status icons */
+    cursor: pointer;
+    display: flex; /* Use flex for internal layout */
+    flex-direction: column;
+    width: 100%; /* Take full width of parent container */
+    height: 100%; /* Take full height of parent container */
+    box-sizing: border-box;
+    /* Background/Border applied based on layout context below */
+    transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* Grouped Card Item */
+.group-chapter-area.layout-card .chapter-item {
+    background-color: var(--color-tertiary-bg);
+    border: var(--border-width-sm) solid var(--color-border-light);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-md); /* Padding applied here */
+    min-height: 120px; /* Ensure min height for card content */
+}
+.group-chapter-area.layout-card .chapter-item:hover {
+    border-color: var(--color-border-medium);
+    background-color: var(--color-border-light);
+}
+
+/* Content Wrapper (Used INSIDE chapter-item for padding/flex layout) */
+.chapter-item-content-wrapper {
+    padding: var(--space-md) var(--space-lg);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* *** FIX: Ensure minimum height to prevent collapse for cellHeight: auto *** */
+    min-height: 50px; /* Adjust based on minimum content */
+}
+
+/* Apply specific styles based on layout class */
+
+/* -- Card Style (Applied to .chapter-item when in group card layout) -- */
+.chapter-item.layout-card {
+    background-color: var(--color-tertiary-bg); /* Slightly different bg */
+    border: var(--border-width-sm) solid var(--color-border-light);
+    border-radius: var(--radius-md); /* Smaller radius for inner cards */
+    box-shadow: var(--shadow-sm);
+}
+.chapter-item.layout-card:hover {
+    border-color: var(--color-border-medium);
+    background-color: var(--color-border-light);
+}
+
+/* -- List Style (Applied to .chapter-item when in group list layout) -- */
+.chapter-item.layout-list {
+    background-color: transparent; /* List items transparent */
+    border: none;
+    border-bottom: var(--border-width-sm) solid var(--color-border-light);
+}
+
+/* Grouped List Item */
+.group-chapter-area.layout-list .chapter-item {
+    background-color: transparent;
+    border: none;
+    border-bottom: var(--border-width-sm) solid var(--color-border-light);
+    padding: var(--space-sm) var(--space-lg); /* List item padding */
+    flex-direction: row; /* Override base column direction */
+    align-items: center;
+    min-height: 40px; /* Min height for list items */
+}
+
+.group-chapter-area.layout-list .chapter-item:last-child {
+    border-bottom: none;
+}
+.chapter-item.layout-list:hover {
+    background-color: rgba(var(--color-border-medium-rgb, 71, 85, 105), 0.1); /* Use RGB */
+}
+/* Add RGB definition to variables.css if needed: --color-border-medium-rgb: 71, 85, 105; */
+.chapter-item.layout-list .chapter-item-content-wrapper {
+    flex-direction: row; /* List items are rows */
+    align-items: center;
+    padding: var(--space-sm) var(--space-lg); /* List item padding */
+}
+
+/* Standalone Chapter (Uses grid-stack-item-content for background/border) */
+.standalone-chapter > .grid-stack-item-content {
+     /* Padding applied directly here */
+     padding: var(--space-md) var(--space-lg);
+}
+/* Style the inner chapter-item structure minimally for standalone */
+.standalone-chapter .chapter-item {
+    padding: 0; /* No extra padding needed */
+    min-height: 150px; /* Ensure min height for standalone */
+}
+
+.standalone-chapter .chapter-item-content-wrapper {
+    padding: 0;
+    /* *** FIX: Ensure minimum height for standalone as well *** */
+    min-height: 100px; /* Standalone likely taller */
+}
+
+/* --- Content Inside Chapter Items --- */
+.chapter-main-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    flex-grow: 1; /* Allow name to take space */
+    min-width: 0;
+    /* Default spacing adjusted based on context */
+}
+/* Remove margin in list view where stats are inline */
+.layout-list .chapter-main-info {
+    margin-bottom: 0;
+}
+
+.chapter-item-name {
+    font-weight: var(--font-weight-medium);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1;
+    color: var(--color-text-primary);
+    font-size: 1rem; /* Base size */
+}
+/* Adjust name size for context */
+.layout-card .chapter-item-name {
+    font-size: var(--font-size-sm); /* Smaller in cards within groups */
+}
+.standalone-chapter .chapter-item-name {
+    font-size: var(--font-size-lg); /* Larger for standalone */
+    font-weight: var(--font-weight-semibold);
+}
+
+/* Mastery Visualization (Progress Bar Example) */
+.mastery-progress-bar-container {
+    display: none; /* Hidden by default, shown by size classes */
+    height: 6px;
+    background-color: var(--color-border-light);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-top: var(--space-sm); /* Space below name */
+    width: 100%; /* Take full width */
+}
+.mastery-progress-bar {
+    height: 100%;
+    width: 0%; /* Set by JS inline style */
+    border-radius: var(--radius-sm);
+    background-color: var(--color-success); /* Default high */
+    transition: width 0.5s ease-out, background-color 0.3s ease;
+}
+.mastery-progress-bar.low { background-color: var(--color-danger); }
+.mastery-progress-bar.medium { background-color: var(--color-warning); }
+.mastery-progress-bar.high { background-color: var(--color-success); }
+
+
+/* Card Stats Area */
+.card-stats-new {
+    display: none; /* Hidden by default, shown by size classes */
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto; /* Push to bottom */
+    padding-top: var(--space-md);
+    border-top: var(--border-width-sm) solid var(--color-border-light);
+    gap: var(--space-md);
+}
+.stat-item-new {
+    display: flex;
+    align-items: center; /* Align icon and text horizontally */
+    gap: var(--space-xs);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+.stat-icon {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+.stat-value {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+}
+/* Color coding for stats */
+.stat-item-new.due-cards { color: var(--color-success); }
+.stat-item-new.due-cards .stat-value { color: var(--color-success); }
+.stat-item-new.new-cards { color: var(--color-warning); } /* Use warning for 'new' */
+.stat-item-new.new-cards .stat-value { color: var(--color-warning); }
+.stat-item-new.total-cards { color: var(--color-text-secondary); }
+.stat-item-new.total-cards .stat-value { color: var(--color-text-primary); }
+
+
+/* --- Size & Content Variations --- */
+
+/* Standalone Card (Shows everything) */
+/* Re-apply rules targeting the new structure */
+.standalone-chapter .chapter-item .mastery-progress-bar-container,
+.standalone-chapter .chapter-item .card-stats-new { display: block; display: flex; }
+.standalone-chapter .chapter-item .chapter-main-info { margin-bottom: 0; }
+
+.group-chapter-area.layout-card .chapter-item .mastery-progress-bar-container { display: block; }
+.group-chapter-area.layout-card .chapter-item .card-stats-new { display: none; }
+.group-chapter-area.layout-card .chapter-item .chapter-main-info { margin-bottom: 0; }
+
+.group-chapter-area.layout-list .chapter-item.size-wide-list .card-stats-new { display: flex; border-top: none; padding-top: 0; margin-top: 0; margin-left: auto; flex-shrink: 0; }
+.group-chapter-area.layout-list .chapter-item.size-wide-list .mastery-progress-bar-container { display: none; }
+.group-chapter-area.layout-list .chapter-item.size-wide-list .chapter-main-info { margin-bottom: 0; }
+
+.group-chapter-area.layout-list .chapter-item.size-medium-list .card-stats-new,
+.group-chapter-area.layout-list .chapter-item.size-compact-list .card-stats-new,
+.group-chapter-area.layout-list .chapter-item.size-medium-list .mastery-progress-bar-container,
+.group-chapter-area.layout-list .chapter-item.size-compact-list .mastery-progress-bar-container { display: none; }
+.group-chapter-area.layout-list .chapter-item.size-medium-list .chapter-main-info,
+.group-chapter-area.layout-list .chapter-item.size-compact-list .chapter-main-info { margin-bottom: 0; }
+
+/* --- Pinned / Suspended Styles --- */
+.status-indicator {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    font-size: 1em;
+    line-height: 1;
+    z-index: 2;
+    color: var(--color-text-secondary); /* Default subtle color */
+}
+
+.chapter-item.is-pinned,
+.standalone-chapter.is-pinned > .grid-stack-item-content {
+    /* Apply accent border */
+    border-left-width: 4px;
+    border-left-color: var(--color-pinned);
+    /* Subtle background tint */
+    background-color: color-mix(in srgb, var(--color-secondary-bg) 95%, var(--color-pinned) 5%);
+}
+.chapter-item.is-pinned .pinned-indicator { /* Target the span if used */
+    color: var(--color-pinned);
+    display: inline-block; /* Ensure shown */
+}
+.pinned-indicator { display: none; } /* Hide by default */
+
+/* Suspended */
+.chapter-item.is-suspended,
+.standalone-chapter.is-suspended > .grid-stack-item-content {
+    opacity: 0.6;
+    filter: grayscale(70%);
+}
+/* Suspended indicator might not be needed if filtered view */
+
+/* --- Rename Input --- */
+/* General styles for the input element itself */
+.rename-input {
+    display: none; /* Hidden by default */
+    width: 100%; /* Take full width available in parent */
+    padding: var(--space-xs) var(--space-sm);
+    font-size: inherit; /* Match surrounding text */
+    font-weight: inherit;
+    line-height: inherit;
+    border: var(--border-width-md) solid var(--color-border-accent); /* Highlight border */
+    border-radius: var(--radius-sm);
+    background-color: var(--color-tertiary-bg); /* Darker background */
+    color: var(--color-text-primary);
+    outline: none;
+    box-sizing: border-box;
+    z-index: 5; /* Ensure it's above other content */
+}
+
+/* Hide original text when renaming */
+.chapter-item.is-renaming .chapter-item-name,
+.group-widget.is-renaming .group-name {
+    display: none;
+}
+/* Show input when renaming */
+.chapter-item.is-renaming .chapter-rename-input,
+.group-widget.is-renaming .group-rename-input {
+    display: block;
+}
+/* Hide other elements during rename */
+.chapter-item.is-renaming .mastery-progress-bar-container,
+.chapter-item.is-renaming .card-stats-new,
+.group-widget.is-renaming .group-stats {
+    display: none !important; /* Force hide */
+}

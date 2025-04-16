@@ -5,25 +5,24 @@ class ApiClient {
     constructor() {
         // Base URL for the API
         // Use environment variable or configuration for production
-        /* this.baseURL = "https://flashcard-api-957892315214.europe-west9.run.app/api" ; */ // No fallback needed if configured correctly // Example using Vue-like env var
-        this.baseURL = "https://flashcard-api-957892315214.europe-west9.run.app/api";
+        this.baseURL = "https://flashcard-api-957892315214.europe-west9.run.app/api" ; // No fallback needed if configured correctly // Example using Vue-like env var
         console.log("ApiClient initialized with baseURL:", this.baseURL);
     }
 
     /**
      * Private helper method for making requests to the API.
-     * Handles common tasks like setting headers, checking response status,
-     * and parsing JSON data. Includes basic error handling.
+     * It handles common tasks like setting headers, checking response status,
+     * and parsing JSON data. It also includes basic error handling.
      * @param {string} endpoint - The API endpoint path (e.g., '/cards')
      * @param {object} [options={}] - Options for the fetch request (method, headers, body, etc.)
-     * @returns {Promise<object>} - A promise that resolves with the JSON response body or null for 204.
+     * @returns {Promise<object>} - A promise that resolves with the JSON response body.
      * @throws {Error} - Throws an error if the network request fails or the API returns an error status (4xx or 5xx).
      * @private
      */
     async _fetchJson(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
-        // Keep logging minimal unless actively debugging
-        // console.log(`DEBUG: [_fetchJson] Preparing request for endpoint: ${endpoint}`);
+        console.log(`DEBUG: [_fetchJson] Preparing request for endpoint: ${endpoint}`);
+        // console.log(`DEBUG: [_fetchJson] Received options:`, JSON.stringify(options)); // Keep logging minimal unless debugging
 
         const method = options.method || 'GET';
         const headers = {
@@ -37,48 +36,41 @@ class ApiClient {
         const config = { method, headers, body };
 
         console.log(`DEBUG: [_fetchJson] Fetching ${config.method} ${url}`);
+        // if (config.body) { console.log(`DEBUG: [_fetchJson] Request body:`, config.body); }
 
         try {
             const response = await fetch(url, config);
+            // console.log(`DEBUG: [_fetchJson] Received response status for ${endpoint}: ${response.status} ${response.statusText}`);
 
             if (!response.ok) {
                 let errorMessage = `API Error: ${response.status} ${response.statusText}`;
                 let errorDetails = null;
                 try {
-                    // Try to parse error details from JSON response
                     errorDetails = await response.json();
                     errorMessage = errorDetails.message || errorDetails.error || errorMessage;
                 } catch (e) { /* Ignore if error response isn't JSON */ }
-                console.error(`API request failed for ${endpoint}: ${errorMessage}`, errorDetails || '');
+                console.error(`API request failed for ${endpoint}: ${errorMessage}`, errorDetails);
                 throw new Error(errorMessage);
             }
 
-            // Handle successful responses with no content (e.g., DELETE)
-            if (response.status === 204) {
-                console.log(`DEBUG: [_fetchJson] Received 204 No Content for ${endpoint}. Returning null.`);
-                return null;
-            }
+            if (response.status === 204) return null;
 
-            // Handle JSON responses
             const contentType = response.headers.get("content-type");
             if (contentType && contentType.includes("application/json")) {
                  try {
                     const data = await response.json();
-                    // console.log(`DEBUG: [_fetchJson] Received JSON data for ${endpoint}:`, data); // DEBUG
+                    // console.log(`DEBUG: [_fetchJson] Received JSON data for ${endpoint}:`, data);
                     return data;
                  } catch (parseError) {
                     console.error(`Error parsing JSON response for ${endpoint}:`, parseError);
                     throw new Error(`Invalid JSON received from server for ${endpoint}.`);
                  }
             } else {
-                 // Handle non-JSON successful responses if necessary (e.g., text)
-                 // For now, assume successful non-JSON means no relevant data to return client-side
                 console.log(`DEBUG: [_fetchJson] Received non-JSON response for ${endpoint} (Status: ${response.status}, Content-Type: ${contentType}). Returning null.`);
                 return null;
             }
         } catch (error) {
             console.error(`Error during fetch operation for ${endpoint}:`, error);
-            // Re-throw specific API or parsing errors, wrap others as network errors
             if (error instanceof Error && (error.message.startsWith('API Error:') || error.message.startsWith('Invalid JSON'))) {
                 throw error;
             } else {
@@ -113,29 +105,6 @@ class ApiClient {
         return this._fetchJson(endpoint);
     }
 
-        /**
-     * Sets the default sorting preference for chapters within a specific material.
-     * Calls PUT /api/settings/:material/default-sort
-     * @param {string} material - The material name.
-     * @param {string} field - The field to sort by (e.g., 'name', 'createdAt', 'stats.mastery').
-     * @param {string} order - Sort order ('asc' or 'desc').
-     * @returns {Promise<object>} - Promise resolving to the server response (message + updated settings).
-     */
-        async setDefaultChapterSort(material, field, order) {
-            if (!material) return Promise.reject(new Error("Material is required."));
-            if (!field) return Promise.reject(new Error("Sort field is required."));
-            const validOrders = ['asc', 'desc'];
-            const sortOrder = validOrders.includes(order?.toLowerCase()) ? order.toLowerCase() : 'asc'; // Default to 'asc' if invalid
-    
-            const encodedMaterial = encodeURIComponent(material);
-            const endpoint = `/settings/${encodedMaterial}/default-sort`;
-            console.log(`DEBUG: [setDefaultChapterSort] Calling PUT ${endpoint}`);
-            return this._fetchJson(endpoint, {
-                method: 'PUT',
-                body: { field: field, order: sortOrder },
-            });
-        }
-
     /**
      * Updates specific settings fields for a given material.
      * Calls PATCH /api/settings/:material
@@ -160,10 +129,9 @@ class ApiClient {
         });
     }
 
-    // --- Material & Settings Methods ---
     async getMaterials() {
         const endpoint = '/materials';
-        console.log(`DEBUG: [getMaterials] Calling GET ${endpoint}`);
+        console.log(`DEBUG: [getMaterials] Calling endpoint: ${endpoint}`);
         return this._fetchJson(endpoint);
     }
 
@@ -277,51 +245,9 @@ class ApiClient {
         return this._fetchJson(endpoint);
     }
 
-        // --- Chapter Methods (Modified & New) ---
-
-
-    /**
-     * Get chapters for a given material, with optional sorting and filtering.
-     * Calls GET /api/materials/:material/chapters
-     * @param {string} material - The material name.
-     * @param {object} [options={}] - Optional object for sorting and filtering.
-     * @param {string} [options.sortBy] - Field to sort by (e.g., 'name', 'createdAt', 'stats.mastery'). Server defaults if omitted.
-     * @param {string} [options.order] - Sort order ('asc' or 'desc'). Server defaults if omitted.
-     * @param {string} [options.groupId] - Filter by group ID ('none' for ungrouped, or a specific group ID).
-     * @param {string} [options.tag] - Filter chapters containing this tag.
-     * @param {boolean} [options.pinned] - Filter by pinned status (true/false).
-     * @param {boolean} [options.suspended] - Filter by suspended status (true/false). Server defaults if omitted.
-     * @returns {Promise<Array<object>>} - Promise resolving to an array of chapter document objects.
-     */
-    async getChapters(material, options = {}) {
-        if (!material) return Promise.reject(new Error("Material is required to get chapters."));
-
-        const encodedMaterial = encodeURIComponent(material);
-        const params = new URLSearchParams();
-
-        // Map client options to server query params
-        if (options.sortBy) params.append('sort_by', options.sortBy);
-        if (options.order) params.append('order', options.order);
-        if (options.groupId) params.append('groupId', options.groupId); // Including 'none' or specific ID
-        if (options.tag) params.append('tag', options.tag);
-        if (typeof options.pinned === 'boolean') params.append('pinned', options.pinned.toString());
-        if (typeof options.suspended === 'boolean') params.append('suspended', options.suspended.toString());
-
-        const queryString = params.toString();
-        const endpoint = `/materials/${encodedMaterial}/chapters${queryString ? '?' + queryString : ''}`;
-        console.log(`DEBUG: [getChapters] Calling GET ${endpoint}`);
-        return this._fetchJson(endpoint); // Expects an array of chapter objects
-    }
-    // getChapterMastery (Existing - Consider deprecating if getChapters provides all needed data)
     async getChapterMastery(material) {
-        // This might now be redundant if getChapters returns the 'stats' object including mastery.
-        // Decision: Keep for now, but prefer using getChapters in new features.
         if (!material) return Promise.reject(new Error("Material is required for chapter mastery."));
-        console.warn("DEBUG: [getChapterMastery] Consider using getChapters which includes stats.");
-        // Assuming the old endpoint still exists or is handled by the /chapters endpoint without stats filter
-        const endpoint = `/materials/${encodeURIComponent(material)}/chapters`; // Example: using the main endpoint
-        // Or if /chapter-mastery still exists:
-        // const endpoint = `/chapter-mastery?material=${encodeURIComponent(material)}`;
+        const endpoint = `/chapter-mastery?material=${encodeURIComponent(material)}`;
         console.log(`DEBUG: [getChapterMastery] Calling endpoint: ${endpoint}`);
         return this._fetchJson(endpoint);
     }
@@ -416,15 +342,11 @@ class ApiClient {
     }
 
 
-    /**
-     * Simple method to get chapters without sorting/filtering (calls getChapters internally).
-     * Kept for potential backward compatibility or simpler use cases.
-     * @param {string} material - The material name.
-     * @returns {Promise<Array<object>>} - Promise resolving to an array of chapter objects.
-     */
     async getChaptersForMaterial(material) {
-        console.log(`DEBUG: [getChaptersForMaterial] calling via getChapters for material: ${material}`);
-        return this.getChapters(material); // Call the more general version with default options
+        if (!material) return Promise.reject(new Error("Material is required to get chapters."));
+        const endpoint = `/materials/${encodeURIComponent(material)}/chapters`;
+        console.log(`DEBUG: [getChaptersForMaterial] Calling endpoint: ${endpoint}`);
+        return this._fetchJson(endpoint);
     }
 
     async getDueTimeline(material, chapter = null, granularity = 'daily') {
@@ -603,317 +525,16 @@ class ApiClient {
      * @param {number} [statsDays] - Optional: Number of days for recent study stats.
      * @returns {Promise<object>} - Promise resolving to the combined dashboard data object.
      */
-   // --- Misc Methods ---
-   async getDashboardSummary(material = null, timelineGranularity = null, statsDays = null) {
-    // (Implementation remains the same)
-    const params = new URLSearchParams();
-    if (material) params.append('material', material);
-    if (timelineGranularity) params.append('timelineGranularity', timelineGranularity);
-    if (statsDays) params.append('statsDays', statsDays);
-    const queryString = params.toString();
-    const endpoint = `/dashboard-summary${queryString ? '?' + queryString : ''}`;
-    console.log(`DEBUG: [getDashboardSummary] Calling GET ${endpoint}`);
-    return this._fetchJson(endpoint);
-}
+    async getDashboardSummary(material = null, timelineGranularity = null, statsDays = null) {
+        const params = new URLSearchParams();
+        if (material) params.append('material', material);
+        if (timelineGranularity) params.append('timelineGranularity', timelineGranularity);
+        if (statsDays) params.append('statsDays', statsDays);
 
-        // --- Tag Management Methods (New) ---
-
-    /**
-     * Fetches the list of unique tags for a specific material.
-     * Calls GET /api/materials/:material/tags
-     * @param {string} material - The material name.
-     * @returns {Promise<Array<string>>} - Promise resolving to an array of tag names.
-     */
-    async getMaterialTags(material) {
-        if (!material) return Promise.reject(new Error("Material is required to get tags."));
-        const encodedMaterial = encodeURIComponent(material);
-        const endpoint = `/materials/${encodedMaterial}/tags`;
-        console.log(`DEBUG: [getMaterialTags] Calling GET ${endpoint}`);
-        const response = await this._fetchJson(endpoint);
-        // API returns { tags: ["tag1", ...] }, extract the array
-        return response?.tags || [];
-    }
-
-    /**
-     * Creates a new unique tag for a material if it doesn't exist.
-     * Calls POST /api/materials/:material/tags
-     * @param {string} material - The material name.
-     * @param {string} tagName - The new tag name to create.
-     * @returns {Promise<object>} - Promise resolving to the server response (e.g., { message: "...", tags: [...] }).
-     */
-    async createMaterialTag(material, tagName) {
-        if (!material) return Promise.reject(new Error("Material is required."));
-        const trimmedTagName = tagName?.trim();
-        if (!trimmedTagName) return Promise.reject(new Error("tagName must be a non-empty string."));
-        const encodedMaterial = encodeURIComponent(material);
-        const endpoint = `/materials/${encodedMaterial}/tags`;
-        console.log(`DEBUG: [createMaterialTag] Calling POST ${endpoint}`);
-        return this._fetchJson(endpoint, {
-            method: 'POST',
-            body: { tagName: trimmedTagName },
-        });
-    }
-
-     /**
-      * Deletes a unique tag from a material's list.
-      * Calls DELETE /api/materials/:material/tags/:tagName
-      * @param {string} material - The material name.
-      * @param {string} tagName - The tag name to delete from the list.
-      * @returns {Promise<object>} - Promise resolving to the server response (e.g., { message: "...", tags: [...] }).
-      */
-     async deleteMaterialTag(material, tagName) {
-        if (!material) return Promise.reject(new Error("Material is required."));
-        if (!tagName) return Promise.reject(new Error("Tag name is required."));
-        const encodedMaterial = encodeURIComponent(material);
-        const encodedTagName = encodeURIComponent(tagName);
-        const endpoint = `/materials/${encodedMaterial}/tags/${encodedTagName}`;
-        console.log(`DEBUG: [deleteMaterialTag] Calling DELETE ${endpoint}`);
-        return this._fetchJson(endpoint, { method: 'DELETE' });
-    }
-
-
-     /**
-     * Sets/overwrites the entire list of tags for a specific chapter document.
-     * Calls PUT /api/materials/:material/chapters/:chapterId/tags (or PUT /api/chapters/:chapterId/tags if backend route changes)
-     * @param {string} material - The material name (required for the current API route).
-     * @param {string} chapterId - The Firestore Document ID of the chapter.
-     * @param {Array<string>} tagsArray - The complete array of tags to set.
-     * @returns {Promise<object>} - Promise resolving to the server response.
-     */
-     async setChapterTags(material, chapterId, tagsArray) {
-        if (!material) return Promise.reject(new Error("Material name is required for the API route.")); // Keep if route needs material
-        if (!chapterId) return Promise.reject(new Error("Chapter ID is required to update tags."));
-        if (!Array.isArray(tagsArray)) return Promise.reject(new Error("tagsArray must be an array of strings."));
-
-        const encodedMaterial = encodeURIComponent(material);
-        const encodedChapterId = encodeURIComponent(chapterId);
-        const endpoint = `/materials/${encodedMaterial}/chapters/${encodedChapterId}/tags`;
-
-        // Alternative endpoint if backend route is simplified:
-        // const endpoint = `/chapters/${encodedChapterId}/tags`;
-
-        console.log(`DEBUG: [setChapterTags] Calling PUT ${endpoint} for chapter ${chapterId}`);
-        return this._fetchJson(endpoint, {
-            method: 'PUT',
-            body: { tags: tagsArray },
-        });
-    }
-
-        // --- Group Methods ---
-
-    /**
-     * Retrieves all groups for a specific material.
-     * Calls GET /api/materials/:material/groups
-     * @param {string} material - The material name.
-     * @returns {Promise<Array<object>>} - Promise resolving to an array of group document objects.
-     */
-    async getMaterialGroups(material) {
-        if (!material) return Promise.reject(new Error("Material is required to get groups."));
-        const encodedMaterial = encodeURIComponent(material);
-        const endpoint = `/materials/${encodedMaterial}/groups`;
-        console.log(`DEBUG: [getMaterialGroups] Calling GET ${endpoint}`);
-        return this._fetchJson(endpoint); // Expects an array
-    }
-
-    /**
-     * Creates a new, empty group for a specified material.
-     * Calls POST /api/materials/:material/groups
-     * @param {string} material - The material name.
-     * @param {object} groupData - Data for the new group (at least `name` is required).
-     * @param {string} groupData.name - The required name for the new group.
-     * @param {string} [groupData.color] - Optional color.
-     * @param {string} [groupData.layoutMode] - Optional layout mode ('card' or 'list').
-     * @param {object} [groupData.gridPosition] - Optional position { row, col }.
-     * @param {object} [groupData.gridSize] - Optional size { rows, cols }.
-     * @returns {Promise<object>} - Promise resolving to the newly created group document object.
-     */
-    async createGroup(material, groupData) {
-        if (!material) return Promise.reject(new Error("Material is required."));
-        if (!groupData || !groupData.name?.trim()) return Promise.reject(new Error("Group name is required."));
-        const encodedMaterial = encodeURIComponent(material);
-        const endpoint = `/materials/${encodedMaterial}/groups`;
-        console.log(`DEBUG: [createGroup] Calling POST ${endpoint}`);
-        // Ensure only valid fields are sent, or let backend handle validation
-        return this._fetchJson(endpoint, {
-            method: 'POST',
-            body: {
-                name: groupData.name.trim(),
-                color: groupData.color, // Send undefined if not provided
-                layoutMode: groupData.layoutMode,
-                gridPosition: groupData.gridPosition,
-                gridSize: groupData.gridSize,
-            },
-        });
-    }
-
-    /**
-     * Partially updates the properties of a specific group.
-     * Calls PATCH /api/groups/:groupId
-     * @param {string} groupId - The Firestore Document ID of the group.
-     * @param {object} updateData - Object containing only fields to update (name, color, layoutMode, gridPosition, gridSize).
-     * @returns {Promise<object>} - Promise resolving to the server response (message + updated group).
-     */
-    async updateGroup(groupId, updateData) {
-        if (!groupId) return Promise.reject(new Error("Group ID is required."));
-        if (!updateData || Object.keys(updateData).length === 0) return Promise.reject(new Error("Update data cannot be empty."));
-        // Optional: Client-side validation of allowed fields/types
-        const endpoint = `/groups/${groupId}`;
-        console.log(`DEBUG: [updateGroup] Calling PATCH ${endpoint}`);
-        return this._fetchJson(endpoint, {
-            method: 'PATCH',
-            body: updateData,
-        });
-    }
-
-    /**
-     * Permanently deletes a group and unassigns its chapters.
-     * Calls DELETE /api/groups/:groupId
-     * @param {string} groupId - The Firestore Document ID of the group to delete.
-     * @returns {Promise<object>} - Promise resolving to the server response message.
-     */
-    async deleteGroup(groupId) {
-        if (!groupId) return Promise.reject(new Error("Group ID is required."));
-        const endpoint = `/groups/${groupId}`;
-        console.log(`DEBUG: [deleteGroup] Calling DELETE ${endpoint}`);
-        return this._fetchJson(endpoint, { method: 'DELETE' });
-    }
-
-    /**
-     * Sets the preferred sorting method for chapters within a specific group.
-     * Calls PUT /api/groups/:groupId/sort-preference
-     * @param {string} groupId - The Firestore Document ID of the group.
-     * @param {string} field - The field to sort by (e.g., 'name', 'stats.mastery').
-     * @param {string} order - Sort order ('asc' or 'desc').
-     * @returns {Promise<object>} - Promise resolving to the server response (message + updated group).
-     */
-    async setGroupSortPreference(groupId, field, order) {
-        if (!groupId) return Promise.reject(new Error("Group ID is required."));
-        if (!field) return Promise.reject(new Error("Sort field is required."));
-        const validOrders = ['asc', 'desc'];
-        if (!validOrders.includes(order?.toLowerCase())) {
-            return Promise.reject(new Error("Invalid sort order. Use 'asc' or 'desc'."));
-        }
-
-        const endpoint = `/groups/${groupId}/sort-preference`;
-        console.log(`DEBUG: [setGroupSortPreference] Calling PUT ${endpoint}`);
-        return this._fetchJson(endpoint, {
-            method: 'PUT',
-            body: { field: field, order: order.toLowerCase() },
-        });
-    }
-
-        /**
-     * Assigns a chapter to a specific group or removes it from its current group.
-     * Calls PATCH /api/chapters/:chapterId/assign-group
-     * @param {string} chapterId - The Firestore Document ID of the chapter.
-     * @param {string | null} groupId - The Document ID of the target group, or null to unassign.
-     * @returns {Promise<object>} - Promise resolving to the server response (message + updated chapter).
-     */
-        async assignChapterToGroup(chapterId, groupId) {
-            if (!chapterId) return Promise.reject(new Error("Chapter ID is required."));
-            // groupId can be null
-            if (typeof groupId !== 'string' && groupId !== null) {
-                return Promise.reject(new Error("groupId must be a string or null."));
-            }
-    
-            const endpoint = `/chapters/${chapterId}/assign-group`;
-            console.log(`DEBUG: [assignChapterToGroup] Calling PATCH ${endpoint} for chapter ${chapterId}`);
-            return this._fetchJson(endpoint, {
-                method: 'PATCH',
-                body: { groupId: groupId },
-            });
-        }
-    
-        /**
-         * Marks a specific chapter as pinned.
-         * Calls PUT /api/chapters/:chapterId/pin
-         * @param {string} chapterId - The Firestore Document ID of the chapter.
-         * @returns {Promise<object>} - Promise resolving to the server response (message + updated chapter).
-         */
-        async pinChapter(chapterId) {
-            if (!chapterId) return Promise.reject(new Error("Chapter ID is required."));
-            const endpoint = `/chapters/${chapterId}/pin`;
-            console.log(`DEBUG: [pinChapter] Calling PUT ${endpoint}`);
-            return this._fetchJson(endpoint, { method: 'PUT' });
-        }
-    
-        /**
-         * Marks a specific chapter as not pinned.
-         * Calls PUT /api/chapters/:chapterId/unpin
-         * @param {string} chapterId - The Firestore Document ID of the chapter.
-         * @returns {Promise<object>} - Promise resolving to the server response (message + updated chapter).
-         */
-        async unpinChapter(chapterId) {
-            if (!chapterId) return Promise.reject(new Error("Chapter ID is required."));
-            const endpoint = `/chapters/${chapterId}/unpin`;
-            console.log(`DEBUG: [unpinChapter] Calling PUT ${endpoint}`);
-            return this._fetchJson(endpoint, { method: 'PUT' });
-        }
-    
-        /**
-         * Marks a specific chapter as suspended.
-         * Calls PUT /api/chapters/:chapterId/suspend
-         * @param {string} chapterId - The Firestore Document ID of the chapter.
-         * @returns {Promise<object>} - Promise resolving to the server response (message + updated chapter).
-         */
-        async suspendChapter(chapterId) {
-            if (!chapterId) return Promise.reject(new Error("Chapter ID is required."));
-            const endpoint = `/chapters/${chapterId}/suspend`;
-            console.log(`DEBUG: [suspendChapter] Calling PUT ${endpoint}`);
-            return this._fetchJson(endpoint, { method: 'PUT' });
-        }
-    
-        /**
-         * Marks a specific chapter as not suspended.
-         * Calls PUT /api/chapters/:chapterId/unsuspend
-         * @param {string} chapterId - The Firestore Document ID of the chapter.
-         * @returns {Promise<object>} - Promise resolving to the server response (message + updated chapter).
-         */
-        async unsuspendChapter(chapterId) {
-            if (!chapterId) return Promise.reject(new Error("Chapter ID is required."));
-            const endpoint = `/chapters/${chapterId}/unsuspend`;
-            console.log(`DEBUG: [unsuspendChapter] Calling PUT ${endpoint}`);
-            return this._fetchJson(endpoint, { method: 'PUT' });
-        }
-
-            /**
-     * Sets the grid position for a specific group.
-     * Calls PUT /api/groups/:groupId/position
-     * @param {string} groupId - The Firestore Document ID of the group.
-     * @param {object} position - Object with { row: number, col: number } (1-based).
-     * @returns {Promise<object>} - Promise resolving to the server response.
-     */
-    async updateGroupPosition(groupId, position) {
-        if (!groupId) return Promise.reject(new Error("Group ID is required."));
-        if (!position || typeof position.row !== 'number' || typeof position.col !== 'number' || position.row < 1 || position.col < 1) {
-            return Promise.reject(new Error("Valid position object {row, col} (1-based) is required."));
-        }
-        const endpoint = `/groups/${groupId}/position`;
-        console.log(`DEBUG: [updateGroupPosition] Calling PUT ${endpoint}`);
-        return this._fetchJson(endpoint, {
-            method: 'PUT',
-            body: { row: position.row, col: position.col },
-        });
-    }
-
-    /**
-     * Sets the grid size for a specific group.
-     * Calls PUT /api/groups/:groupId/size
-     * @param {string} groupId - The Firestore Document ID of the group.
-     * @param {object} size - Object with { rows: number, cols: number }.
-     * @returns {Promise<object>} - Promise resolving to the server response.
-     */
-    async updateGroupSize(groupId, size) {
-        if (!groupId) return Promise.reject(new Error("Group ID is required."));
-        if (!size || typeof size.rows !== 'number' || typeof size.cols !== 'number' || size.rows < 1 || size.cols < 1) {
-            return Promise.reject(new Error("Valid size object {rows, cols} is required."));
-        }
-        const endpoint = `/groups/${groupId}/size`;
-        console.log(`DEBUG: [updateGroupSize] Calling PUT ${endpoint}`);
-        return this._fetchJson(endpoint, {
-            method: 'PUT',
-            body: { rows: size.rows, cols: size.cols },
-        });
+        const queryString = params.toString();
+        const endpoint = `/dashboard-summary${queryString ? '?' + queryString : ''}`;
+        console.log(`DEBUG: [getDashboardSummary] Calling GET ${endpoint}`);
+        return this._fetchJson(endpoint);
     }
 
 } // End of ApiClient class

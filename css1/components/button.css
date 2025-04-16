@@ -1,0 +1,98 @@
+/* css/components/button.css */
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--space-md);
+    height: var(--control-height);
+    border-radius: var(--radius-medium);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    line-height: 1; /* Ensure single line height */
+    white-space: nowrap;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all var(--transition-duration-short) var(--transition-timing-function);
+    border: var(--border-width-thin) solid transparent; /* Base transparent border */
+    outline: none; /* Remove default outline */
+}
+
+/* === Button Variations === */
+.button--primary {
+    background-color: var(--color-accent-primary);
+    color: var(--color-text-on-accent);
+}
+.button--primary:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-accent-primary) 90%, black 10%);
+}
+
+.button--secondary {
+    background-color: var(--color-tertiary-bg);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-primary);
+}
+.button--secondary:hover:not(:disabled) {
+    background-color: var(--color-quaternary-bg);
+    border-color: var(--color-border-secondary);
+}
+
+.button--danger {
+    background-color: var(--color-accent-danger);
+    color: var(--color-text-on-accent);
+}
+.button--danger:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-accent-danger) 90%, black 10%);
+}
+
+/* === Button Sizes === */
+.button--small {
+    height: calc(var(--control-height) * 0.85); /* Slightly smaller height */
+    padding: 0 var(--space-sm);
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-small);
+}
+
+/* === Disabled State === */
+.button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none; /* Prevent interactions */
+}
+
+/* === Control Inputs / Selects (Used in Controls/Modals) === */
+.control-input,
+.control-select {
+    height: var(--control-height);
+    padding: 0 var(--space-sm);
+    border-radius: var(--radius-medium);
+    background-color: var(--color-tertiary-bg);
+    border: var(--border-width-thin) solid var(--color-border-primary);
+    color: var(--color-text-primary);
+    transition: border-color var(--transition-duration-short) var(--transition-timing-function);
+}
+
+.control-select {
+    padding-right: var(--space-lg); /* Space for dropdown arrow */
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0a7b5'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); /* Use variable color for arrow */
+    background-repeat: no-repeat;
+    background-position: right var(--space-xs) center;
+    background-size: var(--font-size-md);
+}
+
+.control-input--small {
+    height: calc(var(--control-height) * 0.85);
+    padding: 0 var(--space-xs);
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-small);
+}
+
+/* Focus State (Shared) */
+.button:focus-visible,
+.control-input:focus-visible,
+.control-select:focus-visible {
+    border-color: var(--color-border-accent);
+    box-shadow: var(--shadow-focus);
+}

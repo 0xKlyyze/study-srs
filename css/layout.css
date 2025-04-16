@@ -1,0 +1,152 @@
+/* css/layout.css */
+
+.management-container {
+    max-width: 1800px; /* Limit max width for very large screens */
+    margin: 0 auto;
+    padding: var(--space-xl) var(--space-lg); /* Generous padding */
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg); /* Space between main sections */
+    border-radius: var(--radius-large);
+}
+
+/* Adjust padding for smaller screens if responsiveness becomes needed */
+/* @media (max-width: 768px) {
+    .dashboard-container {
+        padding: var(--space-lg) var(--space-md);
+    }
+} */
+
+.overview-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Flexible columns */
+    gap: var(--grid-gap);
+    align-items: start; /* Align items to the top */
+}
+
+.overview-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--grid-gap);
+}
+
+.section-container {
+    background-color: var(--secondary-bg);
+    border-radius: var(--radius-large);
+    padding: var(--space-lg);
+    border: var(--border-width-thin) solid var(--border-color);
+    /* Consider adding subtle shadow if needed: box-shadow: var(--shadow-small); */
+}
+
+.section-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-md);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dashboard-controls {
+    display: flex;
+    flex-wrap: nowrap; /* Allow wrapping on smaller screens */
+    align-items: center;
+    gap: var(--space-md);
+    width: 100%; /* Ensure it takes full width */
+    box-sizing: border-box;
+    border-bottom: var(--border-width-thin) solid var(--color-border-dark);
+    box-sizing: border-box;
+    min-height: calc(var(--control-height) + 2px); /* Ensure min height */
+}
+
+.selection-toolbar {
+    display: none; /* Shown by JS */
+    background-color: color-mix(in srgb, var(--color-secondary-bg) 80%, var(--color-accent-primary) 20%);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-medium);
+    margin-top: calc(-1 * var(--space-md) + var(--space-sm)); /* Adjust to sit nicely below controls */
+    margin-bottom: var(--space-md);
+    border: var(--border-width-thin) solid var(--color-accent-primary);
+    box-shadow: var(--shadow-medium);
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+}
+.management-container.selection-mode-active .selection-toolbar {
+    display: flex;
+}
+
+.selection-toolbar #selectionCount {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+}
+
+.selection-toolbar .selection-actions  {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+/* Main Dashboard Grid Area */
+.grid-stack {
+    
+    /* Background/border handled by Gridstack potentially or keep transparent */
+    gap: var(--grid-gap); /* Apply the gap using your variable */
+    border-radius: calc(var(--radius-large) + 3px);
+    border : 1px solid var(--color-border-primary); /* Optional border */
+    background-color: var(--secondary-bg);
+    overflow: hidden;
+}
+
+.grid-placeholder-message {
+    /* Styles for loading/empty text */
+    padding: var(--space-xxl);
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+.grid-placeholder-message .loading-text,
+.grid-placeholder-message .error-text {
+    font-size: var(--font-size-lg);
+}
+.grid-placeholder-message .error-text {
+    color: var(--color-accent-danger);
+    font-style: normal;
+    font-weight: var(--font-weight-medium);
+}
+
+/* Gridstack placeholder styling */
+.grid-stack .grid-stack-placeholder > .placeholder-content {
+    background-color: rgba(79, 133, 226, 0.15); /* Transparent accent color */
+    border: var(--border-width-medium) dashed var(--color-accent-primary);
+    border-radius: var(--radius-medium);
+}
+
+/* Global Tooltip (used in overview, maybe elsewhere) */
+.global-tooltip {
+    position: fixed; /* Position relative to viewport */
+    background-color: var(--color-primary-bg); /* Darker for contrast */
+    color: var(--color-text-primary);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-small);
+    font-size: var(--font-size-sm);
+    white-space: nowrap;
+    z-index: var(--z-index-tooltip);
+    pointer-events: none; /* Prevent tooltip from blocking hover */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-duration-short) var(--transition-timing-function),
+                visibility var(--transition-duration-short) var(--transition-timing-function);
+    box-shadow: var(--shadow-medium);
+    border: 1px solid var(--color-border-primary);
+    /* Position set by JS */
+    left: -9999px;
+    top: -9999px;
+}
+
+.global-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
+}

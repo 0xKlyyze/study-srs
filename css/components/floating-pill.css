@@ -1,0 +1,420 @@
+/* css/components/floating-pill.css */
+
+.floating-study-pill {
+    position: fixed;
+    bottom: var(--space-lg);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0; /* Gap between sections (switcher, stats, actions) */
+    background-color: var(--color-secondary-bg);
+    border-radius: var(--radius-full);
+    padding: var(--space-xs);
+    box-shadow: var(--shadow-large);
+    border: 1px solid var(--color-border-primary);
+    /* z-index: var(--z-index-sticky); */
+    z-index : 100;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    opacity: 1;
+    max-width: 90vw;
+    /* Add specific transition for hover/focus effects if needed */
+}
+
+/* .floating-study-pill {position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 950; display: inline-flex; align-items: center; gap: 8px; flex-wrap: nowrap; background-color: rgba(31, 42, 64, 0.93); color: var(--text-primary); padding: 5px 0 5px 22px; border-radius: 36px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(74, 90, 126, 0.35); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); width: auto; max-width: 90vw;} */
+
+/* Optional: Hide pill while main content is loading? */
+/* .dashboard-container.is-loading-main .floating-study-pill {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+    pointer-events: none;
+} */
+
+
+/* === 1. Material Switcher Section === */
+.material-switcher-pill {
+    order: 1; position: relative; display: flex; justify-content: center; align-items: center;
+    /* *** DEFAULT MIN-WIDTH (for 1 or 2 materials) using new calc *** */
+    min-width: var(--container-min-width-2-materials);
+    height: calc(var(--pill-icon-size) + 8px); padding: 0; overflow: hidden; border-radius: 60px;
+    transition: min-width 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0; margin: 0;
+}
+
+.material-switcher-pill {
+    margin-right: calc(2*var(--space-sm)); /* Add consistent spacing */
+}
+
+
+/* JS ADDS 'has-3plus-materials' class for wider state */
+.material-switcher-pill.has-3plus-materials {
+    min-width: var(--container-min-width-3plus-materials);
+}
+
+.material-switcher-pill-inner {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center; /* Center tabs */
+    position: relative; /* For positioning tabs */
+    gap: var(--pill-icon-gap, 8px); /* Use variable or default */
+    transition: transform var(--transition-duration-medium) ease;
+    /* Ensure visibility of inner content when not loading */
+    opacity: 1;
+    visibility: visible;
+    height: 100%;
+}
+/* Hide inner when skeleton is shown (handled by global skeleton rules) */
+.dashboard-container.is-loading-materialSwitch .material-switcher-pill-inner {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.material-tab {
+    /* Basic button reset inherited */
+    width: var(--pill-icon-size, 40px);
+    height: var(--pill-icon-size, 40px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-tertiary-bg);
+    border: 1px solid var(--color-border-primary);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all var(--transition-duration-medium) ease;
+    outline: none; /* Remove default outline */
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(var(--scale-0));
+}
+.material-tab svg {
+    width: calc(var(--pill-icon-size, 40px) * 0.6); /* Scale SVG based on button size */
+    height: calc(var(--pill-icon-size, 40px) * 0.6);
+    fill: currentColor;
+}
+
+/* .material-switcher-pill .material-tab {width: var(--pill-icon-size); height: var(--pill-icon-size); border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(var(--scale-0)); background-color: #3a4a6e; border: 1px solid #5a6a8e; color: var(--text-primary); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05); transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, box-shadow 0.3s ease, z-index 0s linear 0.35s; } */
+ /* .material-switcher-pill .material-tab svg { width: calc(var(--pill-icon-size) * 0.55); height: calc(var(--pill-icon-size) * 0.55); fill: var(--accent-blue); transition: fill 0.2s ease; } */
+
+
+/* Peeking Styles */
+.material-switcher-pill.has-multiple .material-tab:not(.is-active):not(.is-prev-1):not(.is-next-1):not(.is-prev-2):not(.is-next-2) { opacity: 0; transform: translate(-50%, -50%) scale(0.5); pointer-events: none; z-index: 1; }
+.material-switcher-pill.has-multiple .material-tab.is-active { transform: translate(-50%, -50%) scale(var(--scale-0)); opacity: 1; z-index: 10; pointer-events: auto; border-color: var(--accent-blue); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), 0 0 8px rgba(91, 192, 222, 0.4); }
+.material-switcher-pill.has-multiple .material-tab.is-prev-1 { transform: translate(calc(-50% - var(--peek-center-offset-1)), -50%) scale(var(--scale-1)); opacity: 0.7; z-index: 9; pointer-events: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+.material-switcher-pill.has-multiple .material-tab.is-next-1 { transform: translate(calc(-50% + var(--peek-center-offset-1)), -50%) scale(var(--scale-1)); opacity: 0.7; z-index: 9; pointer-events: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+.material-switcher-pill.has-multiple .material-tab.is-prev-2 { transform: translate(calc(-50% - var(--peek-center-offset-2-abs)), -50%) scale(var(--scale-2)); opacity: 0.5; z-index: 8; pointer-events: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.material-switcher-pill.has-multiple .material-tab.is-next-2 { transform: translate(calc(-50% + var(--peek-center-offset-2-abs)), -50%) scale(var(--scale-2)); opacity: 0.5; z-index: 8; pointer-events: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+/* Hover Styles */
+.material-switcher-pill.has-multiple:hover { min-width: var(--container-min-width-expanded-2); height: calc(var(--pill-icon-size) + 17px); }
+.material-switcher-pill.has-multiple:hover .material-tab { transform: translate(-50%, -50%) scale(var(--scale-0)); opacity: 1; pointer-events: auto; z-index: 5; box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3); border-color: #5a6a8e; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-active { transform: translate(-50%, calc(-50% - 1px)) scale(1.03); z-index: 10; border-color: var(--accent-blue); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 8px rgba(91, 192, 222, 0.5); }
+.material-switcher-pill.has-multiple:hover .material-tab.is-prev-1 { transform: translate(calc(-50% - var(--expand-translate-1)), -50%) scale(var(--scale-0)); z-index: 6; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-next-1 { transform: translate(calc(-50% + var(--expand-translate-1)), -50%) scale(var(--scale-0)); z-index: 6; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-prev-2 { transform: translate(calc(-50% - var(--expand-translate-2)), -50%) scale(var(--scale-0)); z-index: 5; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-next-2 { transform: translate(calc(-50% + var(--expand-translate-2)), -50%) scale(var(--scale-0)); z-index: 5; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-prev-3 { transform: translate(calc(-50% - var(--expand-translate-3)), -50%) scale(var(--scale-0)); z-index: 4; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-next-3 { transform: translate(calc(-50% + var(--expand-translate-3)), -50%) scale(var(--scale-0)); z-index: 4; }
+.material-switcher-pill.has-multiple:hover .material-tab:not(.is-active):hover { transform: translate(var(--tx, -50%), calc(-50% - 3px)) scale(1.03); background-color: var(--accent-blue); border-color: transparent; color: var(--primary-bg); /* No shadow, rely on filter */ filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3)) drop-shadow(0 0 2px rgba(91, 192, 222, 0.7)); z-index: 7; }
+.material-switcher-pill.has-multiple:hover .material-tab.is-prev-1:hover { --tx: calc(-50% - var(--expand-translate-1)); }
+.material-switcher-pill.has-multiple:hover .material-tab.is-next-1:hover { --tx: calc(-50% + var(--expand-translate-1)); }
+/* ... Add more --tx definitions ... */
+.material-switcher-pill.has-multiple:hover .material-tab:not(.is-active):hover svg { fill: currentColor; }
+/* Scroll indicators */
+.material-switcher-pill::before, .material-switcher-pill::after { content: ''; position: absolute; top: 0; bottom: 0; width: 15px; z-index: 15; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
+.material-switcher-pill::before { left: 0; background: linear-gradient(to right, rgba(31, 42, 64, 0.95), rgba(31, 42, 64, 0)); }
+.material-switcher-pill::after { right: 0; background: linear-gradient(to left, rgba(31, 42, 64, 0.95), rgba(31, 42, 64, 0)); }
+.material-switcher-pill.is-scrollable-left::before, .material-switcher-pill.is-scrollable-right::after { opacity: 1; }
+/* Loading Spinner */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.material-switcher-pill .material-tab.is-loading svg { width: calc(var(--pill-icon-size) * 0.6); height: calc(var(--pill-icon-size) * 0.6); fill: var(--text-secondary); animation: spin 1.5s linear infinite;}
+
+.material-tab:hover:not(:disabled) {
+    background-color: var(--color-quaternary-bg);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-secondary);
+    transform: scale(1.05); /* Slight scale on hover */
+}
+.material-tab.is-active {
+    background-color: var(--color-accent-primary);
+    color: var(--color-text-on-accent);
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 0 2px var(--color-secondary-bg), 0 0 0 4px var(--color-accent-primary); /* Focus ring effect */
+    transform: scale(1.1); /* Larger scale when active */
+}
+.material-tab:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+.material-tab.has-error {
+    background-color: var(--color-tertiary-bg);
+    border-color: var(--color-accent-danger);
+    color: var(--color-accent-danger);
+}
+.material-tab.has-error svg {
+    fill: var(--color-accent-danger);
+}
+
+/* Material Switcher Skeleton */
+.skeleton.material-switcher-skeleton {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--pill-icon-gap, 8px);
+    padding: 2px;
+    background-color: transparent; /* Container itself isn't animated */
+    animation: none;
+    border-radius: 0;
+}
+.skeleton .skeleton-material-tab {
+    width: var(--pill-icon-size, 40px);
+    height: var(--pill-icon-size, 40px);
+    border-radius: 50%;
+    flex-shrink: 0;
+    /* Inherits base .skeleton animation */
+}
+
+
+/* === 2. Study Stats Section === */
+.pill-stats {
+    order : 2;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs); /* Space between stat boxes */
+    position: relative; /* For skeleton */
+    padding: 0 ; /* Add some padding */
+}
+.pill-stats.simplified {
+    /* Specific styles if different from a more complex version */
+}
+
+.stat-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--pill-icon-size, 40px); /* Match tab size */
+    height: var(--pill-icon-size, 40px);
+    border-radius: 50%;
+    background-color: var(--color-tertiary-bg);
+    border: 1px solid var(--color-border-primary);
+    color: var(--color-text-secondary);
+    position: relative; /* For stat value positioning */
+    cursor: help; /* Indicate tooltip */
+}
+.stat-box svg {
+    width: 60%;
+    height: 60%;
+    fill: currentColor;
+    opacity: 0.7;
+}
+.stat-value {
+    position: absolute;
+    bottom: -2px; /* Position below the icon slightly */
+    right: -2px;
+    background-color: var(--color-secondary-bg);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    min-width: 18px; /* Ensure minimum size */
+    height: 18px;
+    line-height: 18px; /* Center text vertically */
+    text-align: center;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--color-border-secondary);
+    padding: 0 4px; /* Horizontal padding */
+    box-shadow: var(--shadow-small);
+}
+
+/* Color coding for stats */
+.stat-box.new-cards-stat {
+    color: var(--color-status-new);
+    border-color: color-mix(in srgb, var(--color-border-primary) 70%, var(--color-status-new) 30%);
+}
+.stat-box.new-cards-stat .stat-value {
+    color: var(--color-status-new);
+    border-color: var(--color-status-new);
+    background-color: var(--color-primary-bg); /* Darker background for badge */
+}
+
+.stat-box.due-cards-stat {
+    color: var(--color-status-due);
+     border-color: color-mix(in srgb, var(--color-border-primary) 70%, var(--color-status-due) 30%);
+}
+.stat-box.due-cards-stat .stat-value {
+    color: var(--color-status-due);
+    border-color: var(--color-status-due);
+    background-color: var(--color-primary-bg);
+}
+
+/* Pill Stats Skeleton */
+.skeleton.pill-stats-skeleton {
+    display: flex; /* Should already be flex from base skeleton styles? */
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 0 var(--space-xs);
+    background-color: transparent;
+    animation: none;
+    position: absolute; /* Overlay real stats */
+    inset: 0;
+}
+.skeleton .skeleton-stat-box {
+    width: var(--pill-icon-size, 40px);
+    height: var(--pill-icon-size, 40px);
+    border-radius: 50%;
+    flex-shrink: 0;
+    /* Inherits base skeleton animation */
+}
+
+
+/* === 3. Study Actions Section === */
+/* === 3. Study Actions Section (REVISED) === */
+.pill-study-actions {
+    order : 3;
+    display: flex;
+    align-items: center;
+
+}
+
+/* NEW: Style Study Due as a standalone pill button */
+.study-due-button {
+    /* Use primary button base styles but adapt shape/padding */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--pill-icon-size, 40px); /* Match height of other pill elements */
+    border-radius: var(--radius-full); /* Fully rounded pill shape */
+    padding: 0 var(--space-lg); /* Generous horizontal padding */
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    background-color: var(--color-accent-primary);
+    color: var(--color-text-on-accent);
+    border: 1px solid var(--color-accent-primary);
+    gap: var(--space-xs); /* Gap between icon and text */
+    transition: all var(--transition-duration-short) ease-in-out;
+    box-shadow: var(--shadow-small);
+}
+.study-due-button svg { /* Icon styles */
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+.study-due-button:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-accent-primary) 90%, black 10%);
+    filter: none; /* Override base button filter if needed */
+    transform: translateY(-1px) scale(1.02); /* Lift and slightly enlarge */
+    box-shadow: var(--shadow-medium);
+}
+.study-due-button:active:not(:disabled) {
+    transform: translateY(0) scale(1);
+    filter: brightness(0.95);
+    box-shadow: var(--shadow-small);
+}
+.study-due-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+    background-color: var(--color-tertiary-bg);
+    border-color: var(--color-border-primary);
+    color: var(--color-text-tertiary);
+}
+
+/* NEW: Style Options Trigger as a separate, smaller circle/pill */
+.study-options-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(var(--pill-icon-size, 40px) * 0.8); /* Slightly smaller */
+    height: calc(var(--pill-icon-size, 40px) * 0.8);
+    border-radius: 50%; /* Circular */
+    margin-left: var(--space-xs); /* Space between main button and trigger */
+    background-color: var(--color-tertiary-bg);
+    border: 1px solid var(--color-border-primary);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-duration-short) ease-in-out;
+}
+.study-options-trigger svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    transition: transform var(--transition-duration-short);
+}
+.study-options-trigger:hover:not(:disabled) {
+    background-color: var(--color-quaternary-bg);
+    color: var(--color-text-primary);
+    transform: scale(1.1);
+}
+.study-options-trigger:active:not(:disabled) {
+    transform: scale(1);
+}
+.study-options-trigger[aria-expanded="true"] { /* Style when popup is open */
+    background-color: var(--color-quaternary-bg);
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-focus);
+}
+.study-options-trigger[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+}
+
+
+/* Study Options Popup (Positioning might need slight adjustment) */
+.study-options-popup {
+    position: absolute;
+    bottom: calc(100% + var(--space-xs)); /* Position above the trigger */
+    /* Align based on the new separate trigger button */
+    right: 0; /* Align with the right edge of the actions section maybe? */
+    /* Or adjust left positioning relative to the trigger */
+    /* left: auto; */
+    transform: translateX(0); /* Remove previouscentering transform if any */
+
+    background-color: var(--color-secondary-bg);
+    border-radius: var(--radius-medium);
+    border: 1px solid var(--color-border-primary);
+    box-shadow: var(--shadow-medium);
+    padding: var(--space-sm);
+    display: none;
+    flex-direction: column;
+    gap: var(--space-sm);
+    z-index: calc(var(--z-index-sticky) + 1);
+    min-width: 192px;
+    opacity: 0;
+    transform: translateY(5px); /* Keep entry animation */
+    transition: opacity var(--transition-duration-short) ease-out,
+                transform var(--transition-duration-short) ease-out;
+}
+.study-options-popup.visible {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.focused-study-button {
+    /* Style remains the same (secondary button) */
+    width: 100%;
+    justify-content: center;
+}
+
+.batch-size-control {
+    /* Style remains the same */
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+.batch-size-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+}
+.batch-size-input {
+    /* Use control input styles */
+    width: 60px; /* Fixed small width */
+    text-align: center;
+    padding: 0 var(--space-xs);
+    height: calc(var(--control-height) * 0.9);
+}

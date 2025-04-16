@@ -1,0 +1,269 @@
+/* css/components/group-widget.css */
+
+/* Group widget inherits base card styles via .grid-stack-item-content */
+/* Add group-specific overrides and features */
+/* Ensure group widget colors are properly applied */
+
+.group-widget {
+    /* Base variable that gets overridden inline */
+    --group-bg-color: var(--color-secondary-bg, #2c3a56); 
+}
+
+/* Group widget colors */
+.group-widget > .grid-stack-item-content {
+    background-color: var(--color-secondary-bg);
+    border: 1px solid var(--color-border-primary);
+    /* Group custom color blending */
+    background-color: color-mix(in srgb, var(--color-secondary-bg) 85%, var(--group-bg-color, var(--color-quaternary-bg)) 15%);
+    border-color: color-mix(in srgb, var(--color-border-primary) 75%, var(--group-bg-color, var(--color-border-secondary)) 25%);
+}
+
+/* Group Hover Effects */
+.grid-stack > .grid-stack-item.group-widget:not(.ui-draggable-dragging):not(.ui-resizable-resizing):hover > .grid-stack-item-content {
+    /* Enhance the shadow for depth perception */
+    box-shadow: var(--shadow-large, 0 8px 16px rgba(0, 0, 0, 0.2));
+    
+    /* Slight scale transform on hover for interactive feel */
+    transform: translateY(-3px) scale(1.01);
+    
+    /* Intensify the border using the group's color */
+    border-color: var(--group-bg-color, var(--color-border-highlight));
+    border-width: 2px;
+    
+    /* Optional: Intensify group color slightly on hover */
+    background-color: color-mix(in srgb, var(--color-secondary-bg) 75%, var(--group-bg-color) 25%);
+}
+
+/* Group widget base transition for smooth hover effects */
+.grid-stack > .grid-stack-item.group-widget > .grid-stack-item-content {
+    transition: transform 0.2s ease-out, 
+                box-shadow 0.2s ease-out, 
+                border-color 0.15s ease-out, 
+                background-color 0.15s ease-out,
+                border-width 0.15s ease-out;
+}
+
+/* Fix for transforming without affecting internal layout */
+.grid-stack > .grid-stack-item.group-widget:hover {
+    z-index: 10; /* Bring hovered group forward */
+}
+
+/* Ensure header area has proper hover indication too */
+.grid-stack > .grid-stack-item.group-widget:hover .group-widget-header {
+    background-color: color-mix(in srgb, var(--color-tertiary-bg) 50%, var(--group-bg-color) 50%);
+    transition: background-color 0.15s ease-out;
+}
+
+.group-widget-header {
+    display: flex;
+    background-color: color-mix(in srgb, var(--color-tertiary-bg) 70%, var(--group-bg-color, var(--color-quaternary-bg)) 30%);
+    border-bottom: 1px solid var(--color-border-primary);
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    
+    flex-shrink: 0;
+    cursor: default; /* Header itself isn't draggable */
+    position: relative; /* For rename input positioning */
+}
+
+/* Add these new rules for chapter items within groups */
+.group-widget .chapter-item {
+    /* Apply a subtle tint of the group color to each chapter */
+    background-color: color-mix(in srgb, var(--color-tertiary-bg) 92%, var(--group-bg-color, var(--color-quaternary-bg)) 8%);
+    border-color: color-mix(in srgb, var(--color-border-primary) 90%, var(--group-bg-color, var(--color-border-secondary)) 10%);
+}
+
+/* Add visual indication for dragging chapters from groups */
+.chapter-item.dragging-from-group {
+    opacity: 0.8;
+    outline: 2px dashed var(--color-accent-blue);
+}
+
+/* Make sure chapter items inside group-widget are properly draggable */
+.group-widget .chapter-item {
+    cursor: grab;
+    position: relative; /* Ensure good stacking context */
+    z-index: 2; /* Higher than default to ensure chapters are "above" group for drag events */
+}
+
+.group-widget .chapter-item:active {
+    cursor: grabbing;
+}
+
+/* Make the header area specifically draggable for moving the entire group */
+.group-widget-header {
+    cursor: move;
+    z-index: 1;
+}
+
+/* Special styling for list mode chapter rows */
+.group-widget .group-chapter-area.layout-list .chapter-item {
+    background-color: color-mix(in srgb, var(--color-tertiary-bg) 88%, var(--group-bg-color, var(--color-quaternary-bg)) 12%);
+    border-left: 3px solid var(--group-bg-color, var(--color-border-secondary));
+}
+
+/* Hover effect that preserves group color */
+.group-widget .chapter-item:hover {
+    background-color: color-mix(in srgb, var(--color-tertiary-bg) 75%, var(--group-bg-color, var(--color-quaternary-bg)) 25%);
+    border-color: var(--color-border-secondary);
+}
+
+/* Group hover effect */
+.grid-stack > .grid-stack-item.group-widget:hover > .grid-stack-item-content {
+    border-color: var(--color-border-secondary);
+    box-shadow: var(--shadow-medium);
+    background-color: color-mix(in srgb, var(--color-secondary-bg) 80%, var(--group-bg-color, var(--color-quaternary-bg)) 20%);
+}
+
+.group-name {
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-lg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: var(--space-sm);
+    color: var(--color-text-primary);
+}
+
+.group-stats {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Group Rename Input */
+
+.group-rename-input { /* Style like chapter rename */ }
+.group-widget.is-renaming .group-name,
+.group-widget.is-renaming .group-stats {
+    visibility: hidden; /* Hide underlying elements */
+}
+.group-widget.is-renaming .group-rename-input { display: block; }
+    .group-widget.is-renaming > * > .group-widget-header > .group-name {
+        display: none; /* Hide the original span */
+    }
+
+    .group-widget.is-renaming > * > .group-widget-header > .group-rename-input {
+        display: block; /* Show the input */
+        width: 100%; /* Make input take available width in its container */
+    }
+
+    .group-rename-input {
+        font-size: 1.1em; /* Match group name size */
+        font-weight: 600;
+        flex-grow: 1; /* Allow input to grow */
+   }
+
+   
+
+
+/* Chapter Area within Group */
+.group-chapter-area {
+    flex-grow: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Inherit scrollbar styles from .scrollable */
+    padding: 10px;
+}
+
+/* Layout modes */
+.group-chapter-area.layout-card {
+    display: grid;
+    /* Adjust minmax based on typical group sizes */
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--space-sm);
+    padding: var(--space-md);
+}
+
+.group-chapter-area.layout-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px; /* No gap, use borders */
+    padding: var(--space-xs) 5px; /* Vertical padding only */
+}
+/* Styling for .chapter-item within list handled in chapter-item.css */
+
+
+/* --- Group Edit Mode Cues (Optional but Recommended) --- */
+.dashboard-container.group-edit-mode .group-widget > .grid-stack-item-content {
+    cursor: grab;
+    /* Add visual indicator, e.g., dashed border */
+    border-style: dashed;
+    border-color: var(--color-accent-primary);
+    border-width: var(--border-width-medium);
+}
+
+.dashboard-container.group-edit-mode .group-widget.ui-gridstack-dragging > .grid-stack-item-content {
+    cursor: grabbing;
+    opacity: 0.7;
+    box-shadow: var(--shadow-large);
+}
+
+/* Resize Handles (Example using pseudo-elements) */
+.dashboard-container.group-edit-mode .group-widget > .grid-stack-item-content::before,
+.dashboard-container.group-edit-mode .group-widget > .grid-stack-item-content::after {
+    content: '';
+    position: absolute;
+    background: var(--color-accent-primary);
+    opacity: 0;
+    transition: opacity var(--transition-duration-short);
+    z-index: 10; /* Above content */
+    pointer-events: none; /* Let Gridstack handle events */
+}
+/* Bottom Handle */
+.dashboard-container.group-edit-mode .group-widget > .grid-stack-item-content::before {
+    bottom: -1px; /* Align with border */
+    left: 0; right: 0; height: 5px;
+    cursor: ns-resize;
+    pointer-events: auto;
+}
+/* Right Handle */
+.dashboard-container.group-edit-mode .group-widget > .grid-stack-item-content::after {
+    top: 0; bottom: 0; right: -1px; width: 5px;
+    cursor: ew-resize;
+    pointer-events: auto;
+}
+/* Show handles on hover in edit mode */
+.dashboard-container.group-edit-mode .group-widget:hover > .grid-stack-item-content::before,
+.dashboard-container.group-edit-mode .group-widget:hover > .grid-stack-item-content::after {
+    opacity: 0.6;
+}
+
+/* CRITICAL FIX: More explicit styles to ensure proper drag behavior */
+.group-widget.has-draggable-children .group-widget-header {
+    cursor: move;
+    z-index: 1;
+    position: relative;
+    /* Ensure the header alone is what GridStack can drag */
+    touch-action: none;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+/* Make all other parts of the group prevent GridStack dragging */
+.group-widget.has-draggable-children .group-chapter-area {
+    cursor: default;
+    position: relative;
+    z-index: 2; /* Higher than header */
+}
+
+/* Stronger styles for draggable chapter items */
+.group-widget .chapter-item {
+    cursor: grab;
+    position: relative;
+    z-index: 3; /* Higher than both group and header */
+    -webkit-user-drag: element;
+    user-select: none;
+}
+
+.group-widget .chapter-item:active {
+    cursor: grabbing;
+}
+
+.group-widget .chapter-item.dragging-from-group {
+    opacity: 0.7;
+    outline: 2px dashed var(--color-accent-blue);
+    box-shadow: 0 0 8px rgba(0, 120, 212, 0.6);
+}

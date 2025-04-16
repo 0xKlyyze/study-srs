@@ -167,6 +167,10 @@ class StudyView {
         this.reviewsSinceLastCheck = 0;
         this.checkFrequency = 5; // Check every 5 reviews
         this.isCheckingForCards = false; // Prevent concurrent checks
+        this._finalCheckCount = 0;
+        this._MAX_FINAL_CHECKS = 3; // Safety limit
+        // *** NEW: Property to store the bound Escape key handler ***
+        this._boundHandleEscKeyForPopup = null;
 
         // --- Component Instances ---
         this.cardRenderer = null;
@@ -204,6 +208,9 @@ class StudyView {
         this._updateEditPreview = this._updateEditPreview.bind(this); // NEW bind
         this._fetchAndDisplayRemainingDue = this._fetchAndDisplayRemainingDue.bind(this);
         this._handleStudyRemainingClick = this._handleStudyRemainingClick.bind(this); // Handler for the new button
+        this._handleStudyOtherClick = this._handleStudyOtherClick.bind(this);
+        this._handleEscKeyForPopup = this._handleEscKeyForPopup.bind(this);
+        this._handleKeyDown = this._handleKeyDown.bind(this);
     }
 
     _bindActionHandlers() {
@@ -284,6 +291,7 @@ class StudyView {
         this.initialBatchCardIds = new Set(); // Reset sets
         this.reviewedInThisBatchIds = new Set();
         this.reviewsSinceLastCheck = 0;
+        this._finalCheckCount = 0; // Reset on init
         this.isCheckingForCards = false;
         this._updateFlipStateVisuals(); // Ensure initial state is front
 
@@ -500,6 +508,12 @@ class StudyView {
                 // --- End Edit Panel Listeners ---
                         // *** Add Listener for the NEW "Study Remaining" Button ***
             this.studyRemainingDueBtn?.addEventListener('click', this._handleStudyRemainingClick);
+             // Ensure studyOtherBtn listener is definitely set up
+            if (this.studyOtherBtn && this.otherMaterialsList) {
+                this.studyOtherBtn.addEventListener('click', this._handleStudyOtherClick);
+            } else {
+                console.warn("Study Other button or material list not found, popup functionality disabled.");
+            }
             // Keyboard listener
             document.addEventListener('keydown', this._handleKeyDown);
         }    
@@ -515,6 +529,8 @@ class StudyView {
         this.deleteBtn?.removeEventListener('click', this._deleteCard);
         this.editSaveBtn?.removeEventListener('click', this._handleEditSave);
         this.editCancelBtn?.removeEventListener('click', this._handleEditCancel);
+        document.removeEventListener('keydown', this._handleKeyDown);
+        this.keyboardShortcuts?.stopListening(); // Keep this too
         // Remove input listeners
         this.editNameInput?.removeEventListener('input', this._updateEditPreview);
                 // Remove tilt listeners
@@ -529,6 +545,15 @@ class StudyView {
         }
        console.log("Tilt and TransitionEnd listeners removed.");
 
+        // *** Remove Escape listener if it's somehow still attached ***
+        if (this._boundHandleEscKeyForPopup) {
+            document.removeEventListener('keydown', this._boundHandleEscKeyForPopup);
+            this._boundHandleEscKeyForPopup = null; // Clear reference
+            console.log("Removed dynamic Escape key listener on destroy.");
+        }
+        // Remove other listeners like studyOtherBtn
+        this.studyOtherBtn?.removeEventListener('click', this._handleStudyOtherClick);
+
         // Remove AI listeners
         if (this.aiBtn) {
             this.aiBtn.removeEventListener('click', this._toggleAiPanel);
@@ -541,6 +566,7 @@ class StudyView {
         
         // Remove AI button listener if added
         // *** Remove NEW listener ***
+        this._finalCheckCount = 0;
         this.studyRemainingDueBtn?.removeEventListener('click', this._handleStudyRemainingClick);
         this.initialBatchCardIds.clear();
         this.reviewedInThisBatchIds.clear();
@@ -551,6 +577,26 @@ class StudyView {
             this._toggleAiPanel(); // Attempt to close it cleanly
         }
     }
+
+        /**
+     * Handles the Escape key press specifically to close the 'Study Another' popup.
+     * @param {KeyboardEvent} event
+     * @private
+     */
+        _handleEscKeyForPopup(event) {
+            if (event.key === 'Escape') {
+                if (this.otherMaterialsList && this.otherMaterialsList.classList.contains('visible')) {
+                    console.log("Escape key pressed, closing 'Study Another' popup.");
+                    this.otherMaterialsList.classList.remove('visible');
+                    // *** Remove the listener itself ***
+                    if (this._boundHandleEscKeyForPopup) {
+                        document.removeEventListener('keydown', this._boundHandleEscKeyForPopup);
+                        this._boundHandleEscKeyForPopup = null; // Clear the reference
+                    }
+                    event.stopPropagation(); // Prevent other Escape handlers if necessary
+                }
+            }
+        }
 
         // Add this new method
     _toggleAiPanel(forceState) { // Modified to accept optional forceState
@@ -813,6 +859,14 @@ class StudyView {
             if (this.isAiPanelVisible || this.isEditPanelVisible) {
                  return;
             }
+
+              // --- >>> ADD SAFETY CHECK <<< ---
+        if (!this.keyboardShortcuts) {
+            console.warn("DEBUG: _handleKeyDown called but keyboardShortcuts instance is missing. Listener might be stale.");
+            // Optionally remove the listener again here if it's stale?
+            // document.removeEventListener('keydown', this._handleKeyDown);
+            return; // Prevent error
+        }
     
             // Let KeyboardShortcuts class handle the rest
             this.keyboardShortcuts.handleKeyEvent(event);
@@ -823,56 +877,66 @@ class StudyView {
 
     _loadNextCard() {
         console.log(`DEBUG: _loadNextCard START. Current Index (Before Inc): ${this.currentCardIndex}, Queue Length: ${this.sessionCards.length}`);
-        this.currentCardIndex++;
-        console.log(`DEBUG: _loadNextCard AFTER Inc. New Index: ${this.currentCardIndex}`); // Log right after incremen
-        this._updateRemainingCount(); // Update remaining count based on new index and potentially new length
-        
-                // *** Update the progress tracker display HERE ***
-    
-        this.progressTracker.update(this.sessionStats);
-        console.log(`DEBUG: _loadNextCard - Index: ${this.currentCardIndex}, Remaining (Stat): ${this.sessionStats.remaining}, Queue Length: ${this.sessionCards.length}`);
+
+        // --- Only increment if we are not at the theoretical end ---
+        // This prevents index from going beyond the actual last item during the check phase
+        if (this.currentCardIndex < this.sessionCards.length - 1) {
+            this.currentCardIndex++;
+        } else if (this.sessionCards.length > 0 && this.currentCardIndex === this.sessionCards.length - 1) {
+             // We were on the last card, now check if we *really* finished
+             console.log(`DEBUG: _loadNextCard - Was on last card (Index: ${this.currentCardIndex}, Length: ${this.sessionCards.length}). Triggering final check.`);
+             this.currentCard = null; // Clear current card display while checking
+             // Don't increment index here, let final check decide
+             this._finalDueCardCheck();
+             return; // Exit _loadNextCard, _finalDueCardCheck takes over
+        } else { // Handles initial load (index -1, length > 0) or empty queue
+            this.currentCardIndex++;
+        }
+
+        console.log(`DEBUG: _loadNextCard AFTER potential Inc. New Index: ${this.currentCardIndex}`);
+
+        // Check if index is valid *within the current bounds*
         if (this.currentCardIndex < this.sessionCards.length) {
+            // --- Load card at currentCardIndex ---
             this.currentCard = this.sessionCards[this.currentCardIndex];
-            if (typeof this.currentCard.id === 'undefined') {
-                console.error(`CRITICAL: Card at index ${this.currentCardIndex} is missing an ID!`, this.currentCard);
-                this._showError(`Error loading card ${this.currentCardIndex + 1}. It is missing an ID.`, true);
-                this._skipCard(); // Attempt to skip problematic card
+
+            if (typeof this.currentCard?.id === 'undefined') {
+                console.error(`CRITICAL: Card at index ${this.currentCardIndex} is missing an ID! Skipping.`, this.currentCard);
+                // ... (error handling, skip logic - keep safety check) ...
+                 this._showError(`Error loading card ${this.currentCardIndex + 1}: Missing required ID. Skipping.`, true);
+                 this.isLoading = false; this._updateLoadingState();
+                 this._skipCard();
                 return;
             }
 
             console.log(`Loading card ${this.currentCardIndex + 1}/${this.sessionCards.length}: ${this.currentCard.name} (ID: ${this.currentCard.id})`);
 
-            this.isFlipped = false;
-            this._updateFlipStateVisuals();
-
-            // Render card content using CardRenderer
-            this.cardRenderer.render(this.currentCard); // Renderer now handles front meta too
-
-            // Starred visual state (handled by CardRenderer now)
-            // const isStarred = !!this.currentCard.is_starred;
-            // this.cardViewerEl?.classList.toggle('card-viewer--starred', isStarred); // Removed - handled by Renderer
-
-            // Update progress tracker
-            this.sessionStats.remaining = this.sessionCards.length - this.currentCardIndex;
+            this._updateRemainingCount();
             this.progressTracker.update(this.sessionStats);
 
-            // Re-enable buttons
-            this.qualityButtons.setDisabled(true); // Quality buttons are disabled until flipped
+            // Reset display state
+            this.isFlipped = false;
+            this._updateFlipStateVisuals();
+            this.cardRenderer.render(this.currentCard);
+            this.qualityButtons.setDisabled(true);
             if(this.skipButton) this.skipButton.disabled = false;
-            if(this.flipButton) this.flipButton.disabled = false; // Enable flip button
-            // Update Action Button UI states (star, bury)
+            if(this.flipButton) this.flipButton.disabled = false;
             this._updateActionButtonsUI();
 
             this.isLoading = false;
             this._updateLoadingState();
+            // *** Reset the final check counter since a card was successfully loaded ***
+            this._finalCheckCount = 0;
 
         } else {
-            // Session finished
-            this.currentCard = null;
+            // --- This case should now only be reachable if the queue was initially empty ---
+            console.log(`DEBUG: _loadNextCard - Index (${this.currentCardIndex}) is not less than length (${this.sessionCards.length}). Queue likely empty or check failed?`);
+            // If the queue started empty, initialize should have caught it.
+            // If _finalDueCardCheck decided to end, it calls _showCompletionMessage directly.
+            // So, reaching here might indicate an unexpected state. Let's defensively end.
             this.isLoading = false;
             this._updateLoadingState();
-            this._finalDueCardCheck();
-            // No need to call destroy() here, completion message handles UI transition
+            this._showCompletionMessage("Study session complete.", true); // Or perhaps an error message?
         }
     }
 
@@ -885,18 +949,24 @@ class StudyView {
      * @private
      */
     async _finalDueCardCheck() { // New Logic
-        // --- Guards ---
-        if (this.isFocusedAllSession) {
-            console.log("DEBUG: Final Check - Skipping ('Focused All' session). Proceeding to completion.");
-            this.isLoading = false; this._updateLoadingState(); // Ensure loading off
-            this._showCompletionMessage("Study session complete!", false); // 'Focused All' never shows remaining due
-            return;
-        }
-        if (this.isPreviewMode) {
-             console.log("DEBUG: Final Check - Preview Mode. Ending session.");
-             this.isLoading = false; this._updateLoadingState();
-             this._showCompletionMessage("Preview Session Complete!", false); // No remaining due in preview
+        // --- Guards (keep Focused All, Preview Mode, isChecking, offline, initialBatchId checks) ---
+        if (this.isFocusedAllSession) { /* ... show completion ... */ return; }
+
+         // *** Circuit Breaker Check ***
+         this._finalCheckCount++;
+         console.log(`DEBUG: Final Check - Attempt #${this._finalCheckCount}`);
+         if (this._finalCheckCount > this._MAX_FINAL_CHECKS) {
+             console.warn(`DEBUG: Final Check - Maximum check attempts (${this._MAX_FINAL_CHECKS}) reached. Forcing completion.`);
+             this.isLoading = false; this.isCheckingForCards = false; this._updateLoadingState();
+             this._showCompletionMessage("Study session complete (some cards may still need review).", true);
              return;
+         }
+        
+        if (this.isPreviewMode) {
+            console.log("DEBUG: Final Check - Preview Mode. Ending session.");
+            this.isLoading = false; this._updateLoadingState();
+            this._showCompletionMessage("Preview Session Complete!", false); // No remaining due in preview
+            return;
         }
          if (this.isCheckingForCards || !navigator.onLine) { // Prevent overlap/offline
              console.log("DEBUG: Final Check - Skipping (already checking or offline). Proceeding to completion.");
@@ -913,60 +983,70 @@ class StudyView {
         // --- End Guards ---
 
         console.log("DEBUG: Final Check - Starting final due check using /cards/check-due...");
-        this.isCheckingForCards = true; // Set flag
-        this.isLoading = true; // Show loading
+        this.isCheckingForCards = true;
+        this.isLoading = true; // Show loading during check
         this._updateLoadingState();
 
         try {
             const checkPayload = { cardIds: Array.from(this.initialBatchCardIds) };
-            const result = await apiClient.checkDueStatus(checkPayload); // Assuming apiClient has this method
+            const result = await apiClient.checkDueStatus(checkPayload);
             const stillDueIds = new Set(result?.dueCardIds || []);
 
-            // Find cards from the original batch that are *still* due
-            const cardsToReAddIds = Array.from(this.initialBatchCardIds).filter(id => stillDueIds.has(id));
+            // Filter to find cards that are due AND not already waiting in the queue beyond the current index
+            // Note: currentCardIndex hasn't been incremented yet in this path
+            const upcomingQueueIds = new Set(this.sessionCards.slice(this.currentCardIndex + 1).map(c => c.id));
+            const cardsToReAddIds = Array.from(this.initialBatchCardIds).filter(id =>
+                stillDueIds.has(id) && !upcomingQueueIds.has(id)
+            );
 
             if (cardsToReAddIds.length > 0) {
-                // --- Re-add Cards and Continue ---
-                console.log(`DEBUG: Final Check - Found ${cardsToReAddIds.length} card(s) from initial batch still due. Re-adding and continuing.`);
+                // --- Re-add Cards ---
+                console.log(`DEBUG: Final Check - Found ${cardsToReAddIds.length} card(s) to re-add.`);
                 let cardsAdded = 0;
+                const currentLength = this.sessionCards.length; // Length *before* adding
+
                 for (const cardId of cardsToReAddIds) {
-                    const cardData = this.sessionCards.find(c => c.id === cardId) // Try finding in current list first
-                                     || sampleCardsData.find(c => c.id === cardId); // Fallback for edge cases/preview? Unlikely needed. Find in ORIGINAL batch data is better. Need to store initial data? No, should be in sessionCards.
+                    const cardData = this.sessionCards.find(c => c.id === cardId); // Find original data
                     if (cardData) {
-                         // *** Ensure we don't add duplicates if somehow still in queue (unlikely here) ***
-                         if (!this.sessionCards.slice(this.currentCardIndex + 1).some(c => c.id === cardId)) {
-                             const cardToInsert = { ...cardData }; // Use a shallow copy
-                             this.sessionCards.push(cardToInsert); // Add to the END
-                             cardsAdded++;
-                         }
+                         const cardToInsert = { ...cardData };
+                         this.sessionCards.push(cardToInsert); // Add to the END
+                         cardsAdded++;
+                         console.log(`DEBUG: Final Check - Added card ${cardId} to end. New length: ${this.sessionCards.length}`);
                     } else {
-                         console.warn(`DEBUG: Final Check - Card data for ID ${cardId} not found in sessionCards.`);
+                         console.warn(`DEBUG: Final Check - Card data for ID ${cardId} not found. Cannot re-add.`);
                     }
                 }
 
                 if (cardsAdded > 0) {
-                    this.isCheckingForCards = false; // Reset flag
-                    this.isLoading = false; // Reset loading flag (let _loadNextCard handle its loading)
-                    this._updateRemainingCount(); // Update count reflecting added cards
+                    // --- Cards were added, CONTINUE the session ---
+                    this.isCheckingForCards = false;
+                    // isLoading is still true, will be set by _loadNextCard
+                    this._updateRemainingCount();
                     this.progressTracker.update(this.sessionStats);
-                    console.log(`DEBUG: Final Check - Added ${cardsAdded} cards. Reloading next card.`);
-                    this._loadNextCard(); // Continue session
+
+                    // *** CRITICAL: currentCardIndex is still pointing at the *previous* last card ***
+                    // The next call to _loadNextCard needs to load the card at currentLength.
+                    // The increment logic inside _loadNextCard handles this naturally now.
+                    console.log(`DEBUG: Final Check - Added ${cardsAdded} card(s). Calling _loadNextCard to load index ${this.currentCardIndex + 1}.`);
+                    // The index will be incremented inside the next _loadNextCard call.
+                    this._loadNextCard(); // This will now increment index and load the first re-added card.
+
                 } else {
-                     // No cards were actually added (e.g., data missing), proceed to completion
-                     console.log("DEBUG: Final Check - No valid cards could be re-added. Proceeding to completion.");
-                     this.isCheckingForCards = false; // Reset check flag
-                     this.isLoading = false; // Reset loading flag before showing completion
+                     // No cards needed re-adding (or couldn't be found)
+                     console.log("DEBUG: Final Check - No cards needed re-adding. Proceeding to completion.");
+                     this.isCheckingForCards = false;
+                     this.isLoading = false;
                      this._updateLoadingState();
-                     this._showCompletionMessage("Study session complete!", true); // Show completion, potentially with remaining due
+                     this._showCompletionMessage("Study session complete!", true);
                 }
 
             } else {
-                // --- End the Session ---
+                // --- No cards reported as due, END the session ---
                 console.log("DEBUG: Final Check - Confirmed no cards from the initial batch are still due. Ending session.");
-                this.isCheckingForCards = false; // Reset check flag
-                this.isLoading = false; // Reset loading flag before showing completion
-                this._updateLoadingState(); // Update UI to remove loading state
-                this._showCompletionMessage("Study session complete!", true); // Show completion, potentially with remaining due
+                this.isCheckingForCards = false;
+                this.isLoading = false;
+                this._updateLoadingState();
+                this._showCompletionMessage("Study session complete!", true);
             }
 
         } catch (error) {
@@ -1592,49 +1672,66 @@ class StudyView {
         }
     }
 
-    _showCompletionMessage(message) {
-        if (!this.completionContainer || !this.completionMessageEl) return;
-        console.log("Session complete:", message);
-        this._stopTimer();
+ // Ensure _showCompletionMessage calls destroy *after* setting up its listeners
+ _showCompletionMessage(message, checkRemainingDue = true) { // Added default value
+    if (!this.completionContainer || !this.completionMessageEl) return;
+    console.log("Session complete:", message);
+    this._stopTimer();
 
-        // Hide study elements
-        if(this.studyAreaEl) this.studyAreaEl.style.display = 'none';
-        if (this.isEditPanelVisible) this._toggleEditPanel(false); // Close edit panel too
-        if(this.sessionPillEl) this.sessionPillEl.style.display = 'none';
+    // Hide study elements
+    if(this.studyAreaEl) this.studyAreaEl.style.display = 'none';
+    if (this.isEditPanelVisible) this._toggleEditPanel(false);
+    if (this.isAiPanelVisible) this._toggleAiPanel(false); // Close AI panel too
+    if(this.sessionPillEl) this.sessionPillEl.style.display = 'none';
 
-        // Prepare and show completion UI
-        if (!this.completionOverlay) { // Check overlay
-             console.error("Cannot show completion message: overlay container not found.");
-             window.history.back(); // Fallback
-             return;
-         }
+    // Prepare and show completion UI
+    if (!this.completionOverlay) {
+        console.error("Cannot show completion message: overlay container not found.");
+        window.history.back();
+        return;
+    }
 
-        if(this.completionMessageEl) this.completionMessageEl.textContent = message;
-
-        // --- Populate Stats ---
-        this._updateCompletionStats();
+    if(this.completionMessageEl) this.completionMessageEl.textContent = message;
+    this._updateCompletionStats();
 
 
-        // --- Button 1: Return ---
-        this.returnBtn.onclick = () => {
-             console.log("Return button clicked.");
-             window.history.back();
+       // --- Button 1: Return ---
+    // Use location instead of history for more reliable navigation
+    this.returnBtn.onclick = () => {
+        console.log("Return button clicked, navigating...");
+        try {
+            // Try multiple navigation options
+            const referrer = document.referrer;
+            if (referrer && referrer !== window.location.href) {
+                window.location.href = referrer; // Go to the referring page
+            } else {
+                window.location.href = "./index.html"; // Fallback to home page
+            }
+        } catch (e) {
+            console.error("Navigation error:", e);
+        }
+    };
+
+        if (this.completionRemainingDueContainer) {
+            this.completionRemainingDueContainer.style.visibility = 'hidden'; // Hide initially
+            this.completionRemainingDueContainer.classList.remove('visible'); // Reset animation class
+        }
+        // --- Button for Study Remaining Due: Use inline handler like other buttons ---
+    if (this.studyRemainingDueBtn) {
+        this.studyRemainingDueBtn.onclick = (event) => {
+            console.log("Study Remaining Due button clicked!");
+            this._handleStudyRemainingClick(event);
         };
+    }
+         if(this.compStatRemainingDueEl) this.compStatRemainingDueEl.textContent = '-';
 
-        // --- Hide/Reset Remaining Due Section Initially ---
-        if(this.completionRemainingDueContainer) this.completionRemainingDueContainer.style.display = 'none';
-        if(this.studyRemainingDueBtn) this.studyRemainingDueBtn.disabled = true;
-        if(this.compStatRemainingDueEl) this.compStatRemainingDueEl.textContent = '-';
-                // --- Conditional Fetch for Remaining Due ---
-        // Only check if requested AND it wasn't a "Focused All" session
+        // --- Conditional Fetch ---
         const shouldFetchRemaining = checkRemainingDue && !this.isFocusedAllSession && !this.isPreviewMode;
-
         if (shouldFetchRemaining) {
-            console.log("DEBUG: Attempting to fetch remaining due cards for completion screen...");
-            this._fetchAndDisplayRemainingDue(); // Async call, handles its own UI updates
-       } else {
-            console.log("DEBUG: Skipping fetch for remaining due cards on completion screen.");
-       }
+             this._fetchAndDisplayRemainingDue(); // This will make the container visible on success
+        } else {
+             // Container remains hidden
+        }
 
         // --- Button 2: Study Global Material ---
         const wasSpecificSession = this.initialParams.chapters || this.initialParams.mode === 'all';
@@ -1657,123 +1754,206 @@ class StudyView {
          // --- Button 3: Study Other Material ---
          this.studyOtherBtn.onclick = this._handleStudyOtherClick.bind(this);
          // Reset popup state
-         if (this.otherMaterialsList) {
-             this.otherMaterialsList.classList.remove('visible');
-             this.otherMaterialsList.innerHTML = '';
-         }
+        // Reset popup state and remove listener just in case
+        if (this.otherMaterialsList) {
+            this.otherMaterialsList.classList.remove('visible');
+            if (this._boundHandleEscKeyForPopup) {
+                document.removeEventListener('keydown', this._boundHandleEscKeyForPopup);
+                this._boundHandleEscKeyForPopup = null;
+            }
+        }
 
-         // Show the overlay using visibility class
-         this.completionOverlay.style.display = 'flex'; // Set display before adding class
-         // Use setTimeout to allow display change to render before transition starts
-         setTimeout(() => {
-            this.completionOverlay.classList.add('is-visible');
-         }, 10); // Small delay
+        this.completionOverlay.style.display = 'flex';
+    setTimeout(() => {
+        this.completionOverlay.classList.add('is-visible');
+    }, 10);
 
-         this.destroy(); // Clean up session listeners
-    }
+    // Clean up study session listeners, but preserve completion screen functionality
+    const tempStudyRemainingBtn = this.studyRemainingDueBtn; // Store reference
+    const tempReturnBtn = this.returnBtn;
+    const tempStudyOtherBtn = this.studyOtherBtn;
+    
+    this.destroy(); // Clean up session listeners
+    
+    // Restore button references that destroy() might have cleared
+    this.studyRemainingDueBtn = tempStudyRemainingBtn;
+    this.returnBtn = tempReturnBtn; 
+    this.studyOtherBtn = tempStudyOtherBtn;
+}
 
         /**
      * Fetches the count of remaining due cards for the original session scope
      * and updates the completion screen UI.
      * @private
      */
-        async _fetchAndDisplayRemainingDue() {
-            if (!this.completionRemainingDueContainer || !this.compStatRemainingDueEl || !this.studyRemainingDueBtn || !this.studyRemainingBatchSizeInput) {
-                console.warn("Cannot display remaining due: Elements missing.");
-                return;
-            }
-    
-            // Determine scope
-            const material = this.initialParams.material;
-            const chapters = this.initialParams.chapters; // Comma-separated string or null
-    
-            if (!material) { // Cannot determine scope if no material was specified initially
-                console.warn("Cannot fetch remaining due: Initial material unknown.");
-                return;
-            }
-    
-            console.log(`Fetching remaining due count for Material: ${material}, Chapters: ${chapters ?? 'All'}`);
-            // Show loading state specifically for this part? Or just let it populate? Let's just populate.
-             if(this.compStatRemainingDueEl) this.compStatRemainingDueEl.textContent = 'Loading...';
-    
-            try {
-                // Use getCards with due=true and a large limit to get the count
-                // Important: Filter by the *original* chapter selection, if any
-                const filters = {
-                    material: material,
-                    due: true,
-                    buried: false,
-                    limit: 9999 // Use a very large limit to effectively get all
-                };
-                if (chapters) {
-                    filters.chapter = chapters; // Pass chapter filter if it existed
-                }
-    
-                const remainingDueCards = await apiClient.getCards(filters);
-                const remainingCount = remainingDueCards.length;
-    
-                console.log(`Found ${remainingCount} remaining due cards for the scope.`);
-    
-                // Update UI
-                if(this.compStatRemainingDueEl) this.compStatRemainingDueEl.textContent = remainingCount;
-                if(this.studyRemainingBatchSizeInput) this.studyRemainingBatchSizeInput.value = 20; // Default batch size suggestion
-    
-                // Show the container and enable button IF there are cards remaining
-                if (remainingCount > 0) {
-                     if(this.completionRemainingDueContainer) this.completionRemainingDueContainer.style.display = 'flex'; // Or appropriate display value
-                     if(this.studyRemainingDueBtn) this.studyRemainingDueBtn.disabled = false;
-                } else {
-                     // Optionally show a "None left!" message instead of the count/button
-                     if(this.compStatRemainingDueEl) this.compStatRemainingDueEl.textContent = '0';
-                     if(this.completionRemainingDueContainer) this.completionRemainingDueContainer.style.display = 'flex'; // Show container even if 0 left
-                     if(this.studyRemainingDueBtn) this.studyRemainingDueBtn.disabled = true; // Keep button disabled
-                }
-    
-            } catch (error) {
-                console.error("Failed to fetch remaining due card count:", error);
-                if(this.compStatRemainingDueEl) this.compStatRemainingDueEl.textContent = 'Error';
-                 if(this.completionRemainingDueContainer) this.completionRemainingDueContainer.style.display = 'flex'; // Show container even on error
-                 if(this.studyRemainingDueBtn) this.studyRemainingDueBtn.disabled = true; // Keep button disabled
-            }
+/**
+     * Fetches the count of remaining due cards AND the material's default batch size,
+     * then updates the completion screen UI.
+     * @private
+     */
+    /**
+     * Fetches the TOTAL count of remaining due cards for the original scope
+     * AND the material's default batch size, then updates the completion screen UI.
+     * @private
+     */
+    async _fetchAndDisplayRemainingDue() {
+         // Ensure elements exist
+         if (!this.completionRemainingDueContainer || !this.compStatRemainingDueEl || !this.studyRemainingDueBtn || !this.studyRemainingBatchSizeInput) {
+            console.warn("Cannot display remaining due: Compact container elements missing.");
+            if (this.completionRemainingDueContainer) this.completionRemainingDueContainer.style.display = 'none';
+            return;
         }
+
+        const material = this.initialParams.material;
+        const chapters = this.initialParams.chapters;
+
+        console.log(`Fetching TOTAL remaining due count & settings for Material: ${material}, Chapters: ${chapters ?? 'All'}`);
+        // Indicate loading in compact way
+        if (this.compStatRemainingDueEl) this.compStatRemainingDueEl.textContent = '...';
+        if (this.completionRemainingDueContainer) this.completionRemainingDueContainer.style.visibility = 'hidden'; // Use visibility for smoother show/hide
+        if (this.studyRemainingDueBtn) this.studyRemainingDueBtn.disabled = true;
+
+        let defaultBatchSize = 20;
+
+
+        try {
+            // Fetch Material Settings Concurrently (or first, depends on preference)
+            const settingsPromise = apiClient.getMaterialSettings(material).catch(err => {
+                console.error(`Failed to fetch material settings: ${err}. Using fallback batch size ${defaultBatchSize}.`);
+                return null; // Allow proceeding with fallback
+            });
+
+            const filters = { material, due: true, buried: false, batchSize: 9999 };
+            if (chapters) filters.chapter = chapters;
+            const remainingDuePromise = apiClient.getCards(filters);
+
+            const [settings, remainingDueCards] = await Promise.all([settingsPromise, remainingDuePromise]);
+
+            // Process Settings
+            if (settings) {
+                 const batchSizeSetting = settings?.srsParameters?.defaultBatchSize ?? settings?.defaultBatchSize ?? null;
+                 if (typeof batchSizeSetting === 'number' && batchSizeSetting > 0) {
+                     defaultBatchSize = batchSizeSetting;
+                     console.log(`DEBUG: Found default batch size from settings: ${defaultBatchSize}`);
+                 } else {
+                     console.log(`DEBUG: No valid default batch size found in settings, using fallback: ${defaultBatchSize}`);
+                 }
+            }
+             // Update input field with determined batch size *before* showing the container
+             if (this.studyRemainingBatchSizeInput) this.studyRemainingBatchSizeInput.value = defaultBatchSize;
+
+
+            // Process Remaining Due Cards
+            const remainingCount = remainingDueCards.length;
+            console.log(`Found ${remainingCount} TOTAL remaining due cards.`);
+            if (this.compStatRemainingDueEl) this.compStatRemainingDueEl.textContent = remainingCount;
+
+            // Enable button if needed
+            if (remainingCount > 0) {
+                if (this.studyRemainingDueBtn) this.studyRemainingDueBtn.disabled = false;
+            }
+
+            // *** Make the container visible ***
+            if (this.completionRemainingDueContainer) {
+                this.completionRemainingDueContainer.style.visibility = 'visible'; // Make it visible
+                this.completionRemainingDueContainer.classList.add('visible'); // Add class for animation
+            }
+
+        } catch (error) {
+            console.error("Failed to fetch remaining due or settings:", error);
+            if (this.compStatRemainingDueEl) this.compStatRemainingDueEl.textContent = 'N/A';
+            // Keep container visible but indicate error? Or hide? Let's hide on error.
+             if (this.completionRemainingDueContainer) this.completionRemainingDueContainer.style.visibility = 'hidden';
+
+        }
+    }
 
             /**
      * Handles click on the "Study Remaining Due" button on the completion screen.
      * @private
      */
-    _handleStudyRemainingClick() {
-        const material = this.initialParams.material;
-        const chapters = this.initialParams.chapters; // Original chapters, if any
+ /**
+     * Handles click on the "Study Remaining Due" button on the completion screen.
+     * Removes essential listeners BEFORE navigation.
+     * @param {Event} event - The click event object.
+     * @private
+     */
+ _handleStudyRemainingClick(event) { // Add event parameter
+    console.log("DEBUG: _handleStudyRemainingClick START"); // Log start
 
-        if (!material) {
-            console.error("Cannot start remaining session: Material unknown.");
-            return;
-        }
-
-        let batchSize = 0;
-        if (this.studyRemainingBatchSizeInput) {
-            batchSize = parseInt(this.studyRemainingBatchSizeInput.value, 10);
-            if (isNaN(batchSize) || batchSize <= 0) {
-                batchSize = 0; // Use API default
-            }
-        }
-
-        console.log(`Starting NEW session for remaining due in Material: ${material}, Chapters: ${chapters ?? 'All'}, Batch Size: ${batchSize > 0 ? batchSize : 'API Default'}`);
-
-        const encodedMaterial = encodeURIComponent(material);
-        let url = `study-session.html?material=${encodedMaterial}&status=due`; // Always 'due'
-
-        if (chapters) {
-            url += `&chapters=${encodeURIComponent(chapters)}`; // Add original chapters if they existed
-        }
-        if (batchSize > 0) {
-            url += `&limit=${batchSize}`; // Add new batch size
-        }
-
-        console.log(`Navigating to: ${url}`);
-        window.location.href = url;
+    // Check if default was somehow prevented *before* our logic
+    if (event && event.defaultPrevented) {
+        console.warn("DEBUG: Event default action was already prevented before handler logic.");
     }
 
+    const material = this.initialParams.material;
+    const chapters = this.initialParams.chapters;
+
+    if (!material) {
+        console.error("Cannot start remaining session: Material unknown.");
+        return; // Stop execution
+    }
+
+    let batchSize = 0;
+    if (this.studyRemainingBatchSizeInput) {
+        batchSize = parseInt(this.studyRemainingBatchSizeInput.value, 10);
+        if (isNaN(batchSize) || batchSize <= 0) {
+            batchSize = 0;
+        }
+    } else {
+        console.warn("DEBUG: Batch size input not found.");
+    }
+
+    console.log(`DEBUG: Preparing session - Material: ${material}, Chapters: ${chapters ?? 'All'}, Batch Size: ${batchSize > 0 ? batchSize : 'API Default'}`);
+
+    const encodedMaterial = encodeURIComponent(material);
+    let url = `study-session.html?material=${encodedMaterial}&status=due`;
+
+    if (chapters) {
+        url += `&chapters=${encodeURIComponent(chapters)}`;
+    }
+    if (batchSize > 0) {
+        url += `&limit=${batchSize}`;
+    }
+
+    console.log('DEBUG: Constructed URL:', url); // Log the URL
+
+    try {
+        // --- Listener Removal ---
+        console.log("DEBUG: Attempting to remove keydown listener...");
+        document.removeEventListener('keydown', this._handleKeyDown);
+        console.log("DEBUG: keydown listener removal called.");
+
+        if (this.keyboardShortcuts) {
+             console.log("DEBUG: Attempting to stop keyboardShortcuts listener...");
+             this.keyboardShortcuts.stopListening();
+             console.log("DEBUG: keyboardShortcuts.stopListening() called.");
+        } else {
+            console.warn("DEBUG: keyboardShortcuts instance not found during cleanup.");
+        }
+        // --- End Listener Removal ---
+
+        console.log("DEBUG: About to assign window.location.href..."); // Log before navigation
+
+        // --- Navigation ---
+        window.location.href = url;
+        // --- End Navigation ---
+
+        // Code here might not execute if navigation is successful and immediate
+        console.log("DEBUG: window.location.href assignment executed.");
+
+    } catch (error) {
+        console.error("ERROR during listener removal or navigation assignment:", error);
+        // If an error occurs here, navigation definitely won't happen
+    }
+
+     // Check if default was prevented *after* our logic (less relevant for location change)
+     if (event && event.defaultPrevented) {
+        console.warn("DEBUG: Event default action was prevented during or after handler logic.");
+    }
+
+    console.log("DEBUG: _handleStudyRemainingClick END"); // Log end
+}
         // NEW Method to update completion stats
         _updateCompletionStats() {
             if (!this.completionStatsEl) return;
@@ -1805,32 +1985,40 @@ class StudyView {
                  }, 100); // Delay slightly after overlay becomes visible
             }
         }
-    async _handleStudyOtherClick() { // Logic seems okay, needs testing
-        if (!this.otherMaterialsList) return; // Check if list element exists
+/**
+     * Handles the click on the "Study Other Material" button.
+     * Toggles the visibility of the material list popup and manages the Escape key listener.
+     * @private
+     */
+async _handleStudyOtherClick() {
+    if (!this.otherMaterialsList) return;
 
-        const isVisible = this.otherMaterialsList.classList.contains('visible');
+    const shouldBeVisible = !this.otherMaterialsList.classList.contains('visible');
 
-        if (isVisible) {
-            this.otherMaterialsList.classList.remove('visible');
-            return;
-        }
-
-        console.log("Fetching other materials with due counts...");
+    if (shouldBeVisible) {
+        console.log("Opening 'Study Another' popup and fetching materials...");
         this.otherMaterialsList.innerHTML = '<p>Loading...</p>';
         this.otherMaterialsList.classList.add('visible');
 
+        // *** Add Escape key listener ***
+        if (!this._boundHandleEscKeyForPopup) { // Prevent adding multiple listeners
+            this._boundHandleEscKeyForPopup = this._handleEscKeyForPopup.bind(this);
+            document.addEventListener('keydown', this._boundHandleEscKeyForPopup);
+            console.log("Added Escape key listener for popup.");
+        }
+
         try {
+            // ... (existing fetch logic remains the same) ...
             const allMaterials = await apiClient.getMaterials();
             const otherMaterials = allMaterials.filter(mat =>
                 mat.material !== this.initialParams.material &&
                 (mat.dueCount !== undefined && mat.dueCount > 0)
             );
-
             this.otherMaterialsList.innerHTML = '';
-
             if (otherMaterials.length === 0) {
                  this.otherMaterialsList.innerHTML = '<p>No other materials have cards due.</p>';
             } else {
+                // ... (create links) ...
                 otherMaterials.forEach(mat => {
                     const link = document.createElement('a');
                     link.href = `study-session.html?material=${encodeURIComponent(mat.material)}`;
@@ -1842,14 +2030,26 @@ class StudyView {
                     this.otherMaterialsList.appendChild(link);
                 });
             }
-            this.otherMaterialsList.classList.add('visible');
+            // Ensure it's still visible after async operation
+             this.otherMaterialsList.classList.add('visible');
 
         } catch (error) {
              console.error("Failed to fetch other materials:", error);
              this.otherMaterialsList.innerHTML = '<p style="color: red;">Error loading materials.</p>';
              this.otherMaterialsList.classList.add('visible');
         }
+    } else {
+        // Closing the popup
+        console.log("Closing 'Study Another' popup.");
+        this.otherMaterialsList.classList.remove('visible');
+        // *** Remove Escape key listener ***
+        if (this._boundHandleEscKeyForPopup) {
+            document.removeEventListener('keydown', this._boundHandleEscKeyForPopup);
+            this._boundHandleEscKeyForPopup = null; // Clear reference
+            console.log("Removed Escape key listener for popup.");
+        }
     }
+}
 }
 
 // --- Initialization ---

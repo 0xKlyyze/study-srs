@@ -1,0 +1,49 @@
+/* css/components/context-menu.css */
+
+.context-menu {
+    position: fixed;
+    background-color: var(--color-tertiary-bg);
+    border: var(--border-width-thin) solid var(--color-border-primary);
+    border-radius: var(--radius-medium);
+    box-shadow: var(--shadow-medium);
+    z-index: var(--z-index-dropdown);
+    padding: var(--space-xs) 0;
+    min-width: 180px;
+    display: none; /* Hidden by default */
+    color: var(--color-text-primary);
+}
+
+.context-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.context-menu li {
+    padding: var(--space-sm) var(--space-md); /* Increased padding */
+    font-size: var(--font-size-sm); /* Match button/control size */
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    white-space: nowrap; /* Prevent wrapping */
+    transition: background-color var(--transition-duration-short) var(--transition-timing-function),
+                color var(--transition-duration-short) var(--transition-timing-function);
+}
+
+.context-menu li:hover {
+    background-color: color-mix(in srgb, var(--color-tertiary-bg) 85%, var(--color-quaternary-bg) 15%); /* Subtle hover */
+    color: var(--color-text-primary);
+}
+
+.context-menu .menu-icon {
+    margin-right: var(--space-xs);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--space-md); /* Icon size */
+    height: var(--space-md);
+}
+
+.context-menu .menu-icon svg {
+    width: 100%; height: 100%; fill: currentColor; /* Inherit color from parent li */
+}

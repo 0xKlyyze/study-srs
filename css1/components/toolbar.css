@@ -1,0 +1,59 @@
+/* css/components/toolbar.css */
+
+/* Base layout in layout.css */
+
+/* Button styling within the toolbar */
+#selectionToolbar button {
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    border-radius: var(--radius-md);
+    border: var(--border-width-sm) solid var(--color-border-medium);
+    background-color: var(--color-secondary-bg); /* Match container elements */
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+    display: inline-flex; /* Align icon and text if icons are added */
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+#selectionToolbar button:hover:not(:disabled) {
+    background-color: var(--color-border-light);
+    border-color: var(--color-border-medium);
+    transform: translateY(-1px);
+}
+
+#selectionToolbar button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Specific button colors */
+#selectionToolbar button#deleteSelectedButton {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+}
+#selectionToolbar button#deleteSelectedButton:hover:not(:disabled) {
+    background-color: var(--color-danger);
+    color: white;
+}
+
+#selectionToolbar button#groupSelectedButton {
+    border-color: var(--color-success); /* Example: green for grouping */
+    color: var(--color-success);
+}
+#selectionToolbar button#groupSelectedButton:hover:not(:disabled) {
+    background-color: var(--color-success);
+    color: white;
+}
+
+/* Optional: Icon styling if icons are added */
+#selectionToolbar button svg {
+    width: 1em; /* Size relative to font */
+    height: 1em;
+    fill: currentColor;
+}

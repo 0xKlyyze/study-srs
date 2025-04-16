@@ -1,0 +1,106 @@
+/* css/layout.css */
+
+.dashboard-container {
+    max-width: 2000px; /* Adjust as needed */
+    margin: var(--space-xl) auto;
+    padding: var(--space-lg); /* Adjust outer padding */
+    background-color: var(--color-secondary-bg);
+    border-radius: var(--radius-large);
+    box-shadow: var(--shadow-large);
+    min-height: calc(100vh - var(--space-xl) * 2); /* Ensure min-height for backdrop alignment */
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg); /* Space between sections */
+}
+
+/* === Overview Section === */
+.overview-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Two columns for activity and schedule */
+    gap: var(--space-lg); /* Gap between columns */
+    align-items: start;
+    margin-bottom: var(--space-lg);
+}
+
+.overview-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md); /* Space between boxes in a column */
+}
+
+.section-box {
+    background-color: var(--color-tertiary-bg);
+    border: var(--border-width-thin) solid var(--color-border-primary);
+    border-radius: var(--radius-medium);
+    padding: var(--space-md);
+    position: relative; /* For potential overlays/skeletons */
+    min-height: 100px; /* Ensure some space even when empty/loading */
+}
+
+.section-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+    text-align: center;
+    margin-bottom: var(--space-sm); /* Adjust margin below title */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* === Dashboard Controls === */
+.dashboard-controls {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    align-items: center;
+    gap: var(--space-md) var(--space-lg); /* Row gap, Column gap */
+    padding-bottom: var(--space-md);
+    border-bottom: var(--border-width-thin) solid var(--color-border-primary);
+}
+
+/* === Selection Toolbar === */
+.selection-toolbar {
+    width: 100%; /* Takes full width */
+    background-color: color-mix(in srgb, var(--color-secondary-bg) 85%, var(--color-accent-primary) 15%);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-medium);
+    margin-top: var(--space-sm); /* Space below controls */
+    margin-bottom: var(--space-lg); /* Space above grid */
+    border: var(--border-width-thin) solid var(--color-accent-primary);
+    display: none; /* Hidden by default, JS shows it */
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+}
+
+.selection-toolbar__count {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-medium);
+}
+
+.selection-toolbar__actions {
+    display: flex;
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+}
+
+/* === Main Dashboard Grid === */
+.dashboard-grid {
+    background-color: transparent; /* Remove background from container itself */
+    min-height: 400px; /* Ensure some space */
+}
+
+/* Placeholder message styling */
+.grid-placeholder-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-xl);
+    height: 100%; /* Fill container height if no items */
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    font-size: var(--font-size-md);
+}

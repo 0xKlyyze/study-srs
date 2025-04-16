@@ -1,0 +1,171 @@
+/* css/components/button.css */
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--space-md); /* Horizontal padding */
+    height: var(--control-height);
+    border-radius: var(--radius-medium);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    cursor: pointer;
+    user-select: none;
+    border: var(--border-width-thin) solid transparent; /* Base border transparent */
+    background-color: transparent; /* Base background transparent */
+    color: var(--color-text-primary); /* Default text color */
+    transition: background-color var(--transition-duration-short) var(--transition-timing-function),
+                border-color var(--transition-duration-short) var(--transition-timing-function),
+                color var(--transition-duration-short) var(--transition-timing-function),
+                opacity var(--transition-duration-short) var(--transition-timing-function),
+                box-shadow var(--transition-duration-short) var(--transition-timing-function),
+                transform var(--transition-duration-short) ease; /* Added transform */
+}
+
+.button:hover:not(:disabled) {
+    filter: brightness(1.1); /* Simple hover effect for colored buttons */
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-small);
+}
+
+.button:active:not(:disabled) {
+    filter: brightness(0.95);
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* === Button Variants === */
+
+/* Primary (Accent Blue) */
+.button--primary {
+    background-color: var(--color-accent-primary);
+    color: var(--color-text-on-accent);
+    border-color: var(--color-accent-primary);
+}
+.button--primary:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-accent-primary) 90%, black 10%);
+}
+
+/* Secondary (Default/Subtle) */
+.button--secondary {
+    background-color: var(--color-tertiary-bg);
+    color: var(--color-text-secondary);
+    border-color: var(--color-border-primary);
+}
+.button--secondary:hover:not(:disabled) {
+    background-color: var(--color-quaternary-bg);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-secondary);
+}
+
+/* Danger (Red) */
+.button--danger {
+    background-color: var(--color-accent-danger);
+    color: var(--color-text-on-accent);
+    border-color: var(--color-accent-danger);
+}
+.button--danger:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-accent-danger) 90%, black 10%);
+}
+
+/* Outline Style (Optional) */
+.button--outline-primary {
+    color: var(--color-accent-primary);
+    border-color: var(--color-accent-primary);
+}
+.button--outline-primary:hover:not(:disabled) {
+    background-color: rgba(79, 133, 226, 0.1); /* Faint blue background */
+}
+/* Add other outline variants if needed */
+
+
+/* === Sizes === */
+.button--small {
+    height: calc(var(--control-height) * 0.85);
+    font-size: var(--font-size-xs);
+    padding: 0 var(--space-sm);
+}
+
+.button--large {
+    height: calc(var(--control-height) * 1.2);
+    font-size: var(--font-size-md);
+    padding: 0 var(--space-lg);
+}
+
+
+/* === Filter Pill Specific Styles === */
+/* Inherits from .button for basic shape/interaction */
+.filter-pill {
+    border-radius: var(--radius-full);
+    height: calc(var(--control-height) * 0.9);
+    padding: 0 var(--space-sm);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-normal);
+    color: var(--color-text-secondary);
+    background-color: var(--color-tertiary-bg);
+    border: 1px solid var(--color-border-primary);
+}
+
+.filter-pill:hover:not(:disabled) {
+    background-color: var(--color-quaternary-bg);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-secondary);
+}
+
+.filter-pill.active {
+    background-color: var(--color-accent-primary);
+    color: var(--color-text-on-accent);
+    border-color: var(--color-accent-primary);
+    font-weight: var(--font-weight-medium);
+}
+.filter-pill.active:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-accent-primary) 90%, black 10%);
+}
+
+/* Special filter active states */
+.filter-pill.special-filter[data-filter-type="pinned"].active {
+    background-color: var(--color-status-pinned);
+    border-color: var(--color-status-pinned);
+    color: #fff; /* Or appropriate contrast */
+}
+.filter-pill.special-filter[data-filter-type="suspended"].active {
+    background-color: var(--color-status-suspended);
+    border-color: var(--color-status-suspended);
+    color: #fff; /* Or appropriate contrast */
+}
+
+/* Action buttons within the filter bar */
+.filter-controls .action-button {
+    /* Specific styles if needed, e.g., different color/border */
+    color: var(--color-accent-primary);
+    border-color: var(--color-accent-primary);
+    background-color: transparent;
+    height: calc(var(--control-height) * 0.9);
+}
+.filter-controls .action-button:hover:not(:disabled) {
+    background-color: rgba(79, 133, 226, 0.1);
+}
+.filter-controls .action-button.selection-active {
+    background-color: var(--color-accent-primary);
+    color: var(--color-text-on-accent);
+}
+.filter-controls .add-tag-button {
+    border-style: dashed;
+    color: var(--color-text-secondary);
+    border-color: var(--color-border-primary);
+}
+.filter-controls .add-tag-button:hover:not(:disabled) {
+     color: var(--color-text-primary);
+     border-color: var(--color-border-secondary);
+     background-color: rgba(57, 64, 80, 0.2); /* Subtle bg */
+}
