@@ -6,17 +6,60 @@
     background-color: var(--tertiary-bg);
     border: 1px solid var(--color-border-primary);
     box-shadow: 0 1px 3px var(--border-color-dark); /* Add subtle shadow */
+    min-height:80px;
 }
 
-/* Base Chapter Item Styles (Applied inside .grid-stack-item-content for standalone, or directly for grouped) */
+/* --- Base Chapter Item --- */
 .chapter-item {
     display: flex;
     flex-direction: column;
     height: 100%;
-    width: 100%; /* Take full width of its container */
-    position: relative; /* For absolute positioned elements like indicators */
-    cursor: pointer; /* Default interaction */
-    overflow: hidden; /* Clip content */
+    width: 100%;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    /* Query based on block (height) and inline (width) size */
+    container-type: size;
+    container-name: chapter-item;
+    /* Default background/border - will be overridden for grouped items */
+    background-color: var(--tertiary-bg); /* Base background */
+    border: 1px solid var(--color-border-primary); /* Base border */
+    box-shadow: var(--shadow-small); /* Base shadow */
+    transition: all 0.15s ease-in-out; /* Base transition */
+}
+
+/* --- Standalone Chapter Specific Styling --- */
+/* Apply background/border directly to the item content within the standalone grid item */
+.grid-stack-item.standalone-chapter > .grid-stack-item-content {
+    /* These styles were likely on the base .grid-stack-item-content, ensure they apply */
+    background-color: var(--color-background-secondary);
+    border: 1px solid var(--color-border-primary);
+    border-radius: var(--radius-medium);
+    box-shadow: var(--shadow-small);
+    overflow: hidden; /* Needed for gridstack */
+    display: flex; /* Ensure chapter-item inside fills it */
+}
+/* Ensure the chapter-item itself inside standalone is transparent */
+.grid-stack-item.standalone-chapter .chapter-item {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+
+/* Add minimum height specifically for card layout to prevent vertical collapse */
+.chapter-item.layout-card {
+    min-height: 80px; /* Adjust as needed for the smallest view */
+    /* Ensure flex settings allow content to determine height */
+    display: flex; /* Use flex on the item itself */
+}
+.chapter-item.layout-card .chapter-item__content-wrapper {
+    flex-direction: column; /* Stack content vertically */
+    flex-grow: 1; /* Allow wrapper to fill the item */
+    padding: var(--space-sm); /* Consistent padding */
+    /* Add overflow hidden if text might overflow the min-height */
+    overflow: hidden;
 }
 
 .chapter-item:hover {
@@ -27,27 +70,31 @@
     transform: scale(1.01);
 }
 
-/* Styles ONLY for grouped chapters (not standalone grid items) */
+/* --- Grouped Chapter Specific Styling --- */
+/* Override base styles for items within groups */
 .group-chapter-area .chapter-item {
-    border: 1px solid var(--color-border-primary); /* Border for grouped items */
-    border-radius: var(--radius-medium);
-    background-color: var(--color-tertiary-bg); /* Slightly different bg */
-    box-shadow: var(--shadow-small);
-    transition: all 0.15s ease-in-out;
+    /* Use group color mix from group-widget.css if available, otherwise default */
+    background-color: color-mix(in srgb, var(--color-tertiary-bg) 92%, var(--group-bg-color, var(--color-quaternary-bg)) 8%);
+    border-color: color-mix(in srgb, var(--color-border-primary) 90%, var(--group-bg-color, var(--color-border-secondary)) 10%);
+    border-radius: var(--radius-medium); /* Keep rounding */
+    box-shadow: var(--shadow-small); /* Keep shadow */
 }
 .group-chapter-area .chapter-item:hover {
     border-color: var(--color-border-secondary);
-    background-color: var(--color-quaternary-bg);
-    transform: scale(1.01); /* Subtle scale on hover for grouped */
+    background-color: color-mix(in srgb, var(--color-tertiary-bg) 75%, var(--group-bg-color, var(--color-quaternary-bg)) 25%);
+    transform: scale(1.01);
+    z-index: 5;
 }
 
 /* Wrapper for consistent padding (used inside .grid-stack-item-content or .chapter-item for grouped) */
+/* --- Content Wrapper --- */
 .chapter-item__content-wrapper {
-    padding: var(--space-sm); /* Base padding */
+    padding: var(--chapter-padding, var(--space-sm)); /* Use variable for padding */
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* Ensure wrapper clips content */
+    overflow: hidden;
+    gap: var(--chapter-gap, var(--space-sm)); /* Use variable for gap */
 }
 /* Adjust padding for larger standalone items */
 .grid-stack-item.standalone-chapter > .grid-stack-item-content .chapter-item__content-wrapper {
@@ -86,12 +133,12 @@
 
 
 /* --- Content Elements --- */
+/* --- Header --- */
 .chapter-item__header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start; /* Align name and circle top */
-    margin-bottom: var(--space-sm);
-    gap: var(--space-sm);
+    align-items: flex-start; /* Align items to the top */
+    gap: var(--chapter-gap, var(--space-sm));
     flex-shrink: 0;
 }
 
@@ -100,11 +147,15 @@
     color: var(--color-text-primary);
     line-height: var(--line-height-tight);
     flex-grow: 1;
-    /* Simple truncation - JS might be needed for multi-line */
-    overflow: hidden;
+    /* --- Name Truncation/Wrapping --- */
+    overflow: hidden; /* Needed for ellipsis and line-clamp */
+    display: -webkit-box; /* Required for line-clamp */
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--chapter-name-lines, 2); /* Variable for line count */
     text-overflow: ellipsis;
-    white-space: nowrap;
-    /* Font size adjusted by size variations */
+    /* Fallback for non-webkit */
+    max-height: calc(var(--line-height-tight) * var(--chapter-name-lines, 2) * 1em); /* Approximate max height */
+    font-size: var(--chapter-name-font-size, var(--font-size-md));
 }
 
 /* Rename Input */
@@ -141,119 +192,95 @@
    }
 
 
-/* Mastery Indicators */
-.chapter-item__mastery-indicator { /* Dot for small sizes */
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    margin-top: 4px; /* Align roughly with first line of text */
-    /* Colors applied via class */
-}
-.chapter-item__mastery-indicator.low { background-color: var(--color-accent-danger); }
-.chapter-item__mastery-indicator.medium { background-color: var(--color-accent-warning); }
-.chapter-item__mastery-indicator.high { background-color: var(--color-accent-secondary); }
-
-/* Progress Circle (SVG based) */
+/* --- Progress Circle / Dot --- */
 .chapter-item__progress-circle {
     position: relative;
-    width: 36px; /* Default size */
-    height: 36px;
+    width: var(--chapter-progress-size, 36px); /* Use variable */
+    height: var(--chapter-progress-size, 36px); /* Use variable */
     flex-shrink: 0;
+    display: flex; /* Use flex for centering */
+    align-items: center;
+    justify-content: center;
 }
 .chapter-item__progress-circle svg {
-    width: 100%;
-    height: 100%;
-    transform: rotate(-90deg); /* Start at top */
+    width: 100%; height: 100%; transform: rotate(-90deg);
 }
 .chapter-item__progress-circle .progress-ring-bg,
 .chapter-item__progress-circle .progress-ring-circle {
     fill: none;
-    stroke-width: 3.5; /* Stroke thickness */
+    stroke-width: var(--chapter-progress-stroke, 3.5); /* Use variable */
 }
-.chapter-item__progress-circle .progress-ring-bg {
-    stroke: var(--color-tertiary-bg); /* Track color */
-}
-.chapter-item__progress-circle .progress-ring-circle {
-    stroke: var(--color-text-secondary); /* Default color */
-    stroke-linecap: round;
-    transition: stroke-dashoffset 0.5s ease-out, stroke 0.3s ease;
-}
-/* Colors set via JS adding class */
+.chapter-item__progress-circle .progress-ring-bg { stroke: var(--color-tertiary-bg); }
+.chapter-item__progress-circle .progress-ring-circle { stroke: var(--color-text-secondary); stroke-linecap: round; transition: stroke-dashoffset 0.5s ease-out, stroke 0.3s ease; }
 .chapter-item__progress-circle.low .progress-ring-circle { stroke: var(--color-accent-danger); }
 .chapter-item__progress-circle.medium .progress-ring-circle { stroke: var(--color-accent-warning); }
 .chapter-item__progress-circle.high .progress-ring-circle { stroke: var(--color-accent-secondary); }
 
 .chapter-item__progress-percentage {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-secondary);
-    transition: color 0.3s ease;
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: var(--chapter-progress-font-size, var(--font-size-xs)); /* Use variable */
+    font-weight: var(--font-weight-semibold); color: var(--color-text-secondary); transition: color 0.3s ease;
 }
 .chapter-item__progress-circle.low .chapter-item__progress-percentage { color: var(--color-accent-danger); }
 .chapter-item__progress-circle.medium .chapter-item__progress-percentage { color: var(--color-accent-warning); }
 .chapter-item__progress-circle.high .chapter-item__progress-percentage { color: var(--color-accent-secondary); }
 
-/* Stats Section */
+.chapter-item__mastery-indicator { /* Dot */
+    width: var(--chapter-dot-size, 10px); /* Use variable */
+    height: var(--chapter-dot-size, 10px); /* Use variable */
+    border-radius: 50%; flex-shrink: 0; margin-top: 4px;
+    display: none; /* Hide dot by default, show only in smallest size */
+}
+.chapter-item__mastery-indicator.low { background-color: var(--color-accent-danger); }
+.chapter-item__mastery-indicator.medium { background-color: var(--color-accent-warning); }
+.chapter-item__mastery-indicator.high { background-color: var(--color-accent-secondary); }
+
+/* --- Stats Section --- */
 .chapter-item__stats {
     margin-top: auto; /* Push to bottom */
-    padding-top: var(--space-sm);
+    padding-top: var(--chapter-gap, var(--space-sm)); /* Use variable */
     border-top: 1px solid var(--color-border-dark);
-    display: flex; /* Handled by size variations */
+    display: flex;
     justify-content: space-around;
-    gap: var(--space-sm);
+    gap: var(--chapter-stat-gap, var(--space-sm));
     flex-shrink: 0;
+    flex-wrap: nowrap;
 }
 
 .chapter-item__stat {
     display: flex;
-    flex-direction: column; /* Icon over value */
+    flex-direction: var(--chapter-stat-direction, column);
     align-items: center;
-    gap: var(--space-xxs);
+    gap: var(--chapter-stat-icon-gap, var(--space-xxs));
     text-align: center;
     color: var(--color-text-secondary);
+    flex: 1;
+    min-width: 0;
 }
 .chapter-item__stat svg {
-    width: 18px;
-    height: 18px;
+    width: var(--chapter-stat-icon-size, 18px);
+    height: var(--chapter-stat-icon-size, 18px);
     fill: currentColor;
     opacity: 0.7;
+    flex-shrink: 0;
 }
 .chapter-item__stat-value {
-    font-size: var(--font-size-md); /* Slightly larger stat value */
+    font-size: var(--chapter-stat-font-size, var(--font-size-md));
     font-weight: var(--font-weight-medium);
     color: var(--color-text-primary);
-    line-height: 1.2;
+    line-height: 1.1;
+    white-space: nowrap;
 }
-/* Stat coloring */
 .chapter-item__stat.due { color: var(--color-status-due); }
 .chapter-item__stat.new { color: var(--color-status-new); }
 .chapter-item__stat.due .chapter-item__stat-value { color: var(--color-status-due); }
 .chapter-item__stat.new .chapter-item__stat-value { color: var(--color-status-new); }
 
-/* Tags Section */
-.chapter-item__tags {
-    margin-top: var(--space-sm);
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-xs);
-    max-height: 4em; /* Limit height */
-    overflow: hidden; /* Hide overflow */
+/* --- Hidden Elements --- */
+.chapter-item__tags,
+.selection-checkbox-container {
+    display: none !important; /* Always hide tags and checkboxes */
 }
-.chapter-item__tag {
-    background-color: var(--color-tertiary-bg);
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-xs);
-    padding: 2px var(--space-xs);
-    border-radius: var(--radius-small);
-    white-space: nowrap;
-}
-
-/* --- Size Variations (Control element visibility) --- */
 
 /* Default: Assume large (e.g., 2x2 or more) - show everything */
 .chapter-item__name { font-size: var(--font-size-lg); }
@@ -262,102 +289,143 @@
 .chapter-item__stats { display: flex; }
 .chapter-item__tags { display: flex; }
 
-/* Small (e.g., 1x1) */
-.chapter-item.size-small .chapter-item__content-wrapper { padding: var(--space-xs); }
-.chapter-item.size-small .chapter-item__name { font-size: var(--font-size-sm); margin-bottom: 0; }
-.chapter-item.size-small .chapter-item__header { margin-bottom: 0; }
-.chapter-item.size-small .chapter-item__progress-circle,
-.chapter-item.size-small .chapter-item__stats,
-.chapter-item.size-small .chapter-item__tags {
-    display: none;
-}
-.chapter-item.size-small .chapter-item__mastery-indicator {
-    display: block; /* Show dot */
+/* Apply styles based on the width of the .chapter-item container itself */
+
+/* Default (Large Height: >= 120px) */
+@container chapter-item (min-height: 120px) {
+    /* Apply styles directly to children */
+    .chapter-item__content-wrapper { padding: var(--space-md); gap: var(--space-sm); }
+    .chapter-item__header { gap: var(--space-sm); }
+    .chapter-item__name { font-size: var(--font-size-md); -webkit-line-clamp: 2; max-height: calc(var(--line-height-tight) * 2 * 1em); }
+    .chapter-item__progress-circle { display: flex; width: 36px; height: 36px; }
+    .chapter-item__progress-circle .progress-ring-bg,
+    .chapter-item__progress-circle .progress-ring-circle { stroke-width: 3.5; }
+    .chapter-item__progress-percentage { font-size: var(--font-size-xs); }
+    .chapter-item__mastery-indicator { display: none; width: 10px; height: 10px; }
+    .chapter-item__stats { padding-top: var(--space-sm); gap: var(--space-sm); }
+    .chapter-item__stat { flex-direction: column; gap: var(--space-xxs); }
+    .chapter-item__stat svg { width: 18px; height: 18px; }
+    .chapter-item__stat-value { font-size: var(--font-size-md); }
 }
 
-/* Medium (e.g., 2x1, 1x2) */
-.chapter-item.size-medium .chapter-item__name { font-size: var(--font-size-md); }
-.chapter-item.size-medium .chapter-item__mastery-indicator,
-.chapter-item.size-medium .chapter-item__tags {
-    display: none;
+/* Medium Height (80px to 119.9px) */
+@container chapter-item (max-height: 119.9px) {
+    /* Apply styles directly to children */
+    .chapter-item__content-wrapper { padding: var(--space-sm); gap: var(--space-xs); }
+    .chapter-item__header { gap: var(--space-xs); }
+    .chapter-item__name { font-size: var(--font-size-sm); -webkit-line-clamp: 2; max-height: calc(var(--line-height-tight) * 2 * 1em); }
+    .chapter-item__progress-circle { display: flex; width: 28px; height: 28px; }
+    .chapter-item__progress-circle .progress-ring-bg,
+    .chapter-item__progress-circle .progress-ring-circle { stroke-width: 3; }
+    .chapter-item__progress-percentage { font-size: 9px; }
+    .chapter-item__mastery-indicator { display: none; width: 8px; height: 8px; }
+    .chapter-item__stats { padding-top: var(--space-xs); gap: var(--space-xs); }
+    .chapter-item__stat { flex-direction: column; gap: 2px; }
+    .chapter-item__stat svg { width: 14px; height: 14px; }
+    .chapter-item__stat-value { font-size: var(--font-size-sm); }
 }
-.chapter-item.size-medium .chapter-item__progress-circle {
-    display: block;
-    width: 32px; height: 32px; /* Slightly smaller circle */
+
+/* Small Height (< 80px) */
+@container chapter-item (max-height: 79.9px) {
+    /* Apply styles directly to children */
+    .chapter-item__content-wrapper { padding: var(--space-xs); gap: var(--space-xxs); }
+    .chapter-item__header { gap: var(--space-xxs); align-items: center; }
+    .chapter-item__name { font-size: var(--font-size-xs); -webkit-line-clamp: 1; max-height: calc(var(--line-height-tight) * 1 * 1em); }
+    .chapter-item__progress-circle { display: none; width: 20px; height: 20px; } /* Still set size for potential future use */
+    .chapter-item__progress-circle .progress-ring-bg,
+    .chapter-item__progress-circle .progress-ring-circle { stroke-width: 2.5; }
+    .chapter-item__progress-percentage { font-size: 8px; }
+    .chapter-item__mastery-indicator { display: block; width: 8px; height: 8px; }
+    .chapter-item__stats { padding-top: var(--space-xxs); gap: var(--space-xs); }
+    .chapter-item__stat { flex-direction: column; gap: 2px; }
+    .chapter-item__stat svg { width: 12px; height: 12px; }
+    .chapter-item__stat-value { font-size: var(--font-size-xs); }
 }
-.chapter-item.size-medium .chapter-item__stats {
-    display: flex;
-    padding-top: var(--space-xs);
-    margin-top: var(--space-sm);
-    justify-content: center; /* Center the visible stat */
+
+/* --- Width-based adjustments *within* height ranges --- */
+
+/* Hide dot if card is very narrow, even in small height range */
+@container chapter-item (max-height: 79.9px) and (max-width: 90px) {
+    .chapter-item__mastery-indicator { display: none; }
 }
-/* Show only DUE stat in medium */
-.chapter-item.size-medium .chapter-item__stat.new,
-.chapter-item.size-medium .chapter-item__stat.total {
-    display: none;
+
+/* Switch stats to row if narrow AND short */
+@container chapter-item (max-height: 79.9px) and (max-width: 130px) {
+    .chapter-item__stat { flex-direction: row; gap: var(--space-xxs); }
+    .chapter-item__stat svg { width: 10px; height: 10px; }
+    .chapter-item__stat-value { font-size: 10px; line-height: 1; }
 }
-.chapter-item.size-medium .chapter-item__stat svg { width: 16px; height: 16px; }
-.chapter-item.size-medium .chapter-item__stat-value { font-size: var(--font-size-sm); }
 
 
-/* --- List Layout Variations --- */
-.chapter-item.layout-list {
-    /* Base list styles applied in chapter-item.css for grouped items */
-}
-.chapter-item.layout-list .chapter-item__content-wrapper {
-    padding: var(--space-xs) var(--space-sm);
-    flex-direction: row;
-    align-items: center;
-    gap: var(--space-sm);
-}
-.chapter-item.layout-list .chapter-item__header {
-    /* Header structure not really used in list, combine elements */
-    flex-grow: 1;
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
+.chapter-item.layout-list { min-height: 40px; } /* Base min height */
+.chapter-item.layout-list .chapter-item__content-wrapper { padding: var(--space-xs) var(--space-sm); gap: var(--space-sm); flex-direction: row; align-items: center; overflow: hidden; /* Prevent content overflow */ }
+.chapter-item.layout-list .chapter-item__header { gap: var(--space-sm); flex-grow: 1; display: flex; align-items: center; margin-bottom: 0; min-width: 0; /* Allow header to shrink */ }
+.chapter-item.layout-list .chapter-item__name {
+    font-size: var(--font-size-sm);
+    -webkit-line-clamp: 1;
+    /* Ensure standard text overflow properties are set */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: calc(var(--line-height-tight) * 1 * 1em); /* Keep max-height for fallback */
     margin-bottom: 0;
+    min-width: 0; /* Allow name itself to shrink */
+    flex-shrink: 1; /* Allow name to shrink if needed */
 }
-.chapter-item.layout-list .chapter-item__name { margin-bottom: 0; font-size: var(--font-size-sm); }
-.chapter-item.layout-list .chapter-item__tags { display: none; } /* Hide tags in list */
-.chapter-item.layout-list .chapter-item__stats {
-    margin-top: 0; padding-top: 0; border-top: none;
-    flex-direction: row; /* Horizontal stats */
-    flex-shrink: 0; /* Don't shrink stats area */
-    justify-content: flex-end;
-    gap: var(--space-md);
-}
+.chapter-item.layout-list .chapter-item__progress-circle { width: 24px; height: 24px; flex-shrink: 0; /* Prevent shrinking */; margin-right : var(space-sm); padding-right: var(space-sm); }
+/* ... progress circle inner styles ... */
+.chapter-item.layout-list .chapter-item__progress-circle .progress-ring-bg,
+.chapter-item.layout-list .chapter-item__progress-circle .progress-ring-circle { stroke-width: 3; margin-right : var(space-sm); ; padding-right: var(space-sm); }
+.chapter-item.layout-list .chapter-item__progress-percentage { font-size: 8px; margin-right : var(space-sm)}
+.chapter-item.layout-list .chapter-item__mastery-indicator { width: 8px; height: 8px; flex-shrink: 0; /* Prevent shrinking */ margin-right : var(space-sm); padding-right: var(space-sm); }
+.chapter-item.layout-list .chapter-item__stats { margin-top: 0; padding-top: 0; border-top: none; display: flex; flex-direction: row; flex-shrink: 0; justify-content: flex-end; align-items: center; gap: var(--space-sm); }
 .chapter-item.layout-list .chapter-item__stat {
-    flex-direction: row; /* Icon next to value */
-    font-size: var(--font-size-xs);
+    flex-direction: row;
     gap: var(--space-xxs);
+    padding-left: 0px;
+    border-left: 1px solid var(--color-border-dark);
+    flex: 0 0 auto;
+    /* Add a minimum width to help alignment */
+    min-width: 45px; /* Adjust as needed */
+    justify-content: flex-start; /* Align icon/text within the stat */
 }
-.chapter-item.layout-list .chapter-item__stat svg { width: 14px; height: 14px; }
-.chapter-item.layout-list .chapter-item__stat-value { font-size: var(--font-size-sm); }
+.chapter-item.layout-list .chapter-item__stat:first-child { border-left: none; padding-left: 0; }
+.chapter-item.layout-list .chapter-item__stat svg { width: 14px; height: 14px; flex-shrink: 0; }
+.chapter-item.layout-list .chapter-item__stat-value {
+    font-size: var(--font-size-sm);
+    /* Ensure consistent width for numbers if possible, e.g., using tabular-nums */
+    font-variant-numeric: tabular-nums;
+}
 
-/* List Size Adjustments */
-.chapter-item.layout-list.size-compact-list .chapter-item__progress-circle,
-.chapter-item.layout-list.size-compact-list .chapter-item__stats {
-    display: none;
-}
-.chapter-item.layout-list.size-compact-list .chapter-item__mastery-indicator { display: block; }
 
-.chapter-item.layout-list.size-medium-list .chapter-item__mastery-indicator { display: none; }
-.chapter-item.layout-list.size-medium-list .chapter-item__progress-circle {
-    display: block; width: 24px; height: 24px; /* Small circle */
+/* List Layout - Conditional Display based on Item Width */
+/* Adjust breakpoint for showing stats to ensure enough space */
+@container chapter-item (max-width: 400px) { /* Reduced breakpoint */
+    .chapter-item.layout-list .chapter-item__progress-circle,
+    .chapter-item.layout-list .chapter-item__mastery-indicator,
+    .chapter-item.layout-list .chapter-item__stats {
+        display: none;
+    }
+    /* Give name more room when stats are hidden */
+    .chapter-item.layout-list .chapter-item__header { flex-grow: 1; }
 }
-.chapter-item.layout-list.size-medium-list .chapter-item__stats { display: flex; }
-.chapter-item.layout-list.size-medium-list .chapter-item__stat.new,
-.chapter-item.layout-list.size-medium-list .chapter-item__stat.total { display: none; } /* Only Due */
 
-.chapter-item.layout-list.size-wide-list .chapter-item__mastery-indicator { display: none; }
-.chapter-item.layout-list.size-wide-list .chapter-item__progress-circle {
-    display: block; width: 28px; height: 28px; /* Medium circle */
+/* Adjust breakpoint ranges */
+@container chapter-item (min-width: 400.1px) and (max-width: 450px) { /* Adjusted range */
+    .chapter-item.layout-list .chapter-item__progress-circle { display: flex; }
+    .chapter-item.layout-list .chapter-item__mastery-indicator { display: none; }
+    .chapter-item.layout-list .chapter-item__stats { display: flex; }
+    .chapter-item.layout-list .chapter-item__stat.total { display: none; }
+    .chapter-item.layout-list .chapter-item__stat.due,
+    .chapter-item.layout-list .chapter-item__stat.new { display: flex; }
 }
-.chapter-item.layout-list.size-wide-list .chapter-item__stats { display: flex; }
-/* Show Due and New in wide list */
-.chapter-item.layout-list.size-wide-list .chapter-item__stat { display: flex; }
-.chapter-item.layout-list.size-wide-list .chapter-item__stat.total { display: none; }
+
+@container chapter-item (min-width: 450.1px) { /* Adjusted range */
+    .chapter-item.layout-list .chapter-item__progress-circle { display: flex; }
+    .chapter-item.layout-list .chapter-item__mastery-indicator { display: none; }
+    .chapter-item.layout-list .chapter-item__stats { display: flex; }
+    .chapter-item.layout-list .chapter-item__stat { display: flex; }
+}
 
 .management-container.selection-mode .chapter-item:hover {
     transform: none; /* Disable base hover lift */

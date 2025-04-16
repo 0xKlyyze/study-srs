@@ -16,6 +16,10 @@
     /* Group custom color blending */
     background-color: color-mix(in srgb, var(--color-secondary-bg) 85%, var(--group-bg-color, var(--color-quaternary-bg)) 15%);
     border-color: color-mix(in srgb, var(--color-border-primary) 75%, var(--group-bg-color, var(--color-border-secondary)) 25%);
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Ensure content wrapper fills the grid item */
+    overflow: hidden; /* Prevent content spilling out of grid item */
 }
 
 /* Group Hover Effects */
@@ -165,8 +169,13 @@
     overflow-y: auto;
     overflow-x: hidden;
     /* Inherit scrollbar styles from .scrollable */
-    padding: 10px;
+    padding: 0px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-medium) transparent;
 }
+.group-chapter-area::-webkit-scrollbar { width: 6px; }
+.group-chapter-area::-webkit-scrollbar-track { background: transparent; }
+.group-chapter-area::-webkit-scrollbar-thumb { background-color: var(--color-border-medium); border-radius: 3px; }
 
 /* Layout modes */
 .group-chapter-area.layout-card {
@@ -180,7 +189,7 @@
 .group-chapter-area.layout-list {
     display: flex;
     flex-direction: column;
-    gap: 5px; /* No gap, use borders */
+    gap: 2px; /* No gap, use borders */
     padding: var(--space-xs) 5px; /* Vertical padding only */
 }
 /* Styling for .chapter-item within list handled in chapter-item.css */

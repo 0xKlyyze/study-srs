@@ -1225,7 +1225,7 @@ _handleChapterMouseDown(e) {
                  this._renderHeatmap(this.chaptersData); // Simple re-render
             }
              this._cancelRename(cardElement, false); // Revert UI state without resetting value
-             this._showInfoMessage(`Chapter renamed to "${newChapterName}"`);
+             /* this._showInfoMessage(`Chapter renamed to "${newChapterName}"`); */
 
         } catch (error) {
             console.error("Failed to rename chapter via API:", error);
@@ -2484,269 +2484,219 @@ async _handleConfirmGroupColor() {
  * @private
  */
 _renderChapterItem(chapter, options = {}) {
-     const { isStandalone = false, layout = 'card', containerSize = { rows: 1, cols: 1 } } = options;
-     if (!chapter || !chapter.id) { 
-         console.warn("DEBUG: Skipping render for chapter with missing data:", chapter); 
-         return null; 
-     }
-     
-     const isInGroup = !!chapter.groupId;
-     const chapterElement = document.createElement('div');
-    chapterElement.draggable = true; // Make the item draggable
-    chapterElement.dataset.chapterId = chapter.id;
-    chapterElement.dataset.chapterName = chapter.name; // Useful for study session link
-    if (chapter.groupId) {
-        chapterElement.dataset.groupId = chapter.groupId;
+    const { isStandalone = false, layout = 'card' /* REMOVED: containerSize */ } = options; // Remove containerSize from destructuring if only used for sizeClass
+    if (!chapter || !chapter.id) {
+        console.warn("DEBUG: Skipping render for chapter with missing data:", chapter);
+        return null;
     }
 
-    // Set up HTML5 draggable for chapters in groups
-    if (isInGroup) {
-        chapterElement.setAttribute('draggable', 'true');
-        
-        // CRITICAL FIX: Add mousedown handler to prevent GridStack from taking over
-        chapterElement.addEventListener('mousedown', (e) => {
-            // Only stop propagation if this is a direct click on the chapter (not on buttons, etc.)
-            if (e.target === chapterElement || e.target.closest('.chapter-name, .chapter-content')) {
-                console.log("Chapter mousedown - preventing propagation");
-                e.stopPropagation();
-            }
-        });
-        
-        // Add dragstart handler directly to the chapter element
-        chapterElement.addEventListener('dragstart', (e) => {
-            console.log("Chapter dragstart in group");
-            e.stopPropagation();
-            
-            // Get the chapter data
-            const chapterData = this._findChapterData(chapter.id);
-            
-            // Set up drag data
-            this.draggedItemData = {
-                type: 'chapter',
-                items: [{ id: chapter.id, name: chapter.name }],
-                fromGroup: chapter.groupId
-            };
-            
-            // Mark element as being dragged
-            chapterElement.classList.add('dragging-from-group');
-            
-            // Add drag image and data
-            e.dataTransfer.setData('application/json', JSON.stringify(this.draggedItemData));
-            e.dataTransfer.effectAllowed = 'move';
-        });
-    }
- 
-     // --- Base Classes & State ---
-     chapterElement.classList.add('chapter-item');
-     
-     // Apply layout styles
-     if (isStandalone) {
-         // Standalone chapters are grid-stack-items 
-         chapterElement.classList.add('grid-stack-item', 'standalone-chapter', 'chapter-card-style');
-         chapterElement.setAttribute('gs-id', chapter.id);
-     } else {
-         // Grouped item styling
-         chapterElement.classList.add(`layout-${layout}`);
-         if (layout === 'card') {
-             chapterElement.classList.add('chapter-card-style');
-         } else {
-             chapterElement.classList.add('chapter-list-style');
-         }
-     }
- 
-     // --- Determine Content Visibility ---
-     let showMastery = false, showStats = false, sizeClass = '';
-     if (isStandalone || layout === 'card') {
-         sizeClass = 'size-full'; 
-         showMastery = true; 
-         showStats = true;
-     } else { /* list layout logic */
-         const cellWidth = containerSize.cols || 1;
-         if (cellWidth >= 3) { 
-             sizeClass = 'size-wide-list'; 
-             showMastery = true; 
-             showStats = true; 
-         } else if (cellWidth === 2) { 
-             sizeClass = 'size-medium-list'; 
-             showMastery = true; 
-             showStats = false; 
-         } else { 
-             sizeClass = 'size-compact-list'; 
-             showMastery = false; 
-             showStats = false; 
-         }
-     }
-     chapterElement.classList.add(sizeClass);
-     
-     // Add state classes
-     if (chapter.isPinned) chapterElement.classList.add('is-pinned');
-     if (chapter.isSuspended) chapterElement.classList.add('is-suspended');
- 
-     // --- Build HTML Structure ---
-     // Create content wrapper (proper class structure following CSS)
-     const contentWrapper = document.createElement('div');
-     contentWrapper.classList.add('chapter-item__content-wrapper');
-     
-     // Create header with name and mastery
-     const header = document.createElement('div');
-     header.classList.add('chapter-item__header');
-     
-     // Add chapter name
-     const nameElement = document.createElement('span');
-     nameElement.classList.add('chapter-item__name');
-     nameElement.textContent = chapter.name;
-     header.appendChild(nameElement);
-     
-     // Add rename input (hidden by default)
-     const renameInput = document.createElement('input');
-     renameInput.type = 'text';
-     renameInput.classList.add('rename-input', 'chapter-rename-input');
-     renameInput.value = chapter.name;
-     renameInput.dataset.originalName = chapter.name;
-     renameInput.style.display = 'none';
-     header.appendChild(renameInput);
-     
-     // Add mastery indicator based on visibility rules
-     if (showMastery) {
-         const masteryPercent = chapter.stats?.mastery ?? 0;
-         const masteryLevel = this._getMasteryLevelClass(masteryPercent);
-         
-         if (sizeClass === 'size-compact-list') {
-             // Simple dot indicator for compact view
-             const dot = document.createElement('div');
-             dot.classList.add('chapter-item__mastery-indicator', masteryLevel);
-             header.appendChild(dot);
-         } else {
-             // Progress circle for larger views
-             const progressCircle = document.createElement('div');
-             progressCircle.classList.add('chapter-item__progress-circle', masteryLevel);
-             progressCircle.title = `Mastery: ${masteryPercent}%`;
-             
-             // SVG circle
-             const radius = 15.915;
-             const circumference = 2 * Math.PI * radius;
-             const offset = circumference - (masteryPercent / 100) * circumference;
-             
-             progressCircle.innerHTML = `
-                 <svg viewBox="0 0 36 36" class="progress-ring">
-                     <circle class="progress-ring-bg" cx="18" cy="18" r="${radius}" />
-                     <circle class="progress-ring-circle" cx="18" cy="18" r="${radius}" 
-                             stroke-dasharray="${circumference} ${circumference}" 
-                             stroke-dashoffset="${offset}" />
-                 </svg>
-                 <span class="chapter-item__progress-percentage">${masteryPercent}%</span>
-             `;
-             header.appendChild(progressCircle);
-         }
-     }
-     
-     contentWrapper.appendChild(header);
-     
-     // Add stats if needed
-     if (showStats) {
-         const totalCards = chapter.stats?.cardCount ?? 0;
-         const dueCards = chapter.stats?.totalDueCards ?? 0;
-         const newCards = chapter.stats?.remainingNewCards ?? 0;
-         
-         const statsSection = document.createElement('div');
-         statsSection.classList.add('chapter-item__stats');
-         
-         // Total cards stat
-         const totalStat = document.createElement('div');
-         totalStat.classList.add('chapter-item__stat', 'total');
-         totalStat.title = 'Total Cards';
-         totalStat.innerHTML = `
-             <svg width="18" height="18" viewBox="0 0 32 32">
-                 <rect x="8" y="2" width="20" height="24" rx="3" ry="3" fill="none" stroke="currentColor" 
-                       stroke-width="1.5" transform="rotate(-12 18 14)" />
-                 <rect x="6" y="4" width="20" height="24" rx="3" ry="3" fill="none" stroke="currentColor" 
-                       stroke-width="1.5" transform="rotate(-6 16 16)" />
-                 <g transform="rotate(4 13 13)">
-                     <rect x="4" y="2" width="18" height="22" rx="3" ry="3" fill="none" stroke="currentColor" 
-                           stroke-width="1.5" />
-                 </g>
-             </svg>
-             <span class="chapter-item__stat-value">${totalCards}</span>
-         `;
-         statsSection.appendChild(totalStat);
-         
-         // Due cards stat
-         const dueStat = document.createElement('div');
-         dueStat.classList.add('chapter-item__stat', 'due');
-         dueStat.title = 'Cards Due';
-         dueStat.innerHTML = `
-             <svg viewBox="0 0 24 24">
-                 <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
-             </svg>
-             <span class="chapter-item__stat-value">${dueCards}</span>
-         `;
-         statsSection.appendChild(dueStat);
-         
-         // New cards stat
-         const newStat = document.createElement('div');
-         newStat.classList.add('chapter-item__stat', 'new');
-         newStat.title = 'New Cards';
-         newStat.innerHTML = `
-             <svg viewBox="0 0 24 24">
-                 <path d="M13 7H11v4H7v2h4v4h2v-4h4v-2h-4V7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-             </svg>
-             <span class="chapter-item__stat-value">${newCards}</span>
-         `;
-         statsSection.appendChild(newStat);
-         
-         contentWrapper.appendChild(statsSection);
-     }
-     
-     /* // Add tags if available and space allows
-     if (chapter.tags && chapter.tags.length > 0 && (sizeClass === 'size-full')) {
-         const tagsContainer = document.createElement('div');
-         tagsContainer.classList.add('chapter-item__tags');
-         
-         chapter.tags.forEach(tag => {
-             const tagElement = document.createElement('span');
-             tagElement.classList.add('chapter-item__tag');
-             tagElement.textContent = tag;
-             tagsContainer.appendChild(tagElement);
-         });
-         
-         contentWrapper.appendChild(tagsContainer);
-     } */
+    const isInGroup = !!chapter.groupId;
+    const chapterElement = document.createElement('div');
+   chapterElement.draggable = true; // Make the item draggable
+   chapterElement.dataset.chapterId = chapter.id;
+   chapterElement.dataset.chapterName = chapter.name; // Useful for study session link
+   if (chapter.groupId) {
+       chapterElement.dataset.groupId = chapter.groupId;
+   }
 
-    // Add this new code for drag handling
-    chapterElement.addEventListener('dragstart', (e) => {
-        // Stop propagation only if this is inside a group
-        if (chapter.groupId || chapterElement.closest('.group-widget')) {
-            // Prevent the event from bubbling up to the group container
-            e.stopPropagation();
+   // Set up HTML5 draggable for chapters in groups
+   if (isInGroup) {
+       chapterElement.setAttribute('draggable', 'true');
+
+       // CRITICAL FIX: Add mousedown handler to prevent GridStack from taking over
+       chapterElement.addEventListener('mousedown', (e) => {
+           // Allow text selection, link clicks, button clicks etc.
+           if (e.target.closest('a, button, input, .selection-checkbox')) {
+               return;
+           }
+           // Prevent Gridstack dragging when starting drag on a chapter *inside* a group
+           e.stopPropagation();
+       }, true); // Use capture phase
+
+       chapterElement.addEventListener('dragstart', (e) => {
+           // Stop Gridstack from interfering further
+           e.stopPropagation();
+
+           // Identify the item being dragged
+           const draggedChapterId = chapterElement.dataset.chapterId;
+           const draggedChapterData = this._findChapterData(draggedChapterId);
+
+           // Check if selection mode is active and if the dragged item is part of the selection
+           const isSelected = this.selectedItemIds.chapters.has(draggedChapterId);
+           let itemsToDrag = [];
+
+           if (this.isSelectionModeActive && isSelected) {
+               // Dragging the entire selection
+               itemsToDrag = Array.from(this.selectedItemIds.chapters)
+                                  .map(id => this._findChapterData(id))
+                                  .filter(Boolean);
+               this.draggedItemData = { type: 'chapters-selection', items: itemsToDrag.map(ch => ({ id: ch.id, name: ch.name })) }; // Store minimal data
+               // TODO: Create a custom drag image for multiple items
+           } else {
+               // Dragging a single item (or starting drag on unselected item in selection mode)
+               // Clear selection if dragging an unselected item while selection mode is on
+               if (this.isSelectionModeActive && !isSelected) {
+                   this._handleToggleSelectionMode(false); // Exit selection mode
+               }
+               itemsToDrag = [draggedChapterData].filter(Boolean);
+               this.draggedItemData = { type: 'chapter-single', items: itemsToDrag.map(ch => ({ id: ch.id, name: ch.name })) };
+           }
+
+           console.log("DEBUG: Drag Start - ", this.draggedItemData); // DEBUG
+
+           // Visual cue on the source item(s)
+           itemsToDrag.forEach(item => {
+               const el = this._findChapterElement(item.id);
+               el?.classList.add('dragging-source');
+           });
+           // Add drag image and data
+           e.dataTransfer.setData('application/json', JSON.stringify(this.draggedItemData));
+           e.dataTransfer.effectAllowed = 'move';
+       });
+   }
+
+    // --- Base Classes & State ---
+    chapterElement.classList.add('chapter-item');
+
+    // Apply layout styles
+    if (isStandalone) {
+        // Standalone chapters are grid-stack-items
+        chapterElement.classList.add('grid-stack-item', 'standalone-chapter', 'layout-card'); // Standalone always uses card layout internally
+        chapterElement.setAttribute('gs-id', chapter.id);
+    } else {
+        // Grouped item styling
+        chapterElement.classList.add(`layout-${layout}`);
+        // No longer add size-small/medium/full here based on containerSize
+    }
+
+    // Add state classes
+    if (chapter.isPinned) chapterElement.classList.add('is-pinned');
+    if (chapter.isSuspended) chapterElement.classList.add('is-suspended');
+    if (this.selectedItemIds.chapters.has(chapter.id)) chapterElement.classList.add('selected'); // Reflect selection state on render
+
+    // --- Build Inner HTML ---
+    const contentWrapper = document.createElement('div');
+    contentWrapper.classList.add('chapter-item__content-wrapper');
+
+    // Header (Name, Rename Input, Progress Circle/Dot)
+    const header = document.createElement('div');
+    header.classList.add('chapter-item__header');
+
+    const nameArea = document.createElement('div');
+    nameArea.classList.add('chapter-item__name-area');
+    nameArea.innerHTML = `
+        <span class="chapter-item__name">${chapter.name}</span>
+        <input type="text" class="rename-input chapter-rename-input" value="${chapter.name}" style="display: none;" data-original-name="${chapter.name}">
+    `;
+    header.appendChild(nameArea);
+
+    // Mastery Progress (Circle or Dot depending on CSS @container rules)
+    const masteryPercent = Math.max(0, Math.min(100, chapter.stats?.mastery ?? 0));
+    const masteryLevel = this._getMasteryLevelClass(masteryPercent);
+
+    // Always render the circle structure, CSS will hide/show it or the dot
+    const progressCircle = document.createElement('div');
+    progressCircle.classList.add('chapter-item__progress-circle', masteryLevel);
+    progressCircle.title = `Mastery: ${masteryPercent}%`;
+    const radius = 15.915;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (masteryPercent / 100) * circumference;
+    progressCircle.innerHTML = `
+        <svg viewBox="0 0 36 36" class="progress-ring">
+            <circle class="progress-ring-bg" cx="18" cy="18" r="${radius}" />
+            <circle class="progress-ring-circle" cx="18" cy="18" r="${radius}"
+                    stroke-dasharray="${circumference} ${circumference}"
+                    stroke-dashoffset="${offset}" />
+        </svg>
+        <span class="chapter-item__progress-percentage">${masteryPercent}%</span>
+    `;
+    header.appendChild(progressCircle);
+
+    // Also render the dot, CSS will control visibility
+    const masteryDot = document.createElement('div');
+    masteryDot.classList.add('chapter-item__mastery-indicator', masteryLevel);
+    masteryDot.title = `Mastery: ${masteryPercent}%`;
+    header.appendChild(masteryDot); // Append dot to header
+
+    contentWrapper.appendChild(header);
+
+    // Stats Section (Always render, CSS will hide/show based on container width)
+    const totalCards = chapter.stats?.cardCount ?? 0;
+    const dueCards = chapter.stats?.totalDueCards ?? 0;
+    const newCards = chapter.stats?.remainingNewCards ?? 0;
+
+    const statsSection = document.createElement('div');
+    statsSection.classList.add('chapter-item__stats');
+
+    // Total cards stat
+    const totalStat = document.createElement('div');
+    totalStat.classList.add('chapter-item__stat', 'total');
+    totalStat.title = 'Total Cards';
+    totalStat.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 32 32"> <rect x="8" y="2" width="20" height="24" rx="3" ry="3" fill="none" stroke="currentColor" stroke-width="1.5" transform="rotate(-12 18 14)" /> <rect x="6" y="4" width="20" height="24" rx="3" ry="3" fill="none" stroke="currentColor" stroke-width="1.5" transform="rotate(-6 16 16)" /> <g transform="rotate(4 13 13)"> <rect x="4" y="2" width="18" height="22" rx="3" ry="3" fill="none" stroke="currentColor" stroke-width="1.5" /> </g> </svg>
+        <span class="chapter-item__stat-value">${totalCards}</span>
+    `;
+    statsSection.appendChild(totalStat);
+
+    // Due cards stat
+    const dueStat = document.createElement('div');
+    dueStat.classList.add('chapter-item__stat', 'due');
+    dueStat.title = 'Cards Due';
+    dueStat.innerHTML = `
+        <svg viewBox="0 0 24 24"> <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/> </svg>
+        <span class="chapter-item__stat-value">${dueCards}</span>
+    `;
+    statsSection.appendChild(dueStat);
+
+    // New cards stat
+    const newStat = document.createElement('div');
+    newStat.classList.add('chapter-item__stat', 'new');
+    newStat.title = 'New Cards';
+    newStat.innerHTML = `
+        <svg viewBox="0 0 24 24"> <path d="M13 7H11v4H7v2h4v4h2v-4h4v-2h-4V7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/> </svg>
+        <span class="chapter-item__stat-value">${newCards}</span>
+    `;
+    statsSection.appendChild(newStat);
+
+    contentWrapper.appendChild(statsSection);
+
+    // Tags Section (Always render, CSS will hide/show based on container width)
+    if (chapter.tags && chapter.tags.length > 0) {
+        const tagsContainer = document.createElement('div');
+        tagsContainer.classList.add('chapter-item__tags');
+        chapter.tags.slice(0, 3).forEach(tag => { // Limit initial tags shown for space
+            const tagElement = document.createElement('span');
+            tagElement.classList.add('chapter-item__tag');
+            tagElement.textContent = tag;
+            tagsContainer.appendChild(tagElement);
+        });
+        if (chapter.tags.length > 3) {
+            const moreTags = document.createElement('span');
+            moreTags.classList.add('chapter-item__tag', 'more-tags');
+            moreTags.textContent = `+${chapter.tags.length - 3}`;
+            tagsContainer.appendChild(moreTags);
         }
-    });
-     
-     // Add status indicators
-     if (chapter.isPinned) {
-         const pinIndicator = document.createElement('span');
-         pinIndicator.classList.add('chapter-item__indicator', 'pinned-icon');
-         pinIndicator.title = 'Pinned';
-         pinIndicator.textContent = '📌';
-         contentWrapper.appendChild(pinIndicator);
-     }
-     
-     if (chapter.isSuspended) {
-         const suspendIndicator = document.createElement('span');
-         suspendIndicator.classList.add('chapter-item__indicator', 'suspended-icon');
-         suspendIndicator.title = 'Suspended';
-         suspendIndicator.textContent = '⏸'; // Or appropriate icon
-         contentWrapper.appendChild(suspendIndicator);
-     }
-     
-     // Add the content wrapper to the main element
-     chapterElement.appendChild(contentWrapper);
-     
-     // Attach event listeners
-     renameInput.addEventListener('keydown', this._handleRenameInputKeydown);
-     renameInput.addEventListener('blur', this._handleRenameInputBlur);
-     
-     return chapterElement;
- }
+        contentWrapper.appendChild(tagsContainer);
+    }
+
+
+    // Append content wrapper to the main element
+    chapterElement.appendChild(contentWrapper);
+
+    // Add Selection Checkbox (always add, CSS hides if not in selection mode)
+    const checkboxContainer = document.createElement('div');
+    checkboxContainer.classList.add('selection-checkbox-container');
+    checkboxContainer.innerHTML = `<input type="checkbox" class="selection-checkbox" id="select-${chapter.id}" ${this.selectedItemIds.chapters.has(chapter.id) ? 'checked' : ''}><label for="select-${chapter.id}"></label>`;
+    chapterElement.appendChild(checkboxContainer);
+
+
+    // Attach Listeners needed for elements inside
+    const renameInput = chapterElement.querySelector('.chapter-rename-input');
+    renameInput?.addEventListener('keydown', this._handleRenameInputKeydown);
+    renameInput?.addEventListener('blur', this._handleRenameInputBlur);
+
+    return chapterElement;
+}
 
     /** Renders the top sort controls */
  /** MODIFIED: Renders sort controls, highlighting active order button */
@@ -2988,7 +2938,7 @@ async _handleDeleteTagClick(tagName) {
 
                         // 3. Show Success Message (mentioning chapter updates if count available)
                         const chaptersUpdatedMsg = result?.chaptersUpdatedCount > 0 ? ` Tag removed from ${result.chaptersUpdatedCount} chapter(s).` : "";
-                        this._showInfoMessage(`Tag "${tagName}" deleted.${chaptersUpdatedMsg}`);
+                        /* this._showInfoMessage(`Tag "${tagName}" deleted.${chaptersUpdatedMsg}`); */
 
                    } catch (error) {
                         console.error(`Failed to delete tag ${tagName}:`, error); // DEBUG
@@ -3533,7 +3483,7 @@ async _saveAndApplySortPreference() {
                    // Fallback: Full layout refresh might be needed if structure is broken
                    // this._renderDashboardLayout();
               }
-             this._showInfoMessage(`Group layout changed to ${newMode}.`);
+             /* this._showInfoMessage(`Group layout changed to ${newMode}.`); */
         } catch (error) { /* ... error handling ... */ }
         finally { this._updateLoadingState('action', false); }
     }
@@ -3543,7 +3493,7 @@ async _saveAndApplySortPreference() {
         this.isGroupResizeMoveMode = !this.isGroupResizeMoveMode;
         console.log("DEBUG: Group Resize/Move Mode:", this.isGroupResizeMoveMode); // DEBUG
         this._updateGridEditMode(); // Apply changes to Gridstack items
-        this._showInfoMessage(`Group move/resize ${this.isGroupResizeMoveMode ? 'enabled' : 'disabled'}.`);
+        /* this._showInfoMessage(`Group move/resize ${this.isGroupResizeMoveMode ? 'enabled' : 'disabled'}.`); */
    }
 
     _updateGridEditMode() {
@@ -3595,7 +3545,7 @@ async _saveAndApplySortPreference() {
              const groupData = this._findGroupData(groupId);
              if (groupData) groupData.sortPreference = result.group.sortPreference;
              await this._fetchAndRenderGroupChapters(groupId); // Refresh chapters with new sort
-             this._showInfoMessage(`Sort preference updated for group "${groupData?.name || groupId}".`);
+             /* this._showInfoMessage(`Sort preference updated for group "${groupData?.name || groupId}".`); */
         } catch (error) { /* ... error handling ... */ }
         finally { this._updateLoadingState('action', false); this.groupSortModalGroupId = null; }
     }
@@ -3660,7 +3610,7 @@ async _saveAndApplySortPreference() {
 
               // Update UI visually
                chapterElement?.classList.toggle('is-pinned', chapter.isPinned);
-               this._showInfoMessage(`Chapter ${shouldPin ? 'pinned' : 'unpinned'}.`);
+               /* this._showInfoMessage(`Chapter ${shouldPin ? 'pinned' : 'unpinned'}.`); */
 
                // Refresh filtered view if currently filtering by pinned status
                if (this.currentFilter.type === 'pinned') {
@@ -4409,7 +4359,7 @@ _updateSelectionToolbar() {
                this._renderTagPills(); // Re-render pills in main UI
                this._handleOpenTagManagementModal(); // Refresh modal content
                this.newTagNameInput.value = ''; // Clear input after success
-               this._showInfoMessage(`Tag "${newTagName}" created.`);
+               /* this._showInfoMessage(`Tag "${newTagName}" created.`); */
           } catch (error) {
                console.error("Failed to create tag:", error);
                this._showError(`Could not create tag: ${error.message}`);
@@ -4530,7 +4480,7 @@ _updateSelectionToolbar() {
         }, 150); // Adjust delay if needed
 
         if (errorsOccurred) this._showError("Group created, but some chapters could not be added.");
-        else this._showInfoMessage(`Group "${name}" created.`);
+        /* else this._showInfoMessage(`Group "${name}" created.`); */
 
     } catch (error) {
         console.error("Failed to create group or assign chapters:", error);
@@ -4638,7 +4588,7 @@ _updateSelectionToolbar() {
               nameSpan.textContent = newName; // Update UI
               element.classList.remove('is-renaming');
               input.style.display = 'none';
-              this._showInfoMessage(`${tempTarget.type === 'chapter' ? 'Chapter' : 'Group'} renamed to "${newName}".`);
+              /* this._showInfoMessage(`${tempTarget.type === 'chapter' ? 'Chapter' : 'Group'} renamed to "${newName}".`); */
 
          } catch (error) {
               console.error(`Failed to rename ${tempTarget.type}:`, error);
@@ -4990,7 +4940,7 @@ _updateSelectionToolbar() {
 
             // Show feedback
             if (errorsOccurred) this._showError("Some chapters could not be updated.", true);
-            else if (firstSuccessMessage) this._showInfoMessage(firstSuccessMessage);
+            /* else if (firstSuccessMessage) this._showInfoMessage(firstSuccessMessage); */
 
         } catch (error) {
             console.error("Error processing drop event:", error);
