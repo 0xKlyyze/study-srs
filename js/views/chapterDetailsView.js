@@ -276,26 +276,36 @@ class ChapterDetailsView {
      * Parses URL params and updates the new breadcrumb structure.
      * @private
      */
-    _parseUrlParams() {
-        const urlParams = new URLSearchParams(window.location.search);
-        this.currentMaterial = urlParams.get('material');
-        this.currentChapter = urlParams.get('chapter'); // Encoded
-
-        if (!this.currentMaterial || !this.currentChapter) { /* ... error handling ... */ throw new Error("Missing params"); }
-
-        const decodedChapter = decodeURIComponent(this.currentChapter);
-        this.currentChapterNameDecoded = decodedChapter;
-
-        // Update Header Content using new structure
-        if (this.breadcrumbMaterialLink) {
-            this.breadcrumbMaterialLink.textContent = this.currentMaterial;
-            this.breadcrumbMaterialLink.href = `index.html`; // Or appropriate link
-        }
-        if (this.breadcrumbChapterSpan) {
-            this.breadcrumbChapterSpan.textContent = decodedChapter;
-        }
-        // H1 title is removed from HTML
+_parseUrlParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    this.currentMaterial = urlParams.get('material');
+    this.currentChapter = urlParams.get('chapter'); // Keep encoded chapter name for internal use/API calls if needed
+    if (!this.currentMaterial || !this.currentChapter) {
+        console.error("Missing material or chapter in URL parameters!");
+        // Optionally redirect or show an error message
+        this.mainContent.innerHTML = "<p class='error-text'>Error: Missing material or chapter information.</p>";
+        throw new Error("Missing material or chapter in URL parameters.");
     }
+
+    const decodedChapter = decodeURIComponent(this.currentChapter);
+    this.currentChapterNameDecoded = decodedChapter; // Store decoded name for display
+
+    // Update Header Content using new structure
+    if (this.breadcrumbMaterialLink) {
+        this.breadcrumbMaterialLink.textContent = this.currentMaterial;
+        // *** MODIFICATION START ***
+        // Set the href to navigate back to the dashboard for this specific material
+        this.breadcrumbMaterialLink.href = `index.html?material=${encodeURIComponent(this.currentMaterial)}`;
+        // *** MODIFICATION END ***
+    }
+    if (this.breadcrumbChapterSpan) {
+        this.breadcrumbChapterSpan.textContent = this.currentChapterNameDecoded; // Display decoded name
+        // Add dataset for potential rename functionality
+        this.breadcrumbChapterSpan.dataset.originalName = this.currentChapterNameDecoded;
+    }
+    // H1 title is removed from HTML
+    console.log(`DEBUG: Parsed URL - Material: ${this.currentMaterial}, Chapter (Decoded): ${this.currentChapterNameDecoded}`);
+}
 
     // Add this helper at the top of your class, before the constructor
 _checkDependencies() {

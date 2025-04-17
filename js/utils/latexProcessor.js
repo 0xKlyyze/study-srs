@@ -247,60 +247,28 @@ export function processAndRenderLatex(rawText, outputElement, katexOptions = nul
             let blockContent = blockMatch[2].trim();
 
             // Lowercase Heuristic
-            if (blockTypeRaw && blockTypeRaw[0] === blockTypeRaw[0].toLowerCase() && 
-                blockTypeRaw[0] !== blockTypeRaw[0].toUpperCase()) {
-                // Starts with lowercase - Treat as plain text
-                foundBlocks = true;
-                accumulatedPlainText += (accumulatedPlainText ? " " : "") + 
-                    blockTypeRaw + (blockContent ? 
-                    (blockTypeRaw.endsWith(':') ? " " : ": ") + blockContent : "");
+            if (blockTypeRaw && blockTypeRaw[0] === blockTypeRaw[0].toLowerCase() && blockTypeRaw[0] !== blockTypeRaw[0].toUpperCase()) {
+                // Starts with lowercase -> Treat as plain text, append to accumulator
+                accumulatedPlainText += (accumulatedPlainText ? " " : "") + blockTypeRaw + (blockContent ? (blockTypeRaw.endsWith(':') ? " " : ": ") + blockContent : "");
             } else {
-                // Process as potential structural block or simple bold
-                // Determine Slug
-                let blockTypeSlug = 'other';
-                const blockTypeLower = blockTypeRaw.toLowerCase();
-                
-                if (blockTypeLower.includes('théorème') || blockTypeLower.includes('theorem')) 
-                    blockTypeSlug = 'theoreme';
-                else if (blockTypeLower.includes('proposition')) 
-                    blockTypeSlug = 'proposition';
-                else if (blockTypeLower.includes('définition') || blockTypeLower.includes('definition')) 
-                    blockTypeSlug = 'definition';
-                else if (blockTypeLower.includes('exemple') || blockTypeLower.includes('example')) 
-                    blockTypeSlug = 'exemple';
-                else if (blockTypeLower.includes('explication') || blockTypeLower.includes('explanation')) 
-                    blockTypeSlug = 'explication';
-                else if (blockTypeLower.includes('lemme') || blockTypeLower.includes('lemma')) 
-                    blockTypeSlug = 'lemme';
-                else if (blockTypeLower.includes('corollaire') || blockTypeLower.includes('corollary')) 
-                    blockTypeSlug = 'corollaire';
-                else if (blockTypeLower.includes('remarque') || blockTypeLower.includes('remark')) 
-                    blockTypeSlug = 'remarque';
-                else if (blockTypeLower.includes('preuve') || blockTypeLower.includes('proof') || 
-                         blockTypeLower.includes('demonstration')) 
-                    blockTypeSlug = 'preuve';
-
-                if (blockTypeSlug === 'other') {
-                    // Unstyled block -> treat as simple inline bold text
-                    foundBlocks = true;
-                    const headerCleaned = blockTypeRaw.replace(/:$/, '').trim();
-                    const simpleBoldHtml = ` <strong>${headerCleaned}</strong>${blockContent ? ": " + blockContent : ""}`;
-                    accumulatedPlainText += simpleBoldHtml;
-                } else {
-                    // Structural block
-                    foundBlocks = true;
-                    if (accumulatedPlainText) {
-                        currentSegmentOutputs.push(`<div class="explanation-block type-text">${accumulatedPlainText}</div>`);
-                        accumulatedPlainText = "";
-                    }
-                    
-                    currentSegmentOutputs.push(`<div class="explanation-block type-${blockTypeSlug}" data-block-type="${blockTypeRaw}">`);
-                    currentSegmentOutputs.push(`  <div class="explanation-block-header">${blockTypeRaw.replace(/:$/, '').trim()}</div>`);
-                    currentSegmentOutputs.push(`  <div class="explanation-block-content">`);
-                    currentSegmentOutputs.push(blockContent);
-                    currentSegmentOutputs.push(`  </div>`);
-                    currentSegmentOutputs.push(`</div>`);
+                // --- Treat ALL non-lowercase as structural blocks (V16 change) ---
+                // Finalize any accumulated plain text FIRST
+                if (accumulatedPlainText) {
+                    currentSegmentOutputs.push(`<div class="explanation-block type-text">${accumulatedPlainText}</div>`);
+                    accumulatedPlainText = ""; // Reset accumulator
                 }
+
+                // Determine Slug (same logic as before)
+                let blockTypeSlug = 'other'; const blockTypeLower = blockTypeRaw.toLowerCase();
+                if (blockTypeLower.includes('théorème') || blockTypeLower.includes('theorem')) blockTypeSlug = 'theoreme'; else if (blockTypeLower.includes('proposition')) blockTypeSlug = 'proposition'; else if (blockTypeLower.includes('définition') || blockTypeLower.includes('definition')) blockTypeSlug = 'definition'; else if (blockTypeLower.includes('exemple') || blockTypeLower.includes('example')) blockTypeSlug = 'exemple'; else if (blockTypeLower.includes('explication') || blockTypeLower.includes('explanation')) blockTypeSlug = 'explication'; else if (blockTypeLower.includes('lemme') || blockTypeLower.includes('lemma')) blockTypeSlug = 'lemme'; else if (blockTypeLower.includes('corollaire') || blockTypeLower.includes('corollary')) blockTypeSlug = 'corollaire'; else if (blockTypeLower.includes('remarque') || blockTypeLower.includes('remark')) blockTypeSlug = 'remarque'; else if (blockTypeLower.includes('preuve') || blockTypeLower.includes('proof') || blockTypeLower.includes('demonstration')) blockTypeSlug = 'preuve';
+
+                // Create the structured block HTML (this now includes 'type-other')
+                currentSegmentOutputs.push(`<div class="explanation-block type-${blockTypeSlug}" data-block-type="${blockTypeRaw}">`);
+                currentSegmentOutputs.push(`  <div class="explanation-block-header">${blockTypeRaw.replace(/:$/, '').trim()}</div>`);
+                currentSegmentOutputs.push(`  <div class="explanation-block-content">`);
+                currentSegmentOutputs.push(blockContent); // Add content
+                currentSegmentOutputs.push(`  </div>`);
+                currentSegmentOutputs.push(`</div>`);
             }
 
             localLastIndex = v3_blockRegex.lastIndex;

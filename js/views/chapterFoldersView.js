@@ -207,58 +207,69 @@ class ChapterFoldersView {
     /**
      * Initializes the view: Fetches initial data, sets up grid, renders UI.
      */
-    async initialize() {
-        console.log("ChapterFoldersView Initialize vNext");
-        this.container?.classList.add('is-loading-main');
-        if (this.dashboardGridContainer) this.dashboardGridContainer.innerHTML = '<p class="loading-text">Initializing Dashboard...</p>';
-        this._renderOverviewPlaceholders(true);
+/**
+     * Initializes the view: Fetches initial data, sets up grid, renders UI.
+     */
+async initialize() {
+    console.log("ChapterFoldersView Initialize vNext");
+    this.container?.classList.add('is-loading-main');
+    if (this.dashboardGridContainer) this.dashboardGridContainer.innerHTML = '<p class="loading-text">Initializing Dashboard...</p>';
+    this._renderOverviewPlaceholders(true);
 
-        // Check Critical DOM Elements
-         const criticalElements = [this.container, this.dashboardGridContainer, this.pillMaterialSwitcherInner, /* add others */];
-         if (criticalElements.some(el => !el)) {
-              console.error("Missing critical dashboard elements! Check HTML IDs.");
-              if (this.container) this.container.innerHTML = "<p class='error-text'>Error: UI failed to initialize (missing elements).</p>";
-              this.container?.classList.remove('is-loading-main');
-              return;
-         }
+    // Check Critical DOM Elements
+     const criticalElements = [this.container, this.dashboardGridContainer, this.pillMaterialSwitcherInner, /* add others */];
+     if (criticalElements.some(el => !el)) {
+          console.error("Missing critical dashboard elements! Check HTML IDs.");
+          if (this.container) this.container.innerHTML = "<p class='error-text'>Error: UI failed to initialize (missing elements).</p>";
+          this.container?.classList.remove('is-loading-main');
+          return;
+     }
 
-        // Initialize Grid Library
-        this._initializeGrid();
-        if (!this.gridInstance) {
-            this.container?.classList.remove('is-loading-main');
-            return;
-        }
-
-        // Attach Base Event Listeners
-        this._attachBaseEventListeners();
-        this._attachModalListeners(); // <= CALL THIS HER
-
-        // Fetch Initial Dashboard Data
-        this._updateLoadingState('dashboard', true);
-        try {
-            console.log("FETCH: Initial Dashboard Summary"); // DEBUG
-            const summaryData = await apiClient.getDashboardSummary();
-            console.log("FETCH_SUCCESS: Dashboard Summary", summaryData); // DEBUG
-            // Process summary BUT defer rendering layout until dependent fetches complete
-            await this._processSummaryData_Phase1(summaryData);
-
-            // Fetch chapters and render layout AFTER phase 1 processing is done
-            await this._fetchAndRenderInitialDashboardContent();
-
-            // Fetch Overview Data SEPARATELY and AFTER dashboard basics are initiated
-            await this._loadOverviewData();
-
-        } catch (error) {
-            console.error("FATAL: Failed to initialize dashboard:", error); // DEBUG
-            this._showError(`Failed to load dashboard data: ${error.message}`);
-            if (this.dashboardGridContainer) this.dashboardGridContainer.innerHTML = `<p class="error-text">Could not load chapter data.</p>`;
-            this._renderOverviewPlaceholders(false, true); // Show error in overview
-        } finally {
-            this._updateLoadingState('dashboard', false);
-            this.container?.classList.remove('is-loading-main'); // Ensure loading class is removed
-            console.log("INITIALIZATION COMPLETE (or failed)"); // DEBUG
-        }
+    // Initialize Grid Library
+    this._initializeGrid();
+    if (!this.gridInstance) {
+        this.container?.classList.remove('is-loading-main');
+        return;
     }
+
+    // Attach Base Event Listeners
+    this._attachBaseEventListeners();
+    this._attachModalListeners(); // <= CALL THIS HERE
+
+    // Fetch Initial Dashboard Data
+    this._updateLoadingState('dashboard', true);
+    try {
+        // *** MODIFICATION START ***
+        // Check URL for a specific material to load
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestedMaterial = urlParams.get('material');
+        console.log(`FETCH: Initial Dashboard Summary ${requestedMaterial ? `for material: ${requestedMaterial}` : '(default)'}`); // DEBUG
+
+        // Pass the requested material (or null for default) to the API call
+        const summaryData = await apiClient.getDashboardSummary(requestedMaterial);
+        // *** MODIFICATION END ***
+
+        console.log("FETCH_SUCCESS: Dashboard Summary", summaryData); // DEBUG
+        // Process summary BUT defer rendering layout until dependent fetches complete
+        await this._processSummaryData_Phase1(summaryData);
+
+        // Fetch chapters and render layout AFTER phase 1 processing is done
+        await this._fetchAndRenderInitialDashboardContent();
+
+        // Fetch Overview Data SEPARATELY and AFTER dashboard basics are initiated
+        await this._loadOverviewData();
+
+    } catch (error) {
+        console.error("FATAL: Failed to initialize dashboard:", error); // DEBUG
+        this._showError(`Failed to load dashboard data: ${error.message}`);
+        if (this.dashboardGridContainer) this.dashboardGridContainer.innerHTML = `<p class="error-text">Could not load chapter data.</p>`;
+        this._renderOverviewPlaceholders(false, true); // Show error in overview
+    } finally {
+        this._updateLoadingState('dashboard', false);
+        this.container?.classList.remove('is-loading-main'); // Ensure loading class is removed
+        console.log("INITIALIZATION COMPLETE (or failed)"); // DEBUG
+    }
+}
 
     // --- Debounce Utility ---
     _debounce(func, delay) {

@@ -5,8 +5,8 @@ class ApiClient {
     constructor() {
         // Base URL for the API
         // Use environment variable or configuration for production
-        /* this.baseURL = "https://flashcard-api-957892315214.europe-west9.run.app/api" ; */ // No fallback needed if configured correctly // Example using Vue-like env var
-        this.baseURL = "https://flashcard-api-957892315214.europe-west9.run.app/api";
+        this.baseURL = "https://flashcard-api-957892315214.europe-west9.run.app/api" ; // No fallback needed if configured correctly // Example using Vue-like env var
+        /* this.baseURL = "http://localhost:3000/api"; */
         console.log("ApiClient initialized with baseURL:", this.baseURL);
     }
 
