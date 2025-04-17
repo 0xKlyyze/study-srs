@@ -185,7 +185,7 @@
 /* --- Main Study Area --- */
 .study-area {
     display: flex;
-    gap: 2.5rem;
+    gap: 1.5rem;
     align-items: center;
     justify-content: center; /* <<< Ensure this is center */
     padding: 0rem 1.2rem;
@@ -572,7 +572,7 @@ body.edit-panel-active .edit-panel {
     flex-grow: 1;                     /* <<< Allow growing */
     flex-shrink: 1;                   /* <<< Allow shrinking (good practice) */
     flex-basis: auto;                 /* <<< Let grow/content determine base */
-    max-width: 45rem;                 /* <<< Restore original max-width */
+                   /* <<< Restore original max-width */
     /* === REMOVE MARGIN AUTO === */
     /* margin-left: auto;  */        /* <<< REMOVE */
     /* margin-right: auto; */        /* <<< REMOVE */
@@ -586,6 +586,10 @@ body.edit-panel-active .edit-panel {
                 min-height 0.5s ease,
                 max-height 0.5s ease;
     order: 2;
+    
+    width: 95%; /* Increase width (adjust value as needed) */
+    height: 550px; /* Increase height (adjust value as needed) */
+    margin: 1.8rem auto; /* Adjust margin if needed for centering */
     position: relative;
 }
 
@@ -648,7 +652,7 @@ body.edit-panel-active .edit-panel {
 
         .card-face {
             position: absolute;
-            width: 100%;
+            width: 1000px;
             min-height: inherit; /* Inherit min-height from scene */
             height: 100%; /* Allow to grow based on content */
             -webkit-backface-visibility: hidden;
@@ -770,7 +774,7 @@ body.edit-panel-active .edit-panel {
          .card-content-wrapper::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 4px; border: 2px solid var(--secondary-bg); }
          .card-content-wrapper::-webkit-scrollbar-thumb:hover { background-color: var(--hover-border-color); }
 
-         .explanation {
+.explanation {
             font-size: 1em;
             line-height: 1.3;
             /* margin-bottom: 1em; /* Now handled by explanation-block */
@@ -781,7 +785,7 @@ body.edit-panel-active .edit-panel {
             margin: 15px 0;
             padding: 10px;
             background-color: #1f2a40; /* Slightly different background */
-            border-radius: 4px; /* Can keep this or match main block radius */
+            border-radius: 10px; /* Can keep this or match main block radius */
             overflow-x: auto; /* Allow horizontal scroll for wide equations */
             color: #e0e0e0; /* Ensure text is visible */
         }
@@ -789,118 +793,117 @@ body.edit-panel-active .edit-panel {
         /* --- Base Explanation Block --- */
         /* Common styles for all explanation blocks */
         .explanation .explanation-block {
-            margin-bottom: 1em; /* Space between blocks */
-            border-radius: 6px; /* <<<< Rounded corners applied here */
-            overflow: hidden;   /* <<<< Important for background clipping */
+            margin-bottom: 1.2em; /* Slightly increased space between blocks */
+            border-radius: 15px; /* Slightly larger radius */
+            overflow: hidden;   /* Important for background clipping */
             position: relative; /* Needed if using pseudo-elements later, good practice */
-            
+            border-left: 5px solid transparent; /* Default transparent border */
+            background: rgba(44, 58, 86, 0.1); /* Subtle default background */
         }
         
         /* --- Improved Header --- */
         .explanation .explanation-block .explanation-block-header {
             display: block; /* Ensure it takes full width */
             font-weight: 600; /* Keep header bold */
-            color: var(--text-primary); /* Keep header text brighter */
-            margin-bottom: 0.25em; /* Slightly reduced space below header text */
-            padding: 0.5em 0 0.5em 0; /* Add some vertical padding, keep left padding handled by block */
-            /* Optional: Subtle bottom border for separation */
-            border-bottom: 1px solid var(--border-color-translucent, rgba(255, 255, 255, 0.08));
-            /* Ensure header text isn't affected by block's left padding: */
-            /* We'll rely on the block's padding-left instead */
+            color: var(--text-primary); /* Default header text color */
+            margin-bottom: 0; /* Remove margin, padding will handle space */
+            padding: 0.6em 1.2rem; /* Increased padding */
+            /* border-bottom: 1px solid var(--border-color-translucent, rgba(255, 255, 255, 0.08)); */ /* REMOVED border */
+            /* Background and text color will be set per type */
         }
         
         /* --- Content Area --- */
         .explanation .explanation-block .explanation-block-content {
-             /* Content inherits block padding. Add specific styles if needed */
-             /* e.g., padding-top: 0.25em; if more space needed below header border */
+             padding: 0.5rem 0rem 0.5rem 1.5rem; /* Add padding all around, especially left */
              line-height: 1.6; /* Ensure consistent line-height */
         }
         
         
         /* --- Type-Specific Styling --- */
-        /* Apply individual border colors, backgrounds, and padding */
-        /* NOTE: border-radius is now handled by the base .explanation-block */
+        /* Apply individual border colors, header backgrounds, and adjust padding */
         
+        /* --- Definition --- */
         .explanation .explanation-block[data-block-type*="Définition"],
         .explanation .explanation-block[data-block-type*="Definition"] {
-            border-left: 5px solid var(--accent-blue);
-            padding-left: 1rem; /* Keep space from border */
-            margin-left: 0;
-            padding-top: 0.5em;
-            padding-bottom: 0.5em;
-            background: rgba(91, 192, 222, 0.05); /* Keep translucent background */
-            /* border-radius: 6px; */ /* REMOVED - Handled by base class */
+            border-left-color: var(--accent-blue);
+            background: rgba(91, 192, 222, 0.04); /* More subtle background */
+        }
+        .explanation .explanation-block[data-block-type*="Définition"] .explanation-block-header,
+        .explanation .explanation-block[data-block-type*="Definition"] .explanation-block-header {
+            background-color: var(--accent-blue);
+            color: #0a1e2c; /* Darker text for contrast on blue */
         }
         
+        /* --- Explication --- */
         .explanation .explanation-block[data-block-type*="Explication"] {
-            border-left: 5px solid var(--accent-purple);
-            padding-left: 1rem;
-            margin-left: 0;
-            padding-top: 0.5em;
-            padding-bottom: 0.5em;
-            background: rgba(118, 36, 156, 0.05); /* Keep translucent background */
-            /* border-radius: 6px; */ /* REMOVED - Handled by base class */
+            border-left-color: var(--accent-purple);
+            background: rgba(106, 17, 203, 0.04);
+        }
+        .explanation .explanation-block[data-block-type*="Explication"] .explanation-block-header {
+            background-color: var(--accent-purple);
+            color: #ffffff;
         }
         
+        /* --- Proposition --- */
         .explanation .explanation-block[data-block-type*="Proposition"] {
-            border-left: 5px solid var(--accent-green);
-            padding-left: 1rem;
-            margin-left: 0;
-            padding-top: 0.5em;
-            padding-bottom: 0.5em;
-            background: rgba(92, 184, 92, 0.05); /* Keep translucent background */
-            /* border-radius: 6px; */ /* REMOVED - Handled by base class */
+            border-left-color: var(--accent-green);
+            background: rgba(92, 184, 92, 0.04);
+        }
+        .explanation .explanation-block[data-block-type*="Proposition"] .explanation-block-header {
+            background-color: var(--accent-green);
+            color: #0a1e2c; /* Darker text for contrast on green */
         }
         
+        /* --- Theorem --- */
         .explanation .explanation-block[data-block-type*="Théorème"],
         .explanation .explanation-block[data-block-type*="Theorem"] {
-            border-left: 5px solid var(--accent-yellow);
-            padding-left: 1rem;
-            margin-left: 0;
-            padding-top: 0.5em;
-            padding-bottom: 0.5em;
-            background: rgba(240, 173, 78, 0.05); /* Keep translucent background */
-            /* border-radius: 6px; */ /* REMOVED - Handled by base class */
+            border-left-color: var(--accent-yellow);
+            background: rgba(240, 173, 78, 0.04);
+        }
+        .explanation .explanation-block[data-block-type*="Théorème"] .explanation-block-header,
+        .explanation .explanation-block[data-block-type*="Theorem"] .explanation-block-header {
+            background-color: var(--accent-yellow);
+            color: #0a1e2c; /* Darker text for contrast on yellow */
         }
         
-        /* --- Fix inconsistent selectors & apply consistent styling --- */
-        /* Target .explanation-block and apply similar styles */
-        
+        /* --- Corollary --- */
         .explanation .explanation-block[data-block-type*="Corollaire"],
         .explanation .explanation-block[data-block-type*="Corollary"] {
-            border-left: 5px solid #6a7aac; /* Adjusted border width slightly */
-            padding-left: 1rem;
-            margin-left: 0; /* Remove negative margin */
-            padding-top: 0.5em;
-            padding-bottom: 0.5em;
-            background: rgba(106, 122, 172, 0.05); /* Added background */
-            /* border-radius: 6px; */ /* REMOVED - Handled by base class */
+            border-left-color: #4db6ac; /* Using specific color, consider making a variable */
+            background: rgba(106, 122, 172, 0.04);
+        }
+        .explanation .explanation-block[data-block-type*="Corollaire"] .explanation-block-header,
+        .explanation .explanation-block[data-block-type*="Corollary"] .explanation-block-header {
+            background-color: #4db6ac;
+            color: #ffffff;
         }
         
+        /* --- Lemma --- */
         .explanation .explanation-block[data-block-type*="Lemme"],
         .explanation .explanation-block[data-block-type*="Lemma"] {
-            border-left: 5px solid #d9534f; /* Adjusted border width slightly */
-            padding-left: 1rem;
-            margin-left: 0; /* Remove negative margin */
-            padding-top: 0.5em;
-            padding-bottom: 0.5em;
-            background: rgba(217, 83, 79, 0.05); /* Added background */
-            /* border-radius: 6px; */ /* REMOVED - Handled by base class */
+            border-left-color: var(--accent-red);
+            background: rgba(217, 83, 79, 0.04);
+        }
+        .explanation .explanation-block[data-block-type*="Lemme"] .explanation-block-header,
+        .explanation .explanation-block[data-block-type*="Lemma"] .explanation-block-header {
+            background-color: var(--accent-red);
+            color: #ffffff;
         }
         
+        /* --- Example --- */
         .explanation .explanation-block[data-block-type*="Exemple"],
         .explanation .explanation-block[data-block-type*="Example"] {
-            border-left: 5px solid #7a8aae; /* Adjusted border width slightly */
-            padding-left: 1rem;
-            margin-left: 0; /* Remove negative margin */
-            padding-top: 0.5em;
-            padding-bottom: 0.5em;
-            background: rgba(122, 138, 174, 0.05); /* Added background */
-            /* border-radius: 6px; */ /* REMOVED - Handled by base class */
+            border-left-color: #ffb74d; /* Using specific color, consider making a variable */
+            background: rgba(122, 138, 174, 0.04);
+        }
+        .explanation .explanation-block[data-block-type*="Exemple"] .explanation-block-header,
+        .explanation .explanation-block[data-block-type*="Example"] .explanation-block-header {
+            background-color: #ffb74d;
+            color: #ffffff;
         }
         
         /* --- Plain Text Block Styling --- */
-        /* Style the plain text block if needed, ensure it doesn't get rounded/bordered */
+        /* Ensure plain text blocks don't get the new styles */
         .explanation .explanation-block.type-text {
             padding-left: 0; /* No border padding */
             background: none; /* No background */
@@ -909,15 +912,18 @@ body.edit-panel-active .edit-panel {
             overflow: visible; /* Reset overflow */
             padding-top: 0;
             padding-bottom: 0;
+            margin-bottom: 1em; /* Restore default margin */
         }
-        /* Optional: Hide header border for plain text blocks */
+        /* Reset header style for plain text blocks */
         .explanation .explanation-block.type-text .explanation-block-header {
-            border-bottom: none;
-            padding: 0; /* Reset padding */
-            margin-bottom: 0.5em; /* Restore some margin if needed */
+            background-color: transparent; /* No background */
+            color: var(--text-primary); /* Reset text color */
+            padding: 0 0 0.5em 0; /* Minimal padding */
+            font-weight: 600; /* Keep bold if desired, or reset */
+            border-bottom: none; /* Ensure no border */
         }
         .explanation .explanation-block.type-text .explanation-block-content {
-            /* Keep default content styling */
+            padding: 0; /* Reset content padding */
         }
         
         /* Add others */
@@ -1001,7 +1007,7 @@ body.edit-panel-active .edit-panel {
     /* We need button height. Assume approx 3.5rem height including padding */
     /* 70% of height below = 0.7 * 3.5rem = 2.45rem */
     /* So bottom edge is -2.45rem from card scene bottom */
-     bottom: -2.7rem; /* Push bottom edge down from card bottom */
+     bottom: -3rem; /* Push bottom edge down from card bottom */
      transform: translateX(-50%) translateY(0%); /* No Y translate needed if using bottom */
     /* OR adjust translateY method: */
     /* bottom: 0; */
