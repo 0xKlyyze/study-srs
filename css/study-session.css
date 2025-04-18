@@ -68,6 +68,52 @@
              --panel-transition-duration: 0.45s; /* Define duration */
              --panel-transition-timing: cubic-bezier(0.4, 0, 0.2, 1); /* Smoother ease */
              --action-btn-active-scale: 1.15; /* How much active buttons scale */
+
+              /* NEW Variables for Explanation Blocks */
+    --block-border-radius: 16px; /* Consistent rounding */
+    --block-border-width: 1px;
+    --block-border-color: var(--border-color);
+    --block-bg-color-base: rgba(44, 58, 86, 0.1); /* Subtle base background */
+    --block-header-padding: 0.6em 0.8rem;
+    --block-content-padding: 0.8rem 1.2rem; /* Padding when expanded */
+    --block-peek-height: 2em; /* How much to show when collapsed */
+    --block-blur-amount: 7px; /* Increased blur */
+    --block-fade-height: 1.5em; /* Height of the fade gradient */
+    --block-transition-duration: 0.35s;
+    --block-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+    --block-selected-outline-color: var(--accent-blue);
+    --block-selected-outline-width: 2px;
+    --block-selected-shadow: 0 0 8px rgba(91, 192, 222, 0.5); /* Glow effect */
+     /* ... existing variables ... */
+     --block-header-bg-opacity: 0.25; /* Opacity for header backgrounds */
+     --block-selected-border-width: 2px; /* Make selected border thicker */
+     --block-selected-shadow: 0 0 10px 2px var(--block-selected-outline-color); /* Stronger glow */
+
+    /* Type specific colors (add if not already defined) */
+    --accent-definition: var(--accent-blue);
+    --accent-theoreme: var(--accent-yellow);
+    --accent-proposition: var(--accent-green);
+    --accent-lemme: var(--accent-red);
+    --accent-corollaire: var(--accent-teal); /* Example */
+    --accent-exemple: var(--accent-orange); /* Example */
+    --accent-explication: var(--accent-purple);
+    --accent-remarque: var(--text-secondary); /* Example */
+    --accent-preuve: var(--accent-pink); /* Example */
+    --accent-text: var(--border-color); /* Use border color for text block */
+    --accent-latex-block: #777; /* Example */
+    --accent-error: var(--accent-red);
+    --focus-glow-color: rgba(106, 17, 203, 0.6); /* Purple glow */
+    --focus-glow-hover-color: rgba(106, 17, 203, 0.8);
+    --focus-active-glow-color: rgba(106, 17, 203, 0.6); /* Purple glow */
+
+        /* ... existing variables ... */
+        --hint-chars-unblurred: 10; /* Approx number of chars to show */
+        --hint-overlay-padding: var(--block-content-padding); /* Match content padding */
+            /* Padding is now applied to the inner content divs */
+    --block-content-padding-top-bottom: 0.8rem;
+    --block-content-padding-left-right: 1.2rem;
+    --block-peek-height: 2.6em;
+    --hint-preview-max-height: 5.5em; /* Adjust as needed */
         }
 
         /* --- General Styles & SCALING --- */
@@ -79,6 +125,8 @@
 
         html {
              font-size: 19px; /* Base font size increased (adjust as needed) */
+            /* Prevent vertical scrollbar caused by minor overflows */
+            overflow-y: hidden;
         }
 
         body {
@@ -89,10 +137,86 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            overflow-x: hidden;
+            overflow: hidden;
             padding-top: 0rem; /* Initial padding */
             transition: padding-top 0.5s ease; /* <<< ADD PADDING TRANSITION */
         }
+
+       /* --- Focus Mode Styling (Ensure these are robust) --- */
+body.focus-mode-active .session-pill,
+body.focus-mode-active .card-actions-column { /* Hide both columns */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+
+body.focus-mode-active {
+    /* Optional: Smoother transition for padding */
+    transition: padding-top 0.4s ease;
+    padding-top: 0.5vh; /* Further reduced padding */
+    overflow : hidden;
+}
+
+/* --- Container for Quality Buttons in Focus Mode --- */
+body.focus-mode-active .quality-buttons {
+    /* Apply the desired small gap */
+    gap: 0.2rem; /* Start with 0.2rem, adjust down if it works */
+
+    /* Ensure it inherits/maintains necessary positioning from the non-focus flipped state */
+    position: absolute;
+    left: 50%;
+    width: 100%; /* Or adjust width as needed for focus mode */
+    max-width: calc(100% - 4rem);
+    bottom: 1rem; /* Position relative to card bottom */
+    transform: translateX(-50%) translateY(0%); /* Center horizontally */
+    justify-content: center; /* Center buttons if space-around gives too much space */
+    margin-right : 10px;
+
+    /* Keep transitions */
+    transition: gap 0.3s ease, bottom 0.3s ease, opacity 0.3s ease, transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s, visibility 0s linear 0.6s;
+}
+
+/* --- Individual Quality Buttons in Focus Mode --- */
+body.focus-mode-active .quality-btn {
+    /* Apply scaling */
+    transform: scale(0.7);
+    /* REMOVE conflicting transform: translateX(-50%); */
+
+    opacity: 0.8;
+    margin: 0; /* Keep margin reset */
+    margin-bottom : 10px;
+
+    /* REMOVE conflicting absolute positioning */
+    /* bottom: -7rem; */
+    position: relative; /* Ensure buttons stay in the flex flow */
+
+    pointer-events: auto;
+
+    /* Keep transitions */
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+body.focus-mode-active .study-area {
+    padding-top: 0;
+    max-width: 1000px; /* Keep max-width */
+    height: calc(100vh - 2vh);
+    /* <<< ADD Explicit Centering >>> */
+    margin-left: 160px;
+    margin-right: auto;
+    /* Ensure it takes appropriate width if needed, max-width handles the limit */
+    width: 100%; /* Take full available width up to max-width */
+}
+
+body.focus-mode-active .card-scene {
+    width: 100%; /* Take full width of study-area */
+    max-width: 1000px; /* Max width */
+    height: 100%; /* Take full height of study-area */
+    margin: 0 auto; /* Keep this to center within study-area */
+    flex-grow: 1;
+    min-height: 80vh;
+}
+/* --- End Focus Mode Styling --- */
 
                 /* Allow body padding to reduce when AI active, moving content up */
         body.panel-active {
@@ -158,6 +282,11 @@
              opacity: 0.7;
         }
         /* Removed separators for cleaner look */
+        .session-controls {
+            display: flex; /* Make controls container a flex container too */
+            align-items: center; /* Align items within controls (button, end session) */
+            gap: 0.5rem; /* Space between focus toggle and end session button */
+        }
 
         .session-controls .nav-btn {
             background-color: var(--tertiary-bg);
@@ -179,6 +308,81 @@
              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
 
+        /* --- Focus Mode Pill Button --- */
+
+        /* --- Focus Mode Pill Button --- */
+        .session-controls .focus-toggle {
+            display: inline-flex;    /* Align icon inside */
+            align-items: center;     /* Center icon vertically */
+            justify-content: center; /* Center icon horizontally */
+            background: none;        /* No background */
+            border: 1px solid var(--border-color);            /* Default border */
+            padding: 0;              /* No padding */
+            width: 2.2rem;           /* Explicit width */
+            height: 2.2rem;          /* Explicit height (equal to width) */
+            border-radius: 50%;      /* Make it perfectly round */
+            color: var(--icon-color);/* Icon color */
+            cursor: pointer;
+            /* Add transition for box-shadow */
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            flex-shrink: 0;          /* Prevent shrinking */
+            box-sizing: border-box;  /* Consistent sizing */
+            overflow: hidden;        /* Hide anything overflowing the circle */
+
+            /* <<< ADD Subtle Purple Glow >>> */
+            box-shadow: 0 0 6px 1px var(--focus-glow-color);
+            border-color: color-mix(in srgb, var(--border-color) 70%, var(--accent-purple) 30%); /* Tint border slightly purple */
+        }
+
+        .session-controls .focus-toggle:hover {
+            background-color: var(--secondary-bg); /* Subtle background on hover */
+            color: var(--icon-hover-color);       /* Change icon color on hover */
+            /* <<< Enhance Glow on Hover >>> */
+            box-shadow: 0 0 9px 2px var(--focus-glow-hover-color);
+            border-color: color-mix(in srgb, var(--hover-border-color) 60%, var(--accent-purple) 40%); /* Stronger purple tint */
+        }
+        
+        .session-controls .focus-toggle svg {
+            width: 1.2rem;           /* Control icon size */
+            height: 1.2rem;
+            fill: currentColor;      /* Use the button's text color for the icon */
+            /* <<< Add subtle drop-shadow to SVG icon >>> */
+            filter: drop-shadow(0 0 3px var(--focus-glow-color));
+            transition: filter 0.2s ease; /* Add transition for filter */
+        }
+        .session-controls .focus-toggle:hover svg {
+            /* <<< Enhance SVG glow on hover >>> */
+            filter: drop-shadow(0 0 5px var(--focus-glow-hover-color));
+        }
+        
+        
+        /* Active state for focus button */
+        .session-controls .focus-toggle.active {
+            background-color: var(--focus-glow-color); /* Blue background when active */
+            color: white;                         /* White icon when active */
+            border-color: var(--focus-glow-hover-color);    /* Match border to background */
+            /* <<< Change Glow to Blue when Active >>> */
+            box-shadow: 0 0 8px 2px var(--focus-active-glow-color);
+        }
+        .session-controls .focus-toggle.active:hover {
+            background-color: color-mix(in srgb, var(--focus-glow-hover-color) 90%, #fff); /* Slightly lighter blue on hover when active */
+            /* <<< Enhance Blue Glow on Active Hover >>> */
+            box-shadow: 0 0 10px 3px var(--focus-active-glow-color);
+        }
+        /* Adjust SVG glow when active */
+        .session-controls .focus-toggle.active svg {
+            filter: drop-shadow(0 0 4px var(--focus-active-glow-color));
+        }
+        .session-controls .focus-toggle.active:hover svg {
+            filter: drop-shadow(0 0 6px var(--focus-active-glow-color));
+        }
+        
+        
+        /* Icon swapping */
+        .session-controls .focus-toggle .icon-minimize { display: none; }
+        .session-controls .focus-toggle.active .icon-minimize { display: inline-block; }
+        .session-controls .focus-toggle.active .icon-maximize { display: none; }
+
         /* --- Main Study Area (Holds Actions and Card) --- */
         /* --- Main Study Area Layout Shift --- */
 /* To ensure the study area layout maintains side-by-side arrangement */
@@ -195,7 +399,7 @@
     transition: gap var(--panel-transition-duration) var(--panel-transition-timing),
     align-items var(--panel-transition-duration) var(--panel-transition-timing);
     width: 100%;
-    max-width: 1200px;
+    max-width: 1700px;
     flex-grow: 1;
 }
 
@@ -588,8 +792,8 @@ body.edit-panel-active .edit-panel {
     order: 2;
     
     width: 95%; /* Increase width (adjust value as needed) */
-    height: 550px; /* Increase height (adjust value as needed) */
-    margin: 1.8rem auto; /* Adjust margin if needed for centering */
+    height: 575px; /* Increase height (adjust value as needed) */
+    margin: 0rem auto; /* Adjust margin if needed for centering */
     position: relative;
 }
 
@@ -614,6 +818,11 @@ body.edit-panel-active .edit-panel {
                         height var(--panel-transition-duration) var(--panel-transition-timing),
                         max-height var(--panel-transition-duration) var(--panel-transition-timing),
                         min-height var(--panel-transition-duration) var(--panel-transition-timing);
+        }
+
+        body.panel-active .card-face {
+            width : 100%;
+            margin-top : 0;
         }
 
         .study-area.ai-panel-active .card-scene {
@@ -682,6 +891,7 @@ body.edit-panel-active .edit-panel {
              padding: 0;
              justify-content: space-between;
              z-index: 1; /* Back is initially lower */
+
         }
 
         /* --- Flip Prompt Button --- */
@@ -763,16 +973,29 @@ body.edit-panel-active .edit-panel {
             height: 100%; /* Try to fill card-face height */
              flex-grow: 1;
              overflow-y: auto;
-             padding: 1.5rem 2rem; /* Use rem */
-                 /* Add padding-bottom if needed for spacing before toggle button */
-            padding-bottom: 1rem;
+             padding-left: 1rem;  /* <<< REDUCED */
+             padding-right: 1rem; /* <<< REDUCED */
+             /* Add vertical padding to keep scrollbar away from top/bottom rounded corners */
+             padding-top: 1.5rem;
+             padding-bottom: 1.5rem;
             scroll-behavior: smooth;
          }
          /* Custom scrollbar styling (keep as is) */
-         .card-content-wrapper::-webkit-scrollbar { width: 8px; }
-         .card-content-wrapper::-webkit-scrollbar-track { background: var(--secondary-bg); border-radius: 4px; }
-         .card-content-wrapper::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 4px; border: 2px solid var(--secondary-bg); }
-         .card-content-wrapper::-webkit-scrollbar-thumb:hover { background-color: var(--hover-border-color); }
+ /* Custom scrollbar styling */
+ .card-content-wrapper::-webkit-scrollbar { width: 8px; }
+ .card-content-wrapper::-webkit-scrollbar-track {
+    background: transparent; /* Make track transparent */
+    border-radius: 4px;
+    /* Add margin to push track away from edge */
+    margin: 15px 0;
+ }
+ .card-content-wrapper::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 4px;
+    /* Border creates space around thumb, making it look inset */
+    border: 1px solid var(--card-bg); /* Use card background for border */
+ }
+ .card-content-wrapper::-webkit-scrollbar-thumb:hover { background-color: var(--hover-border-color); }
 
 .explanation {
             font-size: 1em;
@@ -782,7 +1005,7 @@ body.edit-panel-active .edit-panel {
         
         /* --- LaTeX Block Styling (Keep As Is) --- */
         .explanation .latex-block {
-            margin: 15px 0;
+            margin: 0px 0;
             padding: 10px;
             background-color: #1f2a40; /* Slightly different background */
             border-radius: 10px; /* Can keep this or match main block radius */
@@ -791,139 +1014,557 @@ body.edit-panel-active .edit-panel {
         }
         
         /* --- Base Explanation Block --- */
-        /* Common styles for all explanation blocks */
+        /* --- NEW Explanation Block Styling --- */
         .explanation .explanation-block {
-            margin-bottom: 1.2em; /* Slightly increased space between blocks */
-            border-radius: 15px; /* Slightly larger radius */
-            overflow: hidden;   /* Important for background clipping */
-            position: relative; /* Needed if using pseudo-elements later, good practice */
-            border-left: 5px solid transparent; /* Default transparent border */
-            background: rgba(44, 58, 86, 0.1); /* Subtle default background */
+        border: var(--block-border-width) solid var(--block-border-color); /* Default border */
+        border-radius: var(--block-border-radius);
+        background-color: var(--block-bg-color-base);
+        overflow-y: hidden; /* Clip content */
+        position: relative;
+        margin-top:15px;
+        transition: border-color var(--block-transition-duration) ease,
+                box-shadow var(--block-transition-duration) ease;
+                margin-bottom: 1.2em; /* Slightly increased space between blocks */
         }
-        
-        /* --- Improved Header --- */
-        .explanation .explanation-block .explanation-block-header {
-            display: block; /* Ensure it takes full width */
-            font-weight: 600; /* Keep header bold */
-            color: var(--text-primary); /* Default header text color */
-            margin-bottom: 0; /* Remove margin, padding will handle space */
-            padding: 0.6em 1.2rem; /* Increased padding */
-            /* border-bottom: 1px solid var(--border-color-translucent, rgba(255, 255, 255, 0.08)); */ /* REMOVED border */
-            /* Background and text color will be set per type */
-        }
-        
-        /* --- Content Area --- */
-        .explanation .explanation-block .explanation-block-content {
-             padding: 0.5rem 0rem 0.5rem 1.5rem; /* Add padding all around, especially left */
-             line-height: 1.6; /* Ensure consistent line-height */
-        }
-        
-        
-        /* --- Type-Specific Styling --- */
-        /* Apply individual border colors, header backgrounds, and adjust padding */
-        
-        /* --- Definition --- */
+
+        /* --- Style for Short Titles (Instead of Blocks) --- */
+.short-block-title {
+    display: block; /* Ensures it takes its own line and margins */
+    font-weight: 600; /* Bold */
+    font-size: 1.4em; /* Slightly larger than normal text */
+    color: var(--text-primary);
+    margin-top: 0.8em;    /* Space above */
+    margin-bottom: 0.6em; /* Space below */
+    padding-left: 0.4em 0.6em;
+}
+
+/* --- Style for regular text segments --- */
+.explanation-text-segment {
+    padding: 0 0.1em; /* Align with block content */
+    margin-bottom: 0.9em; /* Space below text segments */
+    line-height: 1.6;
+}
+.explanation-text-segment:first-child {
+    padding-top: var(--block-content-padding-top-bottom, 0.8rem); /* Add top padding if it's the first element */
+}
+ .explanation-text-segment:last-child {
+    padding-bottom: var(--block-content-padding-top-bottom, 0.8rem); /* Add bottom padding if it's the last element */
+}
+
+
+        /* Type-Specific Border Colors */
+.explanation .explanation-block.type-definition { border-color: var(--accent-definition); }
+.explanation .explanation-block.type-theoreme { border-color: var(--accent-theoreme); }
+.explanation .explanation-block.type-proposition { border-color: var(--accent-proposition); }
+.explanation .explanation-block.type-lemme { border-color: var(--accent-lemme); }
+.explanation .explanation-block.type-corollaire { border-color: var(--accent-corollaire); }
+.explanation .explanation-block.type-exemple { border-color: var(--accent-exemple); }
+.explanation .explanation-block.type-explication { border-color: var(--accent-explication); }
+.explanation .explanation-block.type-remarque { border-color: var(--accent-remarque); }
+.explanation .explanation-block.type-preuve { border-color: var(--accent-preuve); }
+.explanation .explanation-block.type-text { border-color: var(--accent-text); } /* Ensure text has border */
+.explanation .explanation-block.type-latex-block { border-color: var(--accent-latex-block); }
+.explanation .explanation-block.type-error { border-color: var(--accent-error); }
+
         .explanation .explanation-block[data-block-type*="Définition"],
         .explanation .explanation-block[data-block-type*="Definition"] {
-            border-left-color: var(--accent-blue);
-            background: rgba(91, 192, 222, 0.04); /* More subtle background */
-        }
-        .explanation .explanation-block[data-block-type*="Définition"] .explanation-block-header,
-        .explanation .explanation-block[data-block-type*="Definition"] .explanation-block-header {
-            background-color: var(--accent-blue);
-            color: #0a1e2c; /* Darker text for contrast on blue */
-        }
-        
-        /* --- Explication --- */
-        .explanation .explanation-block[data-block-type*="Explication"] {
-            border-left-color: var(--accent-purple);
-            background: rgba(106, 17, 203, 0.04);
-        }
-        .explanation .explanation-block[data-block-type*="Explication"] .explanation-block-header {
-            background-color: var(--accent-purple);
-            color: #ffffff;
-        }
-        
-        /* --- Proposition --- */
-        .explanation .explanation-block[data-block-type*="Proposition"] {
-            border-left-color: var(--accent-green);
-            background: rgba(92, 184, 92, 0.04);
-        }
-        .explanation .explanation-block[data-block-type*="Proposition"] .explanation-block-header {
-            background-color: var(--accent-green);
-            color: #0a1e2c; /* Darker text for contrast on green */
+            border-color: var(--accent-blue);
         }
         
         /* --- Theorem --- */
         .explanation .explanation-block[data-block-type*="Théorème"],
         .explanation .explanation-block[data-block-type*="Theorem"] {
-            border-left-color: var(--accent-yellow);
-            background: rgba(240, 173, 78, 0.04);
+            border-color: var(--accent-yellow);
+        }
+
+
+        /* Keyboard Selection Highlight - More Prominent */
+        .explanation-block.keyboard-selected {
+        /* Use a thicker border */
+        border-width: var(--block-selected-border-width);
+        border-color: var(--block-selected-outline-color); /* Use the focus color */
+        /* Stronger shadow/glow */
+        box-shadow: 0 0 10px 2px var(--block-selected-outline-color);
+        /* Remove default outline if browser adds one */
+        outline: none;
+        }
+
+        /* Remove any potential default :first-child styling that might confuse selection */
+        .explanation .explanation-block:first-child {
+        /* Remove any specific first-child border/outline styles here if they exist */
+        /* border-left: var(--block-border-width) solid var(--block-border-color); */ /* Reset if needed */
+        }
+
+        /* Type-Specific Selection Highlights (Overrides base border/shadow color) */
+/* Excludes .type-text */
+.explanation-block.type-definition.keyboard-selected {
+    border-color: var(--accent-definition);
+    box-shadow: 0 0 10px 2px var(--accent-definition);
+}
+.explanation-block.type-theoreme.keyboard-selected {
+    border-color: var(--accent-theoreme);
+    box-shadow: 0 0 10px 2px var(--accent-theoreme);
+}
+.explanation-block.type-proposition.keyboard-selected {
+    border-color: var(--accent-proposition);
+    box-shadow: 0 0 10px 2px var(--accent-proposition);
+}
+.explanation-block.type-lemme.keyboard-selected {
+    border-color: var(--accent-lemme);
+    box-shadow: 0 0 10px 2px var(--accent-lemme);
+}
+.explanation-block.type-corollaire.keyboard-selected {
+    border-color: var(--accent-corollaire);
+    box-shadow: 0 0 10px 2px var(--accent-corollaire);
+}
+.explanation-block.type-exemple.keyboard-selected {
+    border-color: var(--accent-exemple);
+    box-shadow: 0 0 10px 2px var(--accent-exemple);
+}
+.explanation-block.type-explication.keyboard-selected {
+    border-color: var(--accent-explication);
+    box-shadow: 0 0 10px 2px var(--accent-explication);
+}
+.explanation-block.type-remarque.keyboard-selected {
+    border-color: var(--accent-remarque);
+    box-shadow: 0 0 10px 2px var(--accent-remarque);
+}
+.explanation-block.type-preuve.keyboard-selected {
+    border-color: var(--accent-preuve);
+    box-shadow: 0 0 10px 2px var(--accent-preuve);
+}
+.explanation-block.type-latex-block.keyboard-selected {
+    border-color: var(--accent-latex-block);
+    box-shadow: 0 0 10px 2px var(--accent-latex-block);
+}
+.explanation-block.type-error.keyboard-selected {
+    border-color: var(--accent-error);
+    box-shadow: 0 0 10px 2px var(--accent-error);
+}
+
+.explanation .explanation-block[data-block-type*="Définition"].keyboard-selected,
+.explanation .explanation-block[data-block-type*="Definition"].keyboard-selected {
+    box-shadow: 0 0 10px 2px var(--accent-blue);
+}
+
+/* --- Theorem --- */
+.explanation .explanation-block[data-block-type*="Théorème"].keyboard-selected,
+.explanation .explanation-block[data-block-type*="Theorem"].keyboard-selected {
+    box-shadow: 0 0 10px 2px var(--accent-yellow);
+}
+
+.explanation-block.is-expanded:not(.keyboard-selected) .explanation-block-header {
+    /* Use the block's default border color when expanded but not selected */
+    border-bottom-color: var(--block-border-color);
+}
+
+        /* Ensure expanded header border uses the selected color if selected */
+        .explanation-block.is-expanded.keyboard-selected .explanation-block-header {
+        border-bottom-color: var(--block-selected-outline-color);
+        }
+        /* And reset header border for non-selected expanded items */
+        .explanation-block.is-expanded:not(.keyboard-selected) .explanation-block-header {
+        border-bottom-color: var(--block-border-color);
+        }
+
+
+        /* --- Explanation Block Header --- */
+        .explanation-block-header {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem; /* Space between icon, title, controls */
+        padding: var(--block-header-padding);
+        cursor: pointer;
+        background-color: rgba(0, 0, 0, 0.1); /* Subtle header background */
+        border-bottom: var(--block-border-width) solid transparent; /* Separator for expanded */
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+        position: relative; /* For focus outline */
+        outline: none; /* Remove default */
+        z-index : 2;
+        }
+
+        .explanation-block.is-expanded .explanation-block-header {
+            border-bottom-color: var(--block-border-color); /* Show separator when expanded */
+       }
+
+/* Header Title */
+.explanation-block-title {
+    flex-grow: 1; /* Take available space */
+    font-weight: 600;
+    color: var(--text-primary); /* Title text always primary */
+    margin-right: 0.5rem; /* Space before controls */
+}
+
+/* Type Icon */
+/* Type Icon */
+/* Type Icon */
+/* --- Type Icon (Simplified for Inline SVG) --- */
+.type-icon {
+    width: 1.2em;
+    height: 1.2em;
+    flex-shrink: 0;
+    opacity: 0.8;
+    display: inline-block; /* Or block, depending on layout needs */
+    vertical-align: middle; /* Align with text */
+    /* Color is inherited from header via 'currentColor' in SVG */
+}
+.type-icon-text {display : none; }
+.type-icon-latex-block {display : none; }
+.type-icon-other {display : none; }
+.type-icon-latex-block {display : none; }
+/* Header Hover Effect */
+.explanation-block-header:hover {
+    background-color: rgba(255, 255, 255, 0.08); /* Slightly lighter on hover */
+}
+/* Keep type-specific header colors */
+.explanation .explanation-block[data-block-type*="Définition"] .explanation-block-header:hover,
+.explanation .explanation-block[data-block-type*="Definition"] .explanation-block-header:hover {
+    background-color: color-mix(in srgb, var(--accent-blue) 90%, #000);
+}
+.explanation .explanation-block[data-block-type*="Explication"] .explanation-block-header:hover {
+    background-color: color-mix(in srgb, var(--accent-purple) 90%, #000);
+}
+.explanation .explanation-block[data-block-type*="Proposition"] .explanation-block-header:hover {
+    background-color: color-mix(in srgb, var(--accent-green) 90%, #000);
+}
+/* Add similar hover mixins for other block types (Theorem, Corollary, Lemma, Example) */
+.explanation .explanation-block[data-block-type*="Théorème"] .explanation-block-header:hover,
+.explanation .explanation-block[data-block-type*="Theorem"] .explanation-block-header:hover {
+    background-color: color-mix(in srgb, var(--accent-yellow) 90%, #000);
+}
+.explanation .explanation-block[data-block-type*="Corollaire"] .explanation-block-header:hover,
+.explanation .explanation-block[data-block-type*="Corollary"] .explanation-block-header:hover {
+    background-color: color-mix(in srgb, #4db6ac 90%, #000);
+}
+.explanation .explanation-block[data-block-type*="Lemme"] .explanation-block-header:hover,
+.explanation .explanation-block[data-block-type*="Lemma"] .explanation-block-header:hover {
+    background-color: color-mix(in srgb, var(--accent-red) 90%, #000);
+}
+.explanation .explanation-block[data-block-type*="Exemple"] .explanation-block-header:hover,
+.explanation .explanation-block[data-block-type*="Example"] .explanation-block-header:hover {
+    background-color: color-mix(in srgb, #ffb74d 90%, #000);
+}
+
+/* --- NEW: Content Container (Handles expand/collapse) --- */
+.content-container {
+    max-height: var(--block-peek-height); /* Collapse using container */
+    overflow: hidden;
+    position: relative; /* Crucial for positioning hint preview */
+    transition: max-height var(--block-transition-duration) var(--block-transition-timing);
+    /* Remove direct padding/margin from here */
+}
+/* Expanded State for Container */
+.explanation-block.is-expanded .content-container,
+.explanation-block.is-hinted .content-container { /* Also expand container in hint state */
+    max-height: 1000px; /* Expand container fully */
+}
+
+
+/* --- NEW: Blurred Content Div --- */
+.explanation-block-content-blurred {
+    padding: calc(0.25*var(--block-content-padding-left-right)) var(--block-content-padding-left-right); /* Apply only horizontal padding by default */
+    line-height: 1.6;
+    transition: filter var(--block-transition-duration) ease;
+    transition: filter var(--block-transition-duration) ease,
+    padding-top var(--block-transition-duration) ease, /* Add padding transition */
+    padding-bottom var(--block-transition-duration) ease; /* Add padding transition */
+    /* Default state: no blur */
+    filter: none;
+    /* Add background if needed, e.g., if main block bg is very transparent */
+    /* background-color: var(--block-bg-color-base); */
+}
+
+
+/* Add blur ONLY in hint state */
+.explanation-block.is-hinted .explanation-block-content-blurred {
+    filter: blur(var(--block-blur-amount));
+}
+
+/* Restore vertical padding when expanded or hinted */
+.explanation-block.is-expanded .explanation-block-content-blurred,
+.explanation-block.is-hinted .explanation-block-content-blurred {
+    padding-top: var(--block-content-padding-top-bottom);
+    padding-bottom: var(--block-content-padding-top-bottom);
+}
+
+.explanation-block-content-blurred ul, /* Target lists inside the blurred div */
+.explanation-block-content-blurred ol {
+    margin-left: 1.8rem; /* <<< INCREASED MARGIN for lists (adjust value as needed) */
+    /* Adjust padding-left if necessary, depending on list-style-position */
+    padding-left: 0; /* Reset padding if margin handles indentation */
+    margin-top: 0.5em; /* Add some space above lists */
+    margin-bottom: 0.5em; /* Add some space below lists */
+}
+
+/* Target lists inside the blurred div AND the hint preview */
+.explanation-block-content-blurred ul,
+.explanation-block-content-blurred ol,
+.explanation-block-hint-preview ul,
+.explanation-block-hint-preview ol {
+    margin-left: 1.8rem; /* <<< INCREASED MARGIN for lists (adjust value as needed) */
+    /* Adjust padding-left if necessary, depending on list-style-position */
+    padding-left: 0; /* Reset padding if margin handles indentation */
+    margin-top: 0.5em; /* Add some space above lists */
+    margin-bottom: 0.5em; /* Add some space below lists */
+}
+
+
+/* Optional: Fade out effect at the bottom when collapsed (peek) */
+.content-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--block-fade-height);
+    background: linear-gradient(to bottom, transparent, var(--block-bg-color, var(--block-bg-color-base)));
+    pointer-events: none;
+    transition: opacity var(--block-transition-duration) ease;
+    opacity: 1; /* Show when collapsed */
+    z-index: 1; /* Below hint preview */
+}
+.explanation-block.is-expanded .content-container::after,
+.explanation-block.is-hinted .content-container::after {
+    opacity: 0; /* Hide fade when expanded or hinted */
+}
+
+/* --- Hint State --- */
+.explanation-block.is-hinted .explanation-block-content {
+    max-height: 1000px; /* Allow full height */
+    filter: blur(var(--block-blur-amount)); /* Apply blur to the *entire* original content */
+    padding-top: var(--block-content-padding); /* Apply padding so overlay aligns */
+    padding-bottom: var(--block-content-padding);
+    overflow-x:scroll;
+}
+.explanation-block.is-hinted .explanation-block-content::after {
+    opacity: 0; /* Hide fade effect when hinted */
+}
+
+/* --- NEW: Hint Preview Div (Overlay) --- */
+.explanation-block-hint-preview {
+    display: none; /* Hidden by default */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--block-content-padding-top-bottom) var(--block-content-padding-left-right); /* Match padding */
+    color: var(--text-primary);
+    font-size: inherit;
+    line-height: inherit;
+    overflow: hidden; /* *** CRUCIAL: Hide content exceeding max-height *** */
+    max-height: var(--hint-preview-max-height); /* *** LIMIT HEIGHT *** */
+    pointer-events: none;
+    z-index: 3;
+    /* white-space: pre-wrap; Remove this, let content flow naturally */
+    background-color: var(--block-bg-color-base); /* Or match card bg */
+    /* No filter applied here */
+}
+/* Show hint preview ONLY in hint state */
+.explanation-block.is-hinted .explanation-block-hint-preview {
+    display: block;
+}
+
+/* Group for Hint/Toggle Controls */
+.explanation .explanation-block .explanation-block-header .header-controls {
+    display: flex;
+    align-items: center;
+    margin-left: auto; /* Push controls to the right */
+}
+
+/* Hint Button */
+.hint-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    padding: 0.3em 0.7em;
+    font-size: 0.8em;
+    line-height: 1;
+    border-radius: 1em; /* Pill shape */
+    border: 1px solid currentColor; /* Use header color */
+    background-color: transparent;
+    color: currentColor; /* Inherit header color */
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+.hint-button:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+.hint-icon {
+    width: 1.5em;
+    height: 1.5em;
+}
+/* Active Hint Button State */
+.explanation-block.is-hinted .hint-button {
+    background-color: rgba(255, 255, 255, 0.2);
+    opacity: 1;
+}
+
+
+/* Toggle Icon Button */
+.toggle-icon-button {
+    background: none;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    padding: 0.7em; /* Clickable area */
+    margin: 0;
+    margin-left : 10px;
+    cursor: pointer;
+    color: currentColor; /* Inherit header color */
+    opacity: 0.7;
+    transition: opacity 0.2s ease, transform var(--block-transition-duration) ease-out;
+    display: inline-flex; /* Align icon */
+    align-items: center;
+    justify-content: center;
+}
+.toggle-icon-button:hover {
+    opacity: 1;
+}
+.toggle-icon {
+    width: 1em;
+    height: 1em;
+    display: block; /* Ensure icon takes space */
+    transition: transform var(--block-transition-duration) ease-out; /* Move transition here */
+    transform-origin: center;
+}
+.explanation-block.is-expanded .toggle-icon {
+    transform: rotate(90deg); /* Rotate when expanded or hinted */
+}
+        
+/* --- Explanation Block Content --- */
+.explanation-block-content {
+    max-height: var(--block-peek-height); /* Start collapsed (peek) */
+    overflow: hidden;
+    position: relative; /* For pseudo-element */
+    padding: 0 var(--block-content-padding); /* No top/bottom padding when collapsed */
+    margin: 0;
+    line-height: 1.6;
+    filter: blur(var(--block-blur-amount)); /* Blur the peek */
+    transition: max-height var(--block-transition-duration) var(--block-transition-timing),
+                filter var(--block-transition-duration) ease,
+                padding-top var(--block-transition-duration) ease,
+                padding-bottom var(--block-transition-duration) ease;
+}
+
+/* --- Increase margin for lists inside explanation blocks --- */
+.explanation-block-content ul,
+.explanation-block-content ol {
+    margin-left: 2.2rem; /* <<< INCREASED MARGIN for lists */
+    /* Adjust padding-left if necessary, depending on list-style-position */
+    padding-left: 0; /* Reset padding if margin handles indentation */
+}
+
+/* Fade-out effect for collapsed content */
+.explanation-block-content::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--block-fade-height);
+    /* Use block bg or fallback */
+    background: linear-gradient(to bottom, transparent, var(--block-bg-color, var(--block-bg-color-base)));
+    pointer-events: none;
+    transition: opacity var(--block-transition-duration) ease;
+    opacity: 1; /* Visible when collapsed */
+}
+
+/* Expanded State */
+.explanation-block.is-expanded .explanation-block-content {
+    max-height: 1000px; /* Large value for expansion */
+    filter: none; /* Remove blur */
+    padding-top: var(--block-content-padding);
+    padding-bottom: var(--block-content-padding);
+}
+.explanation-block.is-expanded .explanation-block-content::after {
+    opacity: 0; /* Hide fade */
+}
+
+/* Expanded State */
+.explanation .explanation-block.is-expanded .explanation-block-content {
+    max-height: 1000px; /* Adjust if content can be extremely long */
+    /* Restore original padding and add margin */
+    filter: none; /* Remove blur */
+    padding-top: 0.8rem;
+    padding-bottom: 1rem;
+    /* Keep left/right padding from default state */
+    /* margin-top: 0.5rem; /* Optional: Add space between header and content */
+}
+.explanation .explanation-block.is-expanded .explanation-block-content::after {
+    opacity: 0; /* Hide fade */
+}
+.explanation .explanation-block.is-expanded .toggle-icon {
+    transform: rotate(90deg); /* Rotate toggle icon */
+}
+
+        /* --- Text Block Specific Styling --- */
+        /* Hide Icon for Text Blocks */
+        .explanation-block.type-text .type-icon {
+        display: none;
+        }
+        .explanation-block.type-text .explanation-block-header {
+            /* gap: 0; Remove gap if icon is the only thing on the left */
+            padding-left: 0.8rem; /* Maintain some left padding */
+        }
+        .explanation-block.type-text .explanation-block-title {
+            margin-left: 0; /* No margin needed if no icon */
+        }
+        .explanation-block.type-text.is-expanded .explanation-block-header {
+        border-bottom-color: var(--accent-text); /* Match border color */
+        }
+
+        /* Header Background Colors (Non-Text) */
+        /* Apply a semi-transparent background matching the border color */
+        .explanation-block:not(.type-text) .explanation-block-header {
+        /* background-color: rgba(var(--accent-rgb), var(--block-header-bg-opacity)); */
+        /* Need to set this per type */
+        border-bottom-color: transparent; /* Ensure default border is transparent */
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+        .explanation-block:not(.type-text):hover .explanation-block-header {
+        /* Slightly less transparent on hover */
+        /* background-color: rgba(var(--accent-rgb), calc(var(--block-header-bg-opacity) + 0.1)); */
+        }
+
+        /* Define backgrounds per type using CSS variables */
+        .explanation-block.type-definition .explanation-block-header { background-color: color-mix(in srgb, var(--accent-definition) calc(var(--block-header-bg-opacity) * 100%), transparent); color: var(--accent-definition); }
+        .explanation-block.type-theoreme .explanation-block-header { background-color: color-mix(in srgb, var(--accent-theoreme) calc(var(--block-header-bg-opacity) * 100%), transparent); color: var(--accent-theoreme); }
+        .explanation-block.type-proposition .explanation-block-header { background-color: color-mix(in srgb, var(--accent-proposition) calc(var(--block-header-bg-opacity) * 100%), transparent); color: var(--accent-proposition); }
+        .explanation-block.type-lemme .explanation-block-header { background-color: color-mix(in srgb, var(--accent-lemme) calc(var(--block-header-bg-opacity) * 100%), transparent); color: var(--accent-lemme); }
+        .explanation-block.type-corollaire .explanation-block-header { background-color: color-mix(in srgb, var(--accent-corollaire) calc(var(--block-header-bg-opacity) * 100%), transparent); color: var(--accent-corollaire); }
+        .explanation-block.type-exemple .explanation-block-header { background-color: color-mix(in srgb, var(--accent-exemple) calc(var(--block-header-bg-opacity) * 100%), transparent); color: var(--accent-exemple); }
+        .explanation-block.type-explication .explanation-block-header { background-color: color-mix(in srgb, var(--accent-explication) calc(var(--block-header-bg-opacity) * 100%), transparent); color: var(--accent-explication); }
+        .explanation-block.type-remarque .explanation-block-header { background-color: color-mix(in srgb, var(--accent-remarque) calc(var(--block-header-bg-opacity) * 100%), transparent); color: var(--accent-remarque); }
+        .explanation-block.type-preuve .explanation-block-header { background-color: color-mix(in srgb, var(--accent-preuve) calc(var(--block-header-bg-opacity) * 100%), transparent); color: var(--accent-preuve); }
+        .explanation-block.type-latex-block .explanation-block-header { background-color: color-mix(in srgb, var(--accent-latex-block) calc(var(--block-header-bg-opacity) * 100%), transparent); color: var(--accent-latex-block); }
+        .explanation-block.type-error .explanation-block-header { background-color: color-mix(in srgb, var(--accent-error) calc(var(--block-header-bg-opacity) * 100%), transparent); color: var(--accent-error); }
+        .explanation .explanation-block[data-block-type*="Définition"] .explanation-block-header,
+        .explanation .explanation-block[data-block-type*="Definition"] .explanation-block-header {
+            background-color: color-mix(in srgb, var(--accent-blue) calc(var(--block-header-bg-opacity) * 100%), transparent); color: var(--accent-blue);
         }
         .explanation .explanation-block[data-block-type*="Théorème"] .explanation-block-header,
         .explanation .explanation-block[data-block-type*="Theorem"] .explanation-block-header {
-            background-color: var(--accent-yellow);
-            color: #0a1e2c; /* Darker text for contrast on yellow */
+            background-color: color-mix(in srgb, var(--accent-theoreme) calc(var(--block-header-bg-opacity) * 100%), transparent); color: var(--accent-theoreme);
         }
-        
-        /* --- Corollary --- */
-        .explanation .explanation-block[data-block-type*="Corollaire"],
-        .explanation .explanation-block[data-block-type*="Corollary"] {
-            border-left-color: #4db6ac; /* Using specific color, consider making a variable */
-            background: rgba(106, 122, 172, 0.04);
+
+        /* Ensure title text remains readable on colored backgrounds */
+        .explanation-block:not(.type-text) .explanation-block-title {
+        color: var(--text-primary); /* Keep title text bright */
         }
-        .explanation .explanation-block[data-block-type*="Corollaire"] .explanation-block-header,
-        .explanation .explanation-block[data-block-type*="Corollary"] .explanation-block-header {
-            background-color: #4db6ac;
-            color: #ffffff;
+
+        /* Header hover refinement */
+        .explanation-block:not(.type-text) .explanation-block-header:hover {
+        /* Slightly darken or lighten the background on hover */
+        background-color: color-mix(in srgb, currentColor 35%, transparent); /* Use currentColor of header */
         }
-        
-        /* --- Lemma --- */
-        .explanation .explanation-block[data-block-type*="Lemme"],
-        .explanation .explanation-block[data-block-type*="Lemma"] {
-            border-left-color: var(--accent-red);
-            background: rgba(217, 83, 79, 0.04);
-        }
-        .explanation .explanation-block[data-block-type*="Lemme"] .explanation-block-header,
-        .explanation .explanation-block[data-block-type*="Lemma"] .explanation-block-header {
-            background-color: var(--accent-red);
-            color: #ffffff;
-        }
-        
-        /* --- Example --- */
-        .explanation .explanation-block[data-block-type*="Exemple"],
-        .explanation .explanation-block[data-block-type*="Example"] {
-            border-left-color: #ffb74d; /* Using specific color, consider making a variable */
-            background: rgba(122, 138, 174, 0.04);
-        }
-        .explanation .explanation-block[data-block-type*="Exemple"] .explanation-block-header,
-        .explanation .explanation-block[data-block-type*="Example"] .explanation-block-header {
-            background-color: #ffb74d;
-            color: #ffffff;
-        }
-        
-        /* --- Plain Text Block Styling --- */
-        /* Ensure plain text blocks don't get the new styles */
-        .explanation .explanation-block.type-text {
-            padding-left: 0; /* No border padding */
-            background: none; /* No background */
-            border-left: none; /* No border */
-            border-radius: 0; /* No rounding */
-            overflow: visible; /* Reset overflow */
-            padding-top: 0;
-            padding-bottom: 0;
-            margin-bottom: 1em; /* Restore default margin */
-        }
-        /* Reset header style for plain text blocks */
-        .explanation .explanation-block.type-text .explanation-block-header {
-            background-color: transparent; /* No background */
-            color: var(--text-primary); /* Reset text color */
-            padding: 0 0 0.5em 0; /* Minimal padding */
-            font-weight: 600; /* Keep bold if desired, or reset */
-            border-bottom: none; /* Ensure no border */
-        }
-        .explanation .explanation-block.type-text .explanation-block-content {
-            padding: 0; /* Reset content padding */
+
+        /* --- KaTeX specific adjustments inside blocks --- */
+        .explanation-block-content .katex-display {
+        margin: 0.8em 0; /* Adjust spacing within blocks */
+        overflow-x: auto; /* Allow horizontal scroll for wide equations */
+        padding: 0.2em 0;
         }
         
         /* Add others */
@@ -952,10 +1593,10 @@ body.edit-panel-active .edit-panel {
             opacity: 0.6; /* Make it less prominent */
         }
 
+        /* --- Adjust detail toggle button position slightly --- */
         .detail-toggle-container {
-            text-align: center; /* Center the button */
-            padding: 1rem 0; /* Add some padding */
-            margin-top: 1rem; /* Space above the button */
+        padding: 0.5rem 0 0.8rem 0; /* Slightly less padding */
+        margin-top: 0.5rem;
         }
         
         .toggle-detail-btn { /* Style remains similar */
@@ -1007,7 +1648,7 @@ body.edit-panel-active .edit-panel {
     /* We need button height. Assume approx 3.5rem height including padding */
     /* 70% of height below = 0.7 * 3.5rem = 2.45rem */
     /* So bottom edge is -2.45rem from card scene bottom */
-     bottom: -3rem; /* Push bottom edge down from card bottom */
+     bottom: -2.8rem; /* Push bottom edge down from card bottom */
      transform: translateX(-50%) translateY(0%); /* No Y translate needed if using bottom */
     /* OR adjust translateY method: */
     /* bottom: 0; */
@@ -1858,6 +2499,7 @@ border: 1px solid rgba(46, 204, 113, 0.4);
     /* Keep other styles */
 }
 
+
         /* --- Responsiveness --- */
         @media (max-width: 1024px) { /* Adjust breakpoint */
             /* On smaller screens, maybe hide AI panel or make it overlay? */
@@ -2069,6 +2711,14 @@ border: 1px solid rgba(46, 204, 113, 0.4);
     .other-materials-popup-floating.visible {
          max-height: 30vh;
     }
+
+    :root {
+        --block-header-padding: 0.5em 0.6rem;
+        --block-content-padding: 0.6rem 0.8rem;
+    }
+    .explanation-block-header { gap: 0.4rem; }
+    .hint-button { font-size: 0.75em; padding: 0.15em 0.6em;}
+    .toggle-icon-button { padding: 0.1em; }
 
 
 

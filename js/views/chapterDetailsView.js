@@ -2,7 +2,7 @@
 console.log("--- chapterDetailsView.js LOADED - Version XYZ ---"); // Put a unique version number here, like XYZ
 
 import { apiClient } from '../api/apiClient.js';
-import { processAndRenderLatex } from '../utils/latexProcessor.js';
+import { processAndRenderLatex } from '../utils/latexProcessorDetails.js';
 import { debounce } from '../utils/helpers.js'; // Assuming debounce exists
 // Note: We will call the global preprocessAndpreprocessAndRenderMathInElementTestTest provided by KaTeX script in HTML
 

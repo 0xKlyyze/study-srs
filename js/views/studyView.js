@@ -78,140 +78,136 @@ const sampleCardsData = [
  * Manages the Study Session View (study-session.html - V3 Layout).
  */
 class StudyView {
-    constructor() {
-        // --- DOM Element References (Updated for V3 Layout) ---
-        this.bodyEl = document.body; // Target body for loading state
-        this.studyAreaEl = document.getElementById('studyArea'); // Main content area
-        this.sessionPillEl = document.querySelector('.session-pill'); // For potential hiding on complete
-        this.cardViewerEl = document.getElementById('cardViewer'); // This is the .card-scene element
-        this.qualityButtonsContainer = document.querySelector('.quality-buttons');
-                // *** ADD DEBUG LOG ***
-                if(this.qualityButtonsContainer) {
-                    console.log("DEBUG: QualityButtons container selected:", this.qualityButtonsContainer);
-                    // Check its parent to confirm it's inside cardViewerEl
-                    console.log("DEBUG: QualityButtons container parent:", this.qualityButtonsContainer.parentElement);
-                } else {
-                    console.error("ERROR: QualityButtons container NOT FOUND!");
-                }
-                // *** END DEBUG LOG ***
-        this.progressTrackerEl = document.getElementById('progressTracker'); // The .session-stats div
-        this.skipButton = document.getElementById('skipBtn'); // Icon button in left actions
-        this.endSessionButton = document.getElementById('endSessionBtn'); // Button in pill
-        this.flipButton = document.getElementById('flipBtn'); // Button on card front
-        this.cardFlipperEl = this.cardViewerEl?.querySelector('.card-flipper'); // Selector for flipper
-
-        // Card Action Buttons (Updated IDs)
-        this.starBtn = document.getElementById('starBtn');
-        this.buryBtn = document.getElementById('buryBtn');
-        this.editBtn = document.getElementById('editBtn');
-        this.deleteBtn = document.getElementById('deleteBtn');
-        this.aiBtn = document.getElementById('aiBtn'); // Added AI button reference (though inactive)
-
-        // Completion Screen Elements
-        this.completionContainer = document.getElementById('sessionCompleteContainer');
-        this.completionMessageEl = document.getElementById('completionMessage');
-        // Return/Study buttons are inside overlay
-        this.returnBtn = document.getElementById('returnBtn');
-        this.studyGlobalMaterialBtn = document.getElementById('studyGlobalMaterialBtn');
-        this.studyOtherBtn = document.getElementById('studyOtherBtn');
-        // Popup is inside overlay
-        this.otherMaterialsList = document.getElementById('otherMaterialsList'); // Uses new class now
-        this.aiPanelEl = document.getElementById('aiPanel');
-        this.closeAiBtn = document.getElementById('closeAiBtn');
-        this.aiBtn = document.getElementById('aiBtn'); // Already exists
-        // --- NEW: Edit Panel Refs ---
-        this.editPanelEl = document.getElementById('editPanel');
-        this.closeEditBtn = document.getElementById('closeEditBtn'); // If added
-        this.editNameInput = document.getElementById('sessionEditNameInput');
-        this.editChapterInput = document.getElementById('sessionEditChapterInput');
-        this.editBriefTextarea = document.getElementById('sessionEditBriefTextarea');
-        this.editDetailedTextarea = document.getElementById('sessionEditDetailedTextarea');
-        this.editSaveBtn = document.getElementById('sessionEditSaveBtn');
-        this.editCancelBtn = document.getElementById('sessionEditCancelBtn');
-
-        this.leftActionsColumnEl = document.getElementById('leftActionsColumn');
-        this.rightActionsColumnEl = document.getElementById('rightActionsColumn');
-               // Completion Screen V2 Elements
-               this.completionOverlay = document.getElementById('sessionCompleteContainer'); // Now the overlay div
-               // Completion message is inside overlay now
-               this.completionMessageEl = document.getElementById('completionMessage');
-               this.completionStatsEl = document.getElementById('completionStats'); // Container for stats
-               // Individual stat elements
-               this.compStatTotalEl = document.getElementById('compStatTotal');
-               this.compStatAccuracyEl = document.getElementById('compStatAccuracy');
-               this.compStatTimeEl = document.getElementById('compStatTime');
-               this.compStatAccuracyCirclePath = document.querySelector('.accuracy-circle .accuracy-value-path'); // Path for circle animation
-
-                       // *** NEW Completion Screen Elements for Remaining Due ***
-        this.completionRemainingDueContainer = document.getElementById('completionRemainingDue'); // Container DIV
-        this.compStatRemainingDueEl = document.getElementById('compStatRemainingDue'); // Span for the count
-        this.studyRemainingDueBtn = document.getElementById('studyRemainingDueBtn'); // New Button
-        this.studyRemainingBatchSizeInput = document.getElementById('studyRemainingBatchSizeInput'); // New Input
-        this.returnBtn = document.getElementById('returnBtn'); // Existing button
-
-        // --- State ---
-        this.isTiltActive = false; // Track if tilt effect is currently modifying style
-        this.originalRightColumnButtons = [];
-        this.sessionCards = [];
-        this.currentCardIndex = -1;
-        this.currentCard = null;
-        this.currentCardOriginalData = null; // For edit cancel
-        this.isLoading = false;
-        this.isFlipped = false; // Card flip state
-        this.sessionStats = { total: 0, remaining: 0, correct: 0, incorrect: 0, startTime: null, time: '00:00', timerInterval: null };
-        this.initialParams = { material: null, chapters: null, mode: null };
-        this.isLoadingAction = false; // Loading state for card actions (star, bury etc.)
-        this.isAiPanelVisible = false;
-        this.isEditPanelVisible = false; // NEW state
-        // *** NEW State for Queue Refresh ***
-        this.reviewsSinceLastCheck = 0;
-        this.checkFrequency = 5; // Check every 5 reviews
-        this.isCheckingForCards = false; // Prevent concurrent checks
-        this._finalCheckCount = 0;
-        this._MAX_FINAL_CHECKS = 3; // Safety limit
-        // *** NEW: Property to store the bound Escape key handler ***
-        this._boundHandleEscKeyForPopup = null;
-
-        // --- Component Instances ---
-        this.cardRenderer = null;
-        this.qualityButtons = null;
-        this.progressTracker = null;
-        this.keyboardShortcuts = null;
-        // Add a flag to easily check if in preview mode
-        this.isPreviewMode = false;
-        this.sessionLimit = null; // Store the batch size limit from URL
-        this.initialBatchCardIds = new Set(); // IDs of cards loaded at session start
-        this.reviewedInThisBatchIds = new Set(); // IDs reviewed *during this specific run*
-        this.isFocusedAllSession = false; // Flag for the specific "Study All Cards in Chapter(s)" mode
-
-        // *** Update check frequency ***
-        this.reviewsSinceLastCheck = 0;
-        this.checkFrequency = 3; // Check every 3 reviews now
-        this.isCheckingForCards = false;
-
-        // Bind methods
-        this._handleMouseMove = this._handleMouseMove.bind(this);
-        this._handleMouseLeave = this._handleMouseLeave.bind(this);
-        this._handleReview = this._handleReview.bind(this);
-        this._skipCard = this._skipCard.bind(this);
-        this._endSession = this._endSession.bind(this);
-        this._flipCard = this._flipCard.bind(this);
-        this._bindActionHandlers();
-        this._toggleStar = this._toggleStar.bind(this); // Ensure these are bound if called directly
-        this._toggleBury = this._toggleBury.bind(this);
-        this._editCard = this._editCard.bind(this);
-        this._deleteCard = this._deleteCard.bind(this);
-        this._toggleAiPanel = this._toggleAiPanel.bind(this); // Bind new method
-        this._toggleEditPanel = this._toggleEditPanel.bind(this); // NEW bind
-        this._handleEditSave = this._handleEditSave.bind(this); // NEW bind
-        this._handleEditCancel = this._handleEditCancel.bind(this); // NEW bind
-        this._updateEditPreview = this._updateEditPreview.bind(this); // NEW bind
-        this._fetchAndDisplayRemainingDue = this._fetchAndDisplayRemainingDue.bind(this);
-        this._handleStudyRemainingClick = this._handleStudyRemainingClick.bind(this); // Handler for the new button
-        this._handleStudyOtherClick = this._handleStudyOtherClick.bind(this);
-        this._handleEscKeyForPopup = this._handleEscKeyForPopup.bind(this);
-        this._handleKeyDown = this._handleKeyDown.bind(this);
-    }
+        constructor() {
+            // --- DOM Element References ---
+            this.bodyEl = document.body;
+            this.studyAreaEl = document.getElementById('studyArea');
+            this.sessionPillEl = document.querySelector('.session-pill');
+            this.cardViewerEl = document.getElementById('cardViewer');
+            this.qualityButtonsContainer = document.querySelector('.quality-buttons');
+            this.progressTrackerEl = document.getElementById('progressTracker');
+            this.skipButton = document.getElementById('skipBtn');
+            this.endSessionButton = document.getElementById('endSessionBtn');
+            this.flipButton = document.getElementById('flipBtn');
+            this.cardFlipperEl = this.cardViewerEl?.querySelector('.card-flipper');
+    
+            // Card Action Buttons
+            this.starBtn = document.getElementById('starBtn');
+            this.buryBtn = document.getElementById('buryBtn');
+            this.editBtn = document.getElementById('editBtn');
+            this.deleteBtn = document.getElementById('deleteBtn');
+            this.aiBtn = document.getElementById('aiBtn');
+    
+            // *** NEW: Focus Mode Button Reference ***
+            // IMPORTANT: Add a button with this ID to your study-session.html
+            // Example: <button id="focusModeToggleBtn" class="icon-btn" title="Toggle Focus Mode (F)">...</button>
+            //          Place it in a column or the session pill.
+            this.focusModeToggleBtn = document.getElementById('focusModeToggleBtn');
+    
+            // Completion Screen Elements
+            // ... (keep existing completion refs) ...
+            this.completionContainer = document.getElementById('sessionCompleteContainer');
+            this.completionMessageEl = document.getElementById('completionMessage');
+            this.returnBtn = document.getElementById('returnBtn');
+            this.studyGlobalMaterialBtn = document.getElementById('studyGlobalMaterialBtn');
+            this.studyOtherBtn = document.getElementById('studyOtherBtn');
+            this.otherMaterialsList = document.getElementById('otherMaterialsList');
+    
+            // Panels
+            this.aiPanelEl = document.getElementById('aiPanel');
+            this.closeAiBtn = document.getElementById('closeAiBtn');
+            this.editPanelEl = document.getElementById('editPanel');
+            this.closeEditBtn = document.getElementById('closeEditBtn');
+            this.editNameInput = document.getElementById('sessionEditNameInput');
+            this.editChapterInput = document.getElementById('sessionEditChapterInput');
+            this.editBriefTextarea = document.getElementById('sessionEditBriefTextarea');
+            this.editDetailedTextarea = document.getElementById('sessionEditDetailedTextarea');
+            this.editSaveBtn = document.getElementById('sessionEditSaveBtn');
+            this.editCancelBtn = document.getElementById('sessionEditCancelBtn');
+    
+            // Action Columns
+            this.leftActionsColumnEl = document.getElementById('leftActionsColumn');
+            this.rightActionsColumnEl = document.getElementById('rightActionsColumn');
+    
+            // Completion Screen V2 Elements
+            // ... (keep existing completion V2 refs) ...
+            this.completionOverlay = document.getElementById('sessionCompleteContainer');
+            this.completionMessageEl = document.getElementById('completionMessage');
+            this.completionStatsEl = document.getElementById('completionStats');
+            this.compStatTotalEl = document.getElementById('compStatTotal');
+            this.compStatAccuracyEl = document.getElementById('compStatAccuracy');
+            this.compStatTimeEl = document.getElementById('compStatTime');
+            this.compStatAccuracyCirclePath = document.querySelector('.accuracy-circle .accuracy-value-path');
+            this.completionRemainingDueContainer = document.getElementById('completionRemainingDue');
+            this.compStatRemainingDueEl = document.getElementById('compStatRemainingDue');
+            this.studyRemainingDueBtn = document.getElementById('studyRemainingDueBtn');
+            this.studyRemainingBatchSizeInput = document.getElementById('studyRemainingBatchSizeInput');
+    
+            // --- State ---
+            this.isTiltActive = false;
+            this.originalRightColumnButtons = [];
+            this.sessionCards = [];
+            this.currentCardIndex = -1;
+            this.currentCard = null;
+            this.currentCardOriginalData = null;
+            this.isLoading = false;
+            this.isFlipped = false;
+            this.sessionStats = { total: 0, remaining: 0, correct: 0, incorrect: 0, startTime: null, time: '00:00', timerInterval: null };
+            this.initialParams = { material: null, chapters: null, mode: null };
+            this.isLoadingAction = false;
+            this.isAiPanelVisible = false;
+            this.isEditPanelVisible = false;
+            this.reviewsSinceLastCheck = 0;
+            this.checkFrequency = 3; // Check every 3 reviews
+            this.isCheckingForCards = false;
+            this._finalCheckCount = 0;
+            this._MAX_FINAL_CHECKS = 3;
+            this._boundHandleEscKeyForPopup = null;
+            this.isPreviewMode = false;
+            this.sessionLimit = null;
+            this.initialBatchCardIds = new Set();
+            this.reviewedInThisBatchIds = new Set();
+            this.isFocusedAllSession = false;
+            this.isFocusMode = false; // *** NEW: Track focus mode state ***
+    
+            // --- Component Instances ---
+            this.cardRenderer = null;
+            this.qualityButtons = null;
+            this.progressTracker = null;
+            this.keyboardShortcuts = null; // Will be initialized later if needed
+    
+            // --- Debounced Preview ---
+            this.debouncedPreviewUpdate = debounce(this._updateEditPreview.bind(this), 1000);
+    
+    
+            // --- Bind methods ---
+            this._handleMouseMove = this._handleMouseMove.bind(this);
+            this._handleMouseLeave = this._handleMouseLeave.bind(this);
+            this._handleReview = this._handleReview.bind(this);
+            this._skipCard = this._skipCard.bind(this);
+            this._endSession = this._endSession.bind(this);
+            this._flipCard = this._flipCard.bind(this); // Bind flip method
+            this._toggleStar = this._toggleStar.bind(this);
+            this._toggleBury = this._toggleBury.bind(this);
+            this._editCard = this._editCard.bind(this);
+            this._deleteCard = this._deleteCard.bind(this);
+            this._toggleAiPanel = this._toggleAiPanel.bind(this);
+            this._toggleEditPanel = this._toggleEditPanel.bind(this);
+            this._handleEditSave = this._handleEditSave.bind(this);
+            this._handleEditCancel = this._handleEditCancel.bind(this);
+            this._fetchAndDisplayRemainingDue = this._fetchAndDisplayRemainingDue.bind(this);
+            this._handleStudyRemainingClick = this._handleStudyRemainingClick.bind(this);
+            this._handleStudyOtherClick = this._handleStudyOtherClick.bind(this);
+            this._handleEscKeyForPopup = this._handleEscKeyForPopup.bind(this);
+            this._handleEscKey = this._handleEscKey.bind(this); // *** ADD BINDING FOR ESCAPE HANDLER ***
+            this._toggleFocusMode = this._toggleFocusMode.bind(this); // *** Bind focus mode toggle ***
+    
+            // Initial checks
+            if (!this.progressTrackerEl) console.warn("Progress tracker element not found.");
+            if (!this.completionContainer) console.warn("Session complete container not found.");
+            if (!this.focusModeToggleBtn) console.warn("Focus Mode toggle button not found. Add a button with id='focusModeToggleBtn'.");
+    
+        }
 
     _bindActionHandlers() {
         // Already bound in constructor now, this method might be redundant
@@ -259,13 +255,27 @@ class StudyView {
 
         if (this.isPreviewMode) {
             console.warn("--- RUNNING IN PREVIEW MODE --- API calls will be skipped.");
-             // Skip batch size logic in preview for simplicity
+             // Skip batch size/limit logic in preview for simplicity
         } else {
-             // *** Read limit parameter ***
+             // *** Read limit or batchSize parameter ***
              const limitParam = urlParams.get('limit');
-             this.sessionLimit = (limitParam && !isNaN(parseInt(limitParam, 10)) && parseInt(limitParam, 10) > 0)
-                 ? parseInt(limitParam, 10)
-                 : null; // Store null if no limit or invalid
+             const batchSizeParam = urlParams.get('batchSize'); // Get batchSize param
+             let parsedLimit = null;
+
+             // Prioritize 'limit'
+             if (limitParam && !isNaN(parseInt(limitParam, 10)) && parseInt(limitParam, 10) > 0) {
+             parsedLimit = parseInt(limitParam, 10);
+             console.log(`Session limit found via 'limit' parameter: ${parsedLimit}`);
+             }
+             // Fallback to 'batchSize' if 'limit' was invalid or missing
+             else if (batchSizeParam && !isNaN(parseInt(batchSizeParam, 10)) && parseInt(batchSizeParam, 10) > 0) {
+             parsedLimit = parseInt(batchSizeParam, 10);
+             console.log(`Session limit found via 'batchSize' parameter: ${parsedLimit}`);
+             } else {
+             console.log(`No valid 'limit' or 'batchSize' parameter found. No session limit applied.`);
+             }
+
+             this.sessionLimit = parsedLimit; // Store the result (null if neither was valid)
              console.log(`Session initialized with limit: ${this.sessionLimit ?? 'None'}`);
         }
 
@@ -302,6 +312,7 @@ class StudyView {
         this.keyboardShortcuts = new KeyboardShortcuts();
 
         // Register keyboard shortcuts (includes flip keys)
+        this._setupEventListeners(); // Ensure called after checks
         this._setupKeyboardShortcuts();
         this.keyboardShortcuts.startListening();
 
@@ -309,7 +320,7 @@ class StudyView {
         this.skipButton?.addEventListener('click', this._skipCard);
         this.endSessionButton?.addEventListener('click', this._endSession);
         this.flipButton?.addEventListener('click', this._flipCard); // Listener for new flip button
-        this._setupEventListeners(); // Ensure called after checks
+
         /* this._setupTiltListeners();
         this._setupAiListeners(); 
         this._setupActionListeners(); // Setup star, bury, edit, delete listeners*/
@@ -404,6 +415,26 @@ class StudyView {
 
     }
 
+/**
+     * Toggles Focus Mode by adding/removing a class on the body.
+     * Accepts an optional boolean to force a state.
+     * @param {boolean} [forceState] - True to force ON, False to force OFF.
+     * @private
+     */
+_toggleFocusMode(forceState) {
+    // Use the version with logging from the previous step
+    const newState = typeof forceState === 'boolean' ? forceState : !this.isFocusMode;
+    console.log(`[DEBUG Focus] _toggleFocusMode called. Current state: ${this.isFocusMode}, Requested state: ${forceState}, Calculated new state: ${newState}`);
+    if (newState === this.isFocusMode) {
+        console.log(`[DEBUG Focus] Focus mode state already ${newState}. No change needed.`);
+        return; // Avoid unnecessary changes if state is already correct
+    }
+    this.isFocusMode = newState;
+    this.bodyEl.classList.toggle('focus-mode-active', this.isFocusMode);
+    this.focusModeToggleBtn?.classList.toggle('active', this.isFocusMode);
+    console.log(`[DEBUG Focus] Focus mode toggled ${this.isFocusMode ? 'ON' : 'OFF'}. Body class updated.`);
+}
+
         // Helper to get dynamic fetch promise based on session type
         _getDynamicDueCardsPromise() {
             const isFocusedDueSession = this.initialParams.material && this.initialParams.chapters && this.initialParams.mode !== 'all';
@@ -473,109 +504,154 @@ class StudyView {
     } */
 
         _setupEventListeners() {
-            // Existing Listeners (Skip, End, Flip, Quality, Tilt)
-            // ...
-            // Action Button Listeners
+            // Basic controls
+            this.skipButton?.addEventListener('click', this._skipCard);
+            this.endSessionButton?.addEventListener('click', this._endSession);
+            this.flipButton?.addEventListener('click', this._flipCard);
+    
+            // Tilt effect
             if (this.cardViewerEl && this.cardFlipperEl) {
                 this.cardViewerEl.addEventListener('mousemove', this._handleMouseMove);
                 this.cardViewerEl.addEventListener('mouseleave', this._handleMouseLeave);
-                // Listen for the end of the flip transition
                 this.cardFlipperEl.addEventListener('transitionend', this._onFlipTransitionEnd.bind(this));
-                console.log("Tilt and TransitionEnd listeners added.");
             }
-
-            if (this.aiBtn && this.aiPanelEl) { // Only add listener if elements exist
-                this.aiBtn.addEventListener('click', this._toggleAiPanel);
-            }
-             if (this.closeAiBtn && this.aiPanelEl) {
-                 this.closeAiBtn.addEventListener('click', this._toggleAiPanel);
-             }
-
+    
+            // AI Panel
+            this.aiBtn?.addEventListener('click', this._toggleAiPanel);
+            this.closeAiBtn?.addEventListener('click', this._toggleAiPanel);
+    
+            // Action Buttons
             this.starBtn?.addEventListener('click', this._toggleStar);
             this.buryBtn?.addEventListener('click', this._toggleBury);
-            this.editBtn?.addEventListener('click', this._editCard); // Connects to edit handler
+            this.editBtn?.addEventListener('click', this._editCard);
             this.deleteBtn?.addEventListener('click', this._deleteCard);
     
-            // --- NEW: Edit Panel Listeners ---
-            this.closeEditBtn?.addEventListener('click', () => this._toggleEditPanel(false)); // Close button if added
+            // Edit Panel Controls
+            this.closeEditBtn?.addEventListener('click', () => this._toggleEditPanel(false));
             this.editSaveBtn?.addEventListener('click', this._handleEditSave);
             this.editCancelBtn?.addEventListener('click', this._handleEditCancel);
-            // Live Preview Listeners
-            this.editNameInput?.addEventListener('input', () => this._updateEditPreview('name'));
-            this.editChapterInput?.addEventListener('input', () => this._updateEditPreview('chapter')); // Add chapter preview if needed
+            // Live Preview (Debounced)
+            this.editNameInput?.addEventListener('input', () => this._updateEditPreview('name')); // No debounce needed for name/chapter
+            this.editChapterInput?.addEventListener('input', () => this._updateEditPreview('chapter'));
             this.editBriefTextarea?.addEventListener('input', () => this.debouncedPreviewUpdate('brief'));
             this.editDetailedTextarea?.addEventListener('input', () => this.debouncedPreviewUpdate('detailed'));
-                // --- End Edit Panel Listeners ---
-                        // *** Add Listener for the NEW "Study Remaining" Button ***
+    
+            // Completion Screen Buttons
             this.studyRemainingDueBtn?.addEventListener('click', this._handleStudyRemainingClick);
-             // Ensure studyOtherBtn listener is definitely set up
-            if (this.studyOtherBtn && this.otherMaterialsList) {
-                this.studyOtherBtn.addEventListener('click', this._handleStudyOtherClick);
-            } else {
-                console.warn("Study Other button or material list not found, popup functionality disabled.");
+            this.studyOtherBtn?.addEventListener('click', this._handleStudyOtherClick);
+            this.returnBtn?.addEventListener('click', () => { // Add listener for return button
+                 console.log("Return button clicked, navigating back...");
+                 try { window.history.back(); } catch (e) { window.location.href = './index.html'; } // Fallback
+            });
+    
+            // *** NEW: Focus Mode Toggle Button Listener ***
+            this.focusModeToggleBtn?.addEventListener('click', this._toggleFocusMode);
+    
+            // Global Keydown Listener - Moved to initialize() after successful load
+            // document.addEventListener('keydown', this._handleKeyDown);
+        }
+
+        destroy() {
+            // Remove basic controls
+            this.skipButton?.removeEventListener('click', this._skipCard);
+            this.endSessionButton?.removeEventListener('click', this._endSession);
+            this.flipButton?.removeEventListener('click', this._flipCard);
+    
+            // Remove tilt
+            if (this.cardViewerEl) {
+                this.cardViewerEl.removeEventListener('mousemove', this._handleMouseMove);
+                this.cardViewerEl.removeEventListener('mouseleave', this._handleMouseLeave);
             }
-            // Keyboard listener
-            document.addEventListener('keydown', this._handleKeyDown);
-        }    
-
-    destroy() {
-        this.keyboardShortcuts?.stopListening();
-        this.skipButton?.removeEventListener('click', this._skipCard);
-        this.endSessionButton?.removeEventListener('click', this._endSession);
-        this.flipButton?.removeEventListener('click', this._flipCard);
-        this.starBtn?.removeEventListener('click', this._toggleStar);
-        this.buryBtn?.removeEventListener('click', this._toggleBury);
-        this.editBtn?.removeEventListener('click', this._editCard);
-        this.deleteBtn?.removeEventListener('click', this._deleteCard);
-        this.editSaveBtn?.removeEventListener('click', this._handleEditSave);
-        this.editCancelBtn?.removeEventListener('click', this._handleEditCancel);
-        document.removeEventListener('keydown', this._handleKeyDown);
-        this.keyboardShortcuts?.stopListening(); // Keep this too
-        // Remove input listeners
-        this.editNameInput?.removeEventListener('input', this._updateEditPreview);
-                // Remove tilt listeners
-        if (this.cardViewerEl) {
-            this.cardViewerEl.removeEventListener('mousemove', this._handleMouseMove);
-            this.cardViewerEl.removeEventListener('mouseleave', this._handleMouseLeave);
-            console.log("Tilt listeners removed.");
-        }
-
-        if (this.cardFlipperEl) {
-            this.cardFlipperEl.removeEventListener('transitionend', this._onFlipTransitionEnd);
-        }
-       console.log("Tilt and TransitionEnd listeners removed.");
-
-        // *** Remove Escape listener if it's somehow still attached ***
-        if (this._boundHandleEscKeyForPopup) {
-            document.removeEventListener('keydown', this._boundHandleEscKeyForPopup);
-            this._boundHandleEscKeyForPopup = null; // Clear reference
-            console.log("Removed dynamic Escape key listener on destroy.");
-        }
-        // Remove other listeners like studyOtherBtn
-        this.studyOtherBtn?.removeEventListener('click', this._handleStudyOtherClick);
-
-        // Remove AI listeners
-        if (this.aiBtn) {
-            this.aiBtn.removeEventListener('click', this._toggleAiPanel);
-        }
-            if (this.closeAiBtn) {
-                this.closeAiBtn.removeEventListener('click', this._toggleAiPanel);
+            if (this.cardFlipperEl) {
+                this.cardFlipperEl.removeEventListener('transitionend', this._onFlipTransitionEnd);
             }
-            console.log("AI listeners removed.");
+    
+            // Remove AI
+            this.aiBtn?.removeEventListener('click', this._toggleAiPanel);
+            this.closeAiBtn?.removeEventListener('click', this._toggleAiPanel);
+    
+            // Remove Actions
+            this.starBtn?.removeEventListener('click', this._toggleStar);
+            this.buryBtn?.removeEventListener('click', this._toggleBury);
+            this.editBtn?.removeEventListener('click', this._editCard);
+            this.deleteBtn?.removeEventListener('click', this._deleteCard);
+    
+            // Remove Edit Panel
+            this.closeEditBtn?.removeEventListener('click', () => this._toggleEditPanel(false));
+            this.editSaveBtn?.removeEventListener('click', this._handleEditSave);
+            this.editCancelBtn?.removeEventListener('click', this._handleEditCancel);
+            this.editNameInput?.removeEventListener('input', this._updateEditPreview);
+            this.editChapterInput?.removeEventListener('input', this._updateEditPreview);
+            this.editBriefTextarea?.removeEventListener('input', this.debouncedPreviewUpdate); // Might need adjustment if debounce wrapper saved differently
+            this.editDetailedTextarea?.removeEventListener('input', this.debouncedPreviewUpdate);
+    
+            // Remove Completion
+            this.studyRemainingDueBtn?.removeEventListener('click', this._handleStudyRemainingClick);
+            this.studyOtherBtn?.removeEventListener('click', this._handleStudyOtherClick);
+            this.returnBtn?.removeEventListener('click'); // Remove inline handler logic if complex
+    
+            // *** Remove Focus Mode Toggle Listener ***
+            this.focusModeToggleBtn?.removeEventListener('click', this._toggleFocusMode);
+    
+            // --- STOP KeyboardShortcuts Listener ---
+            this.keyboardShortcuts?.stopListening(); // Use the service's method
+            console.log("Keyboard shortcut listener stopped via service.");
+    
+            // Remove dynamic Escape listener if active
+            if (this._boundHandleEscKeyForPopup) {
+                document.removeEventListener('keydown', this._boundHandleEscKeyForPopup);
+                this._boundHandleEscKeyForPopup = null;
+            }
+    
+            // Stop timer, destroy CardRenderer etc.
+            this._stopTimer();
+            this.cardRenderer?.destroy(); // Call destroy on CardRenderer
+    
+            // Reset state
+            this.initialBatchCardIds.clear();
+            this.reviewedInThisBatchIds.clear();
+            this.isCheckingForCards = false;
+            this._finalCheckCount = 0;
+    
+            console.log("StudyView destroyed and listeners removed.");
+        }
 
-        
-        // Remove AI button listener if added
-        // *** Remove NEW listener ***
-        this._finalCheckCount = 0;
-        this.studyRemainingDueBtn?.removeEventListener('click', this._handleStudyRemainingClick);
-        this.initialBatchCardIds.clear();
-        this.reviewedInThisBatchIds.clear();
-        this._stopTimer();
-        this.isCheckingForCards = false; 
-        console.log("StudyView destroyed and listeners removed.");
+        // --- Central Escape Key Handler (Called by KeyboardShortcuts) ---
+    /**
+     * Handles the Escape key press, prioritizing Focus Mode > Panels > Popup.
+     * @param {KeyboardEvent} event - The keyboard event object.
+     * @private
+     */
+    _handleEscKey(event) {
+        console.log("[Shortcut 'Escape'] Triggered.");
+        const isPopupOpen = this.otherMaterialsList?.classList.contains('visible');
+
+        // Priority: Focus Mode > Edit Panel > AI Panel > Popup
+        if (this.isFocusMode) {
+            console.log("[Shortcut 'Escape'] Action: Exiting focus mode.");
+            event.preventDefault(); event.stopPropagation();
+            this._toggleFocusMode(false); // Force exit
+            return;
+        }
+        if (this.isEditPanelVisible) {
+            console.log("[Shortcut 'Escape'] Action: Cancelling Edit.");
+            event.preventDefault(); event.stopPropagation();
+            this._handleEditCancel(); // Use cancel handler
+            return;
+        }
         if (this.isAiPanelVisible) {
-            this._toggleAiPanel(); // Attempt to close it cleanly
+            console.log("[Shortcut 'Escape'] Action: Closing AI panel.");
+            event.preventDefault(); event.stopPropagation();
+            this._toggleAiPanel(false); // Force close
+            return;
         }
+        if (isPopupOpen) {
+            console.log("[Shortcut 'Escape'] Action: Closing 'Study Other' popup.");
+            event.preventDefault(); event.stopPropagation();
+            this._handleEscKeyForPopup(event); // Reuse existing logic to close and remove listener
+            return;
+        }
+        console.log("[Shortcut 'Escape'] No specific action taken.");
     }
 
         /**
@@ -811,7 +887,39 @@ class StudyView {
     
         // --- Keyboard Shortcuts Update ---
         _setupKeyboardShortcuts() {
-             if (!this.keyboardShortcuts) return;
+            if (!this.keyboardShortcuts) {
+                console.error("KeyboardShortcuts service not initialized!");
+                return;
+             }
+             console.log("Registering keyboard shortcuts via KeyboardShortcuts service...");
+
+            // --- Escape Key ---
+            this.keyboardShortcuts.register('Escape', this._handleEscKey); // Use the central handler
+
+             // --- Focus Mode Toggle ('f') ---
+            this.keyboardShortcuts.register('f', (event) => {
+            // Check conditions *before* toggling (ignore if loading or popup open)
+            const isPopupOpen = this.otherMaterialsList?.classList.contains('visible');
+            if (this.isLoading || isPopupOpen) {
+                console.log("[Shortcut 'f'] Ignoring: isLoading or Popup Open.");
+                return;
+            }
+            // Allow toggling even if panels are open
+            console.log("[Shortcut 'f'] Triggered.");
+            event.preventDefault(); // Prevent browser find
+            this._toggleFocusMode();
+            });
+
+            // --- Panel Specific ---
+            // Example: Ctrl+S to save in Edit Panel
+            this.keyboardShortcuts.register('s', (event) => { // Register 's' again, but check for Ctrl
+            if (this.isEditPanelVisible && event.ctrlKey) {
+                console.log("[Shortcut 'Ctrl+S'] Triggered in Edit Panel.");
+                event.preventDefault(); // Prevent browser save
+                this.editSaveBtn?.click(); // Simulate save click
+            }
+            // Note: The regular 's' handler above won't run if isEditPanelVisible is true due to canPerformAction() check
+            });
     
              // Rating Keys (1-4) - Active only when flipped AND no panel visible
              ['1', '2', '3', '4'].forEach((key, index) => {
@@ -846,32 +954,166 @@ class StudyView {
              // Escape Key - Handled in _handleKeyDown directly for panel logic
          }
 
-         _handleKeyDown(event) {
-            // Escape logic to close panels first
-            if (event.key === 'Escape') {
-                if (this.isEditPanelVisible) { this._handleEditCancel(); }
-                else if (this.isAiPanelVisible) { this._toggleAiPanel(false); }
-                else { /* Potentially end session or do nothing? */ }
-                return; // Stop further processing for Escape
-            }
-    
-            // If any panel is visible, block other shortcuts
-            if (this.isAiPanelVisible || this.isEditPanelVisible) {
-                 return;
+/*
+_handleKeyDown(event) {
+    console.log(`DEBUG: Keydown Event: Key='${event.key}', Target=${event.target.tagName}#${event.target.id}.${event.target.className}`); // Log key and target
+
+    const activeElement = document.activeElement;
+    const isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable);
+    const isPopupOpen = this.otherMaterialsList?.classList.contains('visible');
+
+    console.log(`[DEBUG KeyDown] State Check: isTyping=${isTyping}, isPopupOpen=${isPopupOpen}, isLoading=${this.isLoading}, isFocusMode=${this.isFocusMode}, isAiPanelVisible=${this.isAiPanelVisible}, isEditPanelVisible=${this.isEditPanelVisible}`);
+
+    // --- Highest Priority: Escape Key ---
+    if (event.key === 'Escape') {
+         console.log("DEBUG: Escape key processing...");
+         if (this.isFocusMode) {
+            console.log("[DEBUG KeyDown] Focus mode is active. Attempting to exit focus mode via Escape.");
+             event.preventDefault(); event.stopPropagation();
+             this._toggleFocusMode(false); // Force exit
+             console.log("[DEBUG KeyDown] Called _toggleFocusMode(false) for Escape.");
+             return;
+         }
+        if (this.isEditPanelVisible) { // Close Edit Panel
+            console.log("DEBUG: Closing edit panel via Escape.");
+            event.preventDefault(); event.stopPropagation();
+            this._handleEditCancel();
+            return;
+        }
+        if (this.isAiPanelVisible) { // Close AI Panel
+            console.log("DEBUG: Closing AI panel via Escape.");
+            event.preventDefault(); event.stopPropagation();
+            this._toggleAiPanel(false);
+            return;
+        }
+        if (isPopupOpen && this._boundHandleEscKeyForPopup) { return; } // Let specific handler manage
+        console.log("DEBUG: Escape pressed, no specific action taken.");
+        return; // Allow default if nothing else handled
+   }
+
+    // --- Ignore other keys if typing, popup open, or loading ---
+        // Add logging here to see if 'f' is ignored prematurely
+        if (isTyping) { console.log("DEBUG: Ignoring keydown (typing)"); return; }
+        if (isPopupOpen) { console.log("DEBUG: Ignoring keydown (popup open)"); return; }
+        if (this.isLoading) { console.log("DEBUG: Ignoring keydown (isLoading)"); return; }
+
+
+        // --- Focus Mode Toggle ('f') ---
+         // Allow 'f' even if panels are open, as it's a global toggle
+         if (event.key === 'f' || event.key === 'F') {
+            console.log("[DEBUG KeyDown] 'f' key detected. Attempting to toggle focus mode.");
+            event.preventDefault(); // Prevent default 'f' behavior (like find)
+            this._toggleFocusMode(); // Toggle current state
+            console.log("[DEBUG KeyDown] Called _toggleFocusMode() for 'f' key.");
+            return; // Handled
+        }
+
+        // --- Defer to CardRenderer if focus is inside explanation block ---
+        const isFocusOnExplanationElement = activeElement && activeElement.closest('.explanation-block-header'); // Broader check
+        if (isFocusOnExplanationElement) {
+             console.log("DEBUG: Focus is within explanation header/button, deferring to CardRenderer.");
+             // CardRenderer's delegated listener should handle Arrows, Enter (on header), H.
+             // It should stop propagation for those it handles.
+             // Space on header will bubble up intentionally.
+             return;
+        }
+
+       // --- Panel-Specific Overrides or General Shortcuts ---
+       const noPanelVisible = !this.isAiPanelVisible && !this.isEditPanelVisible;
+       console.log(`[DEBUG KeyDown] Panel Check for shortcuts: noPanelVisible=${noPanelVisible}`);
+
+       if (noPanelVisible) {
+           console.log("[DEBUG KeyDown] No panels visible. Processing general/card shortcuts.");
+           // Flip Card (Space, Enter) - Only if not flipped
+           if (!this.isFlipped && (event.key === ' ' || event.key === 'Enter')) {
+               console.log("[DEBUG KeyDown] Space or Enter detected (card not flipped). Flipping card.");
+               event.preventDefault(); // Prevent default space/enter actions
+               this._flipCard();
+               return; // Handled
+           }
+
+           // Card Actions (S, B, E, Delete, N) - Available regardless of flip state (except maybe Delete?)
+           if (event.key === 's' || event.key === 'S') {
+               console.log("[DEBUG KeyDown] 's' key detected. Toggling star.");
+               event.preventDefault();
+               this.starBtn?.click(); // Simulate click to ensure UI updates and async logic runs
+               // this._toggleStar(); // Direct call might bypass some UI updates or checks
+               return; // Handled
+           }
+           if (event.key === 'b' || event.key === 'B') {
+               console.log("[DEBUG KeyDown] 'b' key detected. Toggling bury.");
+               event.preventDefault();
+               this.buryBtn?.click(); // Simulate click
+               // this._toggleBury();
+               return; // Handled
+           }
+           if (event.key === 'e' || event.key === 'E') {
+               console.log("[DEBUG KeyDown] 'e' key detected. Opening edit panel.");
+               event.preventDefault();
+               this.editBtn?.click(); // Simulate click
+               // this._editCard(); // This toggles the panel
+               return; // Handled
+           }
+           if (event.key === 'Delete') {
+               console.log("[DEBUG KeyDown] 'Delete' key detected. Attempting delete.");
+               event.preventDefault();
+               this.deleteBtn?.click(); // Simulate click
+               // this._deleteCard();
+               return; // Handled
+           }
+            if (event.key === 'n' || event.key === 'N') {
+                console.log("[DEBUG KeyDown] 'n' key detected. Skipping card.");
+                event.preventDefault();
+                this.skipButton?.click(); // Simulate click
+                // this._skipCard();
+                return; // Handled
             }
 
-              // --- >>> ADD SAFETY CHECK <<< ---
-        if (!this.keyboardShortcuts) {
-            console.warn("DEBUG: _handleKeyDown called but keyboardShortcuts instance is missing. Listener might be stale.");
-            // Optionally remove the listener again here if it's stale?
-            // document.removeEventListener('keydown', this._handleKeyDown);
-            return; // Prevent error
-        }
-    
-            // Let KeyboardShortcuts class handle the rest
-            this.keyboardShortcuts.handleKeyEvent(event);
-        }
-    
+           // Actions only available when flipped
+           if (this.isFlipped) {
+               console.log("[DEBUG KeyDown] Card is flipped. Checking for rating/detail keys.");
+               // Rating Keys (1-4)
+               if (['1', '2', '3', '4'].includes(event.key)) {
+                   const quality = parseInt(event.key, 10) - 1; // Quality is 0-3
+                   console.log(`[DEBUG KeyDown] Rating key '${event.key}' detected. Handling review with quality ${quality}.`);
+                   event.preventDefault();
+                   // Find the corresponding button and click it
+                   const qualityButton = this.qualityButtonsContainer?.querySelector(`.quality-btn[data-quality="${quality}"]`);
+                   if (qualityButton) {
+                       console.log(`[DEBUG KeyDown] Simulating click on quality button ${quality + 1}.`);
+                       qualityButton.click();
+                   } else {
+                       console.error(`[DEBUG KeyDown] Could not find quality button for quality ${quality}.`);
+                       // Fallback to direct call if needed, though click simulation is often better
+                       // this._handleReview(quality);
+                   }
+                   return; // Handled
+               }
+               // Toggle Detail (D)
+               if (event.key === 'd' || event.key === 'D') {
+                   console.log("[DEBUG KeyDown] 'd' key detected. Toggling detail view.");
+                   event.preventDefault();
+                   // Assuming CardRenderer instance handles its own detail toggle logic
+                   this.cardRenderer?.toggleDetailedExplanation();
+                   console.log("[DEBUG KeyDown] Called cardRenderer.toggleDetailedExplanation().");
+                   return; // Handled
+               }
+           } else {
+                console.log("[DEBUG KeyDown] Card not flipped. Ignoring rating/detail keys (1-4, d).");
+           }
+       } else {
+           console.log("[DEBUG KeyDown] Panel is visible. Ignoring general card shortcuts.");
+           // Add any panel-specific shortcuts here if needed (e.g., C3trl+S for save in edit panel)
+           if (this.isEditPanelVisible && event.ctrlKey && (event.key === 's' || event.key === 'S')) {
+                console.log("[DEBUG KeyDown] Ctrl+S detected in Edit Panel. Simulating Save click.");
+                event.preventDefault();
+                this.editSaveBtn?.click();
+                return; // Handled
+           }
+       }
+       console.log(`[DEBUG KeyDown] Key "${event.key}" was not handled by any specific shortcut logic in studyView.`);
+   }
+    */
 
     // --- Private Helper Methods ---
 
@@ -937,6 +1179,22 @@ class StudyView {
             this.isLoading = false;
             this._updateLoadingState();
             this._showCompletionMessage("Study session complete.", true); // Or perhaps an error message?
+        }
+    }
+
+    // Make sure _handleFlip exists and works correctly
+    _handleFlip() {
+        if (!this.cardFlipperEl || this.isLoading || this.isLoadingAction) return; // Add guards
+        this.isCardFlipped = !this.isCardFlipped;
+        this.cardViewerEl?.classList.toggle('is-flipped', this.isCardFlipped); // Use cardViewerEl for class
+        console.log(`DEBUG: Card flipped state: ${this.isCardFlipped}`);
+
+        if (this.isCardFlipped) {
+            // If just flipped to back, ensure keyboard focus starts correctly
+            this.cardRenderer?._initializeKeyboardSelection(); // Use optional chaining
+            this.qualityButtons?.setDisabled(false); // Enable quality buttons
+        } else {
+            this.qualityButtons?.setDisabled(true); // Disable quality buttons
         }
     }
 
@@ -1913,7 +2171,7 @@ class StudyView {
         url += `&chapters=${encodeURIComponent(chapters)}`;
     }
     if (batchSize > 0) {
-        url += `&limit=${batchSize}`;
+        url += `&batchSize=${batchSize}`;
     }
 
     console.log('DEBUG: Constructed URL:', url); // Log the URL
@@ -2054,22 +2312,19 @@ async _handleStudyOtherClick() {
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Add a check for KaTeX dependencies before initializing
     if (typeof katex === 'undefined' || typeof renderMathInElement === 'undefined') {
-        console.error("KaTeX or auto-render not loaded. Study session cannot initialize properly.");
-        // Display a user-facing error message on the page
-        document.body.innerHTML = `<div style="color: red; padding: 20px; text-align: center;">
-            <h2>Error Loading Dependencies</h2>
-            <p>Could not load essential rendering libraries (KaTeX). Please check your internet connection and refresh the page.</p>
-            </div>`;
+        // ... (keep KaTeX check) ...
+         console.error("KaTeX or auto-render not loaded. Study session cannot initialize properly.");
+         document.body.innerHTML = `<div style="color: red; padding: 20px; text-align: center;"><h2>Error Loading Dependencies</h2><p>Could not load essential rendering libraries (KaTeX). Please check your internet connection and refresh the page.</p></div>`;
         return;
     }
 
     const studyView = new StudyView();
     studyView.initialize();
 
-    // Optional: Add beforeunload cleanup (can be problematic)
-    // window.addEventListener('beforeunload', () => {
-    //     studyView.destroy();
-    // });
+    // Cleanup on unload (optional but good practice)
+     window.addEventListener('unload', () => {
+         console.log("Window unloading, attempting to destroy StudyView...");
+         studyView.destroy();
+     });
 });
