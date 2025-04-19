@@ -1571,6 +1571,10 @@ body.edit-panel-active .edit-panel {
         .card-scene .brief-explanation { display: block; }
         .card-scene .detailed-explanation { display: none; }
         /* --- Separator styling (keep as is) --- */
+        .card-scene .explanation-separator {
+            display: none;
+        }
+        .ca
         .card-scene.show-detailed .explanation-separator {
             display: block;
             border: none;
