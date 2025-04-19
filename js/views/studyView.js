@@ -1728,7 +1728,7 @@ _handleKeyDown(event) {
         }
     }
 
-    async _toggleBury() {
+async _toggleBury() {
         if (!this.currentCard || this.isLoading || this.isLoadingAction) return;
 
                 // *** PREVIEW MODE Check ***
@@ -1736,7 +1736,7 @@ _handleKeyDown(event) {
                     const isCurrentlyBuried = !!this.currentCard.is_buried;
                     const action = isCurrentlyBuried ? 'unbury' : 'bury';
                     if (action === 'bury' && !confirm(`PREVIEW: Bury this card?`)) return;
-       
+
                     console.log(`PREVIEW: Toggling bury to ${!isCurrentlyBuried} for card ${this.currentCard.id}`);
                     this.currentCard.is_buried = !isCurrentlyBuried; // Update local sample state
                     this._updateActionButtonsUI(); // Update button visuals
@@ -1755,7 +1755,7 @@ _handleKeyDown(event) {
         const isCurrentlyBuried = !!this.currentCard.is_buried;
         const action = isCurrentlyBuried ? 'unbury' : 'bury';
 
-        if (action === 'bury' && !confirm(`Bury this card until tomorrow?`)) {
+        if (action === 'bury' && !confirm(`Bury this card ?`)) {
              this.isLoadingAction = false;
              this._setActionButtonStateBasedOnLoading();
              return;
@@ -1764,17 +1764,22 @@ _handleKeyDown(event) {
         console.log(`${action === 'bury' ? 'Burying' : 'Unburying'} card ${cardId}`);
         // Optimistic UI update handled by _updateActionButtonsUI after success/failure
 
+        let burySucceeded = false; // Flag to track success within try block
+
         try {
             const updatedCard = await apiClient[action === 'bury' ? 'buryCard' : 'unburyCard'](cardId);
             this.currentCard.is_buried = updatedCard.is_buried; // Update state from response
             this._updateActionButtonsUI(); // Update UI based on final state
 
-            if (!isCurrentlyBuried) { // If action was 'bury'
+            if (!isCurrentlyBuried && updatedCard.is_buried) { // If action was 'bury' AND it succeeded
+                 burySucceeded = true; // Mark bury as successful
                  console.log("Card buried, loading next card.");
                  // Don't need skipCard, just load next directly after state is set
                  this.isLoading = true; // Set main loading flag for next card load
                  this._updateLoadingState(); // Show loading visuals
+                 console.log("DEBUG: [_toggleBury] Before calling _loadNextCard. this.currentCard:", this.currentCard ? this.currentCard.id : 'null'); // Log before loadNextCard
                  this._loadNextCard(); // Load the next one
+                 console.log("DEBUG: [_toggleBury] After calling _loadNextCard."); // Log after loadNextCard returns (or starts async)
             }
 
         } catch (error) {
@@ -1782,12 +1787,23 @@ _handleKeyDown(event) {
              this._showError(`Failed to ${action} card.`, true);
              // State didn't change, so just re-enable buttons
         } finally {
-             // Only reset loading flag if NOT loading next card (i.e., unbury or failed bury)
-             if (isCurrentlyBuried || !this.currentCard.is_buried) {
+             console.log("DEBUG: [_toggleBury finally] Entering finally block."); // Log entry into finally
+             console.log("DEBUG: [_toggleBury finally] Current value of this.currentCard:", this.currentCard ? this.currentCard.id : 'null'); // Log currentCard state in finally
+             console.log("DEBUG: [_toggleBury finally] isCurrentlyBuried:", isCurrentlyBuried);
+             console.log("DEBUG: [_toggleBury finally] burySucceeded flag:", burySucceeded);
+
+             // Only reset loading flag if the action was 'unbury' OR if the action was 'bury' BUT it failed.
+             // We use the burySucceeded flag set in the try block.
+             if (!burySucceeded) {
+                  console.log("DEBUG: [_toggleBury finally] Bury did not succeed or action was unbury. Resetting isLoadingAction.");
+                  // Reset loading state only if it wasn't a successful bury
                   this.isLoadingAction = false;
                   this._setActionButtonStateBasedOnLoading(); // Re-enable relevant buttons
+             } else {
+                  console.log("DEBUG: [_toggleBury finally] Bury succeeded. isLoadingAction remains true, main isLoading handles state.");
              }
-             // If burying succeeded, isLoadingAction remains true until next card loaded sets it false implicitly.
+             // If bury succeeded, isLoadingAction remains true, and isLoading (main) is true,
+             // letting _loadNextCard or _finalDueCardCheck handle the state reset.
         }
     }
 
