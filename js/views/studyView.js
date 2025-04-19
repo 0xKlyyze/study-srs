@@ -1787,25 +1787,21 @@ async _toggleBury() {
              this._showError(`Failed to ${action} card.`, true);
              // State didn't change, so just re-enable buttons
         } finally {
-             console.log("DEBUG: [_toggleBury finally] Entering finally block."); // Log entry into finally
-             console.log("DEBUG: [_toggleBury finally] Current value of this.currentCard:", this.currentCard ? this.currentCard.id : 'null'); // Log currentCard state in finally
-             console.log("DEBUG: [_toggleBury finally] isCurrentlyBuried:", isCurrentlyBuried);
-             console.log("DEBUG: [_toggleBury finally] burySucceeded flag:", burySucceeded);
+            console.log("DEBUG: [_toggleBury finally] Entering finally block."); // Log entry into finally
+            console.log("DEBUG: [_toggleBury finally] Current value of this.currentCard:", this.currentCard ? this.currentCard.id : 'null'); // Log currentCard state in finally
+            console.log("DEBUG: [_toggleBury finally] isCurrentlyBuried:", isCurrentlyBuried);
+            console.log("DEBUG: [_toggleBury finally] burySucceeded flag:", burySucceeded);
 
-             // Only reset loading flag if the action was 'unbury' OR if the action was 'bury' BUT it failed.
-             // We use the burySucceeded flag set in the try block.
-             if (!burySucceeded) {
-                  console.log("DEBUG: [_toggleBury finally] Bury did not succeed or action was unbury. Resetting isLoadingAction.");
-                  // Reset loading state only if it wasn't a successful bury
-                  this.isLoadingAction = false;
-                  this._setActionButtonStateBasedOnLoading(); // Re-enable relevant buttons
-             } else {
-                  console.log("DEBUG: [_toggleBury finally] Bury succeeded. isLoadingAction remains true, main isLoading handles state.");
-             }
-             // If bury succeeded, isLoadingAction remains true, and isLoading (main) is true,
-             // letting _loadNextCard or _finalDueCardCheck handle the state reset.
-        }
-    }
+            // --- Always reset isLoadingAction in finally ---
+            // The main isLoading flag (controlled by _loadNextCard or error handlers)
+            // will manage the overall loading state and button disabling during the actual load.
+            console.log("DEBUG: [_toggleBury finally] Resetting isLoadingAction.");
+            this.isLoadingAction = false;
+            // Re-evaluate button states based on the *current* main isLoading flag and card state
+            this._setActionButtonStateBasedOnLoading();
+            console.log("DEBUG: [_toggleBury finally] Exiting finally block.");
+       }
+   }
 
        // --- Transition End Handler ---
        _onFlipTransitionEnd(event) {
