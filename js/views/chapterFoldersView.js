@@ -748,6 +748,7 @@ _handleChapterMouseDown(e) {
 
         const originalName = this.settingsEditMaterialNameInput.value; // Name *before* potential edit in the modal
         const originalSettings = this.editingMaterialSettings; // Settings *before* edits
+        console.log("DEBUG: Original Settings for Comparison:", JSON.stringify(originalSettings, null, 2));
         const collectedData = this._collectSettingsFormData(); // Settings *after* edits from form
         let targetMaterialName = originalName;
         let nameChanged = false;
@@ -793,6 +794,9 @@ _handleChapterMouseDown(e) {
         if (!deepCompare(collectedData.srsThresholds, originalSettings.srsThresholds)) {
              patchPayload.srsThresholds = collectedData.srsThresholds; settingsChanged = true;
         }
+        
+        console.log("DEBUG: Settings Changed Flag:", settingsChanged);
+        console.log("DEBUG: Final PATCH Payload:", JSON.stringify(patchPayload, null, 2));
 
         // --- 3. Execute Update/PATCH Call only if necessary ---
         if (!settingsChanged && !nameChanged) {
@@ -820,7 +824,7 @@ _handleChapterMouseDown(e) {
             console.log(`Sending PATCH for '${targetMaterialName}' with payload:`, JSON.stringify(patchPayload, null, 2));
             // Use the specific updateMaterialSettings which likely does a PATCH
             const result = await apiClient.updateMaterialSettings(targetMaterialName, patchPayload);
-            console.log("Settings PATCH successful:", result);
+            console.log("DEBUG: API Response Settings:", JSON.stringify(result?.settings, null, 2)); // Log the settings from response
             this._showInfoMessage("Settings updated successfully.");
 
             // Update UI based on changes
@@ -906,7 +910,7 @@ _handleChapterMouseDown(e) {
 
         const steps = parseSteps(this.settingsAlgoLearningStepsInput);
 
-        return {
+        const data = {
             materialName: this.settingsMaterialNameInput?.value.trim() || '',
             studyOptions: { // Matches structure used in _populateSettingsForm & API calls
                 newCardsPerDay: parseIntOrDefault(this.settingsDailyLimitInput, 20),
@@ -932,6 +936,10 @@ _handleChapterMouseDown(e) {
                 criticalEase: parseFloatOrDefault(this.settingsThresholdCriticalEaseInput, 1.5)
             }
         };
+
+        console.log("DEBUG: Collected Form Data:", JSON.stringify(data, null, 2));
+
+        return data;
     }
 
     _handletoggleStudyOptionsPopup() {
