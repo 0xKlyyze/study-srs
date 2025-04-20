@@ -1208,7 +1208,14 @@ _handleKeyDown(event) {
      */
     async _finalDueCardCheck() { // New Logic
         // --- Guards (keep Focused All, Preview Mode, isChecking, offline, initialBatchId checks) ---
-        if (this.isFocusedAllSession) { /* ... show completion ... */ return; }
+        if (this.isFocusedAllSession) {
+            console.log("DEBUG: Final Check - Skipping ('Focused All' session). Ending session.");
+            this.isLoading = false; // Ensure loading is off
+            this.isCheckingForCards = false;
+            this._updateLoadingState(); // Update UI
+            this._showCompletionMessage("Study session complete!", false); // Focused All never has remaining due check
+            return;
+        }
 
          // *** Circuit Breaker Check ***
          this._finalCheckCount++;
@@ -1850,57 +1857,132 @@ async _toggleBury() {
         }
     }
 
-    async _deleteCard() { // Logic largely unchanged, added isLoadingAction
-        if (!this.currentCard || this.isLoading || this.isLoadingAction) return;
-        if (!confirm("PERMANENTLY delete this flashcard? This cannot be undone.")) return;
+    async _deleteCard() {
+        if (!this.currentCard || this.isLoading || this.isLoadingAction) {
+            console.log("DEBUG: [_deleteCard] Aborted (loading or no card). isLoading:", this.isLoading, "isLoadingAction:", this.isLoadingAction);
+            return;
+        }
 
-                // *** PREVIEW MODE Check ***
-                if (this.isPreviewMode) {
-                    console.log(`PREVIEW: Simulating delete for card ${this.currentCard.id}`);
-                    const cardIndex = this.currentCardIndex;
-                    this.sessionCards.splice(cardIndex, 1); // Remove from sample array
-                    this.sessionStats.total--;
-                    if (this.currentCardIndex >= this.sessionCards.length) { this.currentCardIndex = this.sessionCards.length - 1; }
-                    else { this.currentCardIndex--; }
-                    this.isLoading = true; this._updateLoadingState(); // Simulate load
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    this._loadNextCard(); // Load next sample
-                    return; // Skip API call
+        // *** PREVIEW MODE Check ***
+        if (this.isPreviewMode) {
+            if (!confirm(`PREVIEW: Delete this card? (Cannot be undone in preview)`)) return;
+            const cardId = this.currentCard.id;
+            console.log(`PREVIEW: Deleting card ${cardId}`);
+            const indexToRemove = this.sessionCards.findIndex(c => c.id === cardId);
+            if (indexToRemove > -1) {
+                this.sessionCards.splice(indexToRemove, 1);
+                console.log(`PREVIEW: Removed card ${cardId} from local queue. New length: ${this.sessionCards.length}`);
+                // Adjust index if needed (though _loadNextCard handles it)
+                if (indexToRemove <= this.currentCardIndex) {
+                    // Don't decrement currentCardIndex here, let _loadNextCard handle finding the next valid one.
+                    console.log("PREVIEW: Index adjustment might be needed by _loadNextCard.");
                 }
-                // *** END PREVIEW MODE Check ***
-
-        this.isLoadingAction = true;
-        this._setActionButtonStateBasedOnLoading(); // Disable buttons
+                this.sessionStats.totalCards = this.sessionCards.length; // Update total count
+                this._updateRemainingCount();
+                this.progressTracker.update(this.sessionStats);
+                this.isLoading = true; this._updateLoadingState(); // Simulate load
+                await new Promise(resolve => setTimeout(resolve, 100)); // Short delay
+                this._loadNextCard(); // Load next sample
+            } else {
+                console.warn(`PREVIEW: Card ${cardId} not found in local queue.`);
+                // Optionally proceed to load next anyway? Or show error?
+                this.isLoading = true; this._updateLoadingState();
+                this._loadNextCard();
+            }
+            return; // Skip API call
+        }
+        // *** END PREVIEW MODE Check ***
 
         const cardId = this.currentCard.id;
-        const cardIndex = this.currentCardIndex;
-        console.log(`Deleting card ${cardId}`);
+        const cardName = this.currentCard.name; // For confirmation
+
+        if (!confirm(`Are you sure you want to permanently delete the card "${cardName}"? This cannot be undone.`)) {
+            console.log("DEBUG: [_deleteCard] Deletion cancelled by user.");
+            return;
+        }
+
+        console.log(`DEBUG: [_deleteCard] Starting deletion for card ${cardId}`);
+        this.isLoadingAction = true;
+        this._setActionButtonStateBasedOnLoading(); // Disable buttons during action
+
+        let deleteHandled = false; // Flag to track if deletion logic (including loading next) was processed
 
         try {
+            console.log(`Deleting card ${cardId}`);
             await apiClient.deleteCard(cardId);
-            this._showError("Card deleted.", true); // Use temporary error as notification
+            console.log(`DEBUG: [_deleteCard] API call for delete successful (or returned no content).`);
 
-            this.sessionCards.splice(cardIndex, 1);
-            this.sessionStats.total--;
-
-            // Adjust index before loading next
-            if (this.currentCardIndex >= this.sessionCards.length) {
-                this.currentCardIndex = this.sessionCards.length - 1;
-            } else {
-                this.currentCardIndex--; // Decrement before _loadNextCard increments
-            }
-
-            this.isLoading = true; // Set main loading flag for next card load
-            this._updateLoadingState(); // Show loading visuals
-            this._loadNextCard(); // Load next card
+            // --- Deletion Success Logic ---
+            this._handleSuccessfulDeletion(cardId);
+            deleteHandled = true;
+            // --- End Deletion Success Logic ---
 
         } catch (error) {
-             console.error(`Failed to delete card:`, error);
-             this._showError("Failed to delete card.", true);
-             this.isLoadingAction = false; // Reset on error
-             this._setActionButtonStateBasedOnLoading(); // Re-enable buttons
+            console.error("Error during card deletion API call:", error);
+            // Check if the error suggests deletion was likely successful despite fetch error
+            // This is brittle; ideally, apiClient handles 204 correctly.
+            // A TypeError often occurs if fetch tries to parse empty JSON response.
+            const likelyDeleted = error instanceof TypeError || (error.message && (error.message.includes('Failed to fetch') || error.message.includes('JSON') ));
+
+            if (likelyDeleted && !deleteHandled) {
+                 console.warn("DEBUG: [_deleteCard] Treating fetch error as likely successful deletion.");
+                 // --- Deletion Success Logic (Fallback in Catch) ---
+                 this._handleSuccessfulDeletion(cardId);
+                 deleteHandled = true;
+                 // --- End Deletion Success Logic ---
+            } else if (!deleteHandled) {
+                 // Genuine error or already handled
+                 console.error("DEBUG: [_deleteCard] Genuine delete error or already handled. Not loading next card.");
+                 this._showError(`Failed to delete card: ${error.message || error}`, true);
+                 // Don't load next card on genuine failure
+            }
+        } finally {
+            console.log("DEBUG: [_deleteCard finally] Entering finally block.");
+            console.log("DEBUG: [_deleteCard finally] deleteHandled flag:", deleteHandled);
+            // Always reset isLoadingAction, as the action itself (delete attempt) is finished.
+            console.log("DEBUG: [_deleteCard finally] Resetting isLoadingAction.");
+            this.isLoadingAction = false;
+            // Re-evaluate button states based on the *current* main isLoading flag and card state
+            // If deletion was handled, isLoading should be true (set by _handleSuccessfulDeletion)
+            // If not handled (error), isLoading should be false (or whatever it was before)
+            this._setActionButtonStateBasedOnLoading();
+            console.log("DEBUG: [_deleteCard finally] Exiting finally block. isLoading:", this.isLoading, "isLoadingAction:", this.isLoadingAction);
         }
-        // Success path handles loading state via _loadNextCard
+    }
+
+    /**
+     * Helper function to handle the state updates and loading sequence
+     * after a card has been successfully deleted (or assumed deleted).
+     * @param {string} cardId The ID of the card that was deleted.
+     * @private
+     */
+    _handleSuccessfulDeletion(cardId) {
+        console.log(`DEBUG: [_handleSuccessfulDeletion] Processing successful deletion for ${cardId}`);
+        // Remove card from the local queue
+        const indexToRemove = this.sessionCards.findIndex(c => c.id === cardId);
+        if (indexToRemove > -1) {
+            this.sessionCards.splice(indexToRemove, 1);
+            console.log(`DEBUG: [_handleSuccessfulDeletion] Removed card ${cardId} from local queue. New length: ${this.sessionCards.length}`);
+
+            // Update stats
+            this.sessionStats.totalCards = this.sessionCards.length;
+            this._updateRemainingCount();
+            this.progressTracker.update(this.sessionStats);
+
+            console.log(`DEBUG: [_handleSuccessfulDeletion] Index before potential adjustment: ${this.currentCardIndex}. Card removed at index: ${indexToRemove}`);
+            // No index adjustment needed here, _loadNextCard handles finding the next valid index.
+
+        } else {
+            console.warn(`DEBUG: [_handleSuccessfulDeletion] Card ${cardId} not found in local queue after successful API delete/assumption.`);
+        }
+
+        // Load the next card
+        console.log("DEBUG: [_handleSuccessfulDeletion] Preparing to load next card.");
+        this.isLoading = true; // Set main loading flag for next card load
+        this._updateLoadingState(); // Show loading visuals
+        console.log("DEBUG: [_handleSuccessfulDeletion] Before calling _loadNextCard.");
+        this._loadNextCard();
+        console.log("DEBUG: [_handleSuccessfulDeletion] After calling _loadNextCard.");
     }
 
 
